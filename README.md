@@ -7,7 +7,7 @@ Someday, there will be some clever words. :leaves:
 
 ### Project goals: :cherry_blossom:
 
-* Create simple command sets, which will belong to different architectures
+* Create simple instruction sets, which will belong to different architectures
 (which are listed below)
 
 * Create a simulator (to see differences in these architectures)
@@ -51,7 +51,17 @@ _(There also exists some SIMD, but it is scary, so we will not talk about that)_
 
 ### What we will (possibly) use: :maple_leaf:
 
+* Python
+
+* Qt for GUI
+
 ### Examples and resources: :fallen_leaf:
+
+* Guidelines from [nand2tetris](http://f.javier.io/rep/books/The%20Elements%20of%20Computing%20Systems.pdf)
+
+* https://schweigi.github.io/assembler-simulator/
+
+* https://parraman.github.io/asm-simulator/
 
 ---
 
