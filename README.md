@@ -16,37 +16,37 @@ Someday, there will be some clever words. :leaves:
 
 *Architectures:*
 
-* First category
+* Instruction Set Architecture (Register Architecture)
 
-  1. Stack architecture
+  1. Stack (Zero-Address)
 
-  2. Accumulator (?) architecture
+  2. Accumulator (One-Address)
 
-  3. Register architecture
+  3. Register (Two-Address)
 
-* Second category
+* Instruction Set Complexity
 
-  1. RISC
+  1. Reduced Instruction Set Computer (RISC)
+  
+  2. Complex Instruction Set Computer (CISC)
 
-  2. CISC
+* General Architecture
 
-* Third category
-
-  1. Von Neumann architecture
+  1. Von Neumann (Princeton) architecture
 
   2. Harvard architecture
-
+  
   3. Modified Harvard architecture
 
-* Forth category
+* Input/Output
 
-  1. Memory mapped input-output (I/O)
+  1. Memory-Mapped I/O
+  
+  2. Separate Space MMIO
+  
+  3. Special commands
 
-  2. Separate space (I/O)
-
-  3. Separate commands (I/O)
-
-_(There also exists some SIMD, but it is scary, so we will not talk about that)_
+_(There also exists some SIMD, but it is scary, ~~so we will not talk about that~~ we will talk about that a bit later)_
 
 
 ### What we will (possibly) use: :maple_leaf:
