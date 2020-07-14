@@ -133,6 +133,7 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 | ```out $num``` | ```out $num``` | ```out $num, %reg``` | ```out $num, %reg```|
 |  |  |  | ```out $num, [mem]```|
 | *Transfers data from ```num2``` (or ```tos```) to the device at port ```num1```* | *Transfers data from ```num2``` (or ```acc```) to the device at port ```num1```* | *Transfers data from ```num2``` (or ```reg```) to the device at port ```num1```* | *Transfers data from ```num2``` (or ```reg```, or from location ```mem```) to the device at port ```num1```* |
+|  |  |  |  |
 | **SIMD** |   |   |   |
 |||| ```add4 %reg1, %reg2``` |
 |||| ```sub4 %reg1, %reg2``` |
