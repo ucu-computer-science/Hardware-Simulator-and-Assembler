@@ -4,6 +4,8 @@
 * [] –– memory location (```[mem]```)
 * $ –– constant value (```$42```)
 
+All instructions are 16-bit. As we have 32 instructions, we require 5 bits to represent the opcode, with 11 bits left for zero, one or two operands.
+
 Using Intel-style instructions with results of computations
 being saved into the first operand:
 
@@ -28,7 +30,7 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 
 | RISC STACK | RISC ACCUMULATOR | RISC REGISTER | CISC REGISTER |
 |------------|------------------|---------------|---------------|
-| **Registers** |    |   |               |
+| **Registers** ||||
 | ```tos``` - Points to the top of the register stack in the memory| *```acc``` - Points to the accumulator register*| *```a```, ```b```, ```c```, ```d``` - Multipurpose, hold 16-bit words* | *```a```, ```b```, ```c```, ```d``` - Multipurpose, hold 16-bit words* |
 | | | | |
 | **Memory** |   |   |   |
@@ -94,8 +96,13 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 | ```ret``` | ```ret``` | ```ret``` | ```ret``` |
 | *Transfers control to the popped instruction location* | *Transfers control to the popped instruction location* | *Transfers control to the popped instruction location* | *Transfers control to the popped instruction location* |
 | ```cmp``` | ```cmp [mem]``` | ```cmp %reg1, %reg2``` | ```cmp %reg1, %reg2``` |
+| ```cmp $num``` | ```cmp $num``` | ```cmp %reg, $num``` | ```cmp %reg, $num``` |
 |  |  |  | ```cmp %reg, [mem]``` |
-| *Compares two numbers on ```tos``` by subtracting the second one from the first one, changing the flags accordingly* | *Compares value of register ```acc``` and value at location ```mem```, by subtracting the second one from the first one, changing the flags accordingly* | *Compares value of register ```reg1``` and value of register ```reg2```, by subtracting the second one from the first one, changing the flags accordingly* | *Compares value of register ```reg1```(or ```reg```) and value of register ```reg2```(or at ```mem```), by subtracting the second one from the first one, changing the flags accordingly* |
+| *Compares two numbers on ```tos``` by subtracting the second one from the first one, changing the flags accordingly (or compares value from the top register with a constant ```num```)* | *Compares value of register ```acc``` and value at location ```mem``` (or with constant ```num```), by subtracting the second one from the first one, changing the flags accordingly* | *Compares value of register ```reg1```(or ```reg```) and value of register ```reg2``(or with constant ```num```)`, by subtracting the second one from the first one, changing the flags accordingly* | *Compares value of register ```reg1```(or ```reg```) and value of register ```reg2```(or at ```mem```) or constant ```num```, by subtracting the second one from the first one, changing the flags accordingly* |
+| ```test $num``` | ```test $num``` | ```test %reg1, $num``` | ```test %reg1, $num``` |
+| ```test``` | ```test [mem]``` | ```test %reg1, %reg2``` | ```test %reg1, %reg2``` |
+|  |  |  | ```test %reg, [mem]``` |
+| *Performs bitwise ```and``` operation between either the ```tos``` and ```num``` or two popped ```tos``` values, changing the flags accordingly* | *Performs bitwise ```and``` operation between the ```num``` (or ```mem```) and ```acc```, changing the flags accordingly* | *Performs bitwise ```and``` operation between the ```reg1``` and ```reg2``` (or ```num```), changing the flags accordingly* | *Performs bitwise ```and``` operation between the ```reg1``` and ```reg2``` (or ```num```, or ```mem```), changing the flags accordingly* |
 | ```jmp $num``` | ```jmp $num``` | ```jmp $num```| ```jmp $num```|
 | ```jmp``` | ```jmp``` | ```jmp %reg```| ```jmp %reg```|
 | *Jumps to the location at the ```tos``` (or ```num```)* | *Jumps to the location at ```acc``` (or ```num```)* | *Jumps to the location at value of the register ```reg``` (or ```num```)* | *Jumps to the location at value of the register ```reg``` (or ```num```)* |
@@ -126,6 +133,12 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 | ```out $num``` | ```out $num``` | ```out $num, %reg``` | ```out $num, %reg```|
 |  |  |  | ```out $num, [mem]```|
 | *Transfers data from ```num2``` (or ```tos```) to the device at port ```num1```* | *Transfers data from ```num2``` (or ```acc```) to the device at port ```num1```* | *Transfers data from ```num2``` (or ```reg```) to the device at port ```num1```* | *Transfers data from ```num2``` (or ```reg```, or from location ```mem```) to the device at port ```num1```* |
+| **SIMD** |   |   |   |
+|||| ```add4 %reg1, %reg2``` |
+|||| ```sub4 %reg1, %reg2``` |
+|||| ```mul4 %reg1, %reg2``` |
+|||| ```div4 %reg1, %reg2``` |
+| | | | *Computes the needed mathematical operation between two vectors of size 4, with ```reg1``` representing the start of the first vector in memory, and the next popped ```reg2``` representing the start of the second vector in memory. The result is saved in the ```reg1``` memory location* |
 
 ### Jump table
 | Instruction name | Assembly instruction | Flags checked |
