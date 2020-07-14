@@ -31,6 +31,8 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 * ### Memory stack registers:
     * Stack pointer ```esp```
     * Stack base pointer ```ebp```
+   
+* Instruction Pointer ```ip```
 
 - - -
 
