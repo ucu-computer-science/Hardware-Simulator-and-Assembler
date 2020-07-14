@@ -39,7 +39,7 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 | RISC STACK | RISC ACCUMULATOR | RISC REGISTER | CISC REGISTER |
 |------------|------------------|---------------|---------------|
 | **Registers** ||||
-| ```tos``` - Points to the top of the register stack in the memory| ```acc``` - Points to the accumulator register*| *```A``` - General-purpose 16-bit word; ```BC``` - General-purpose 16-bit word, B-high byte, C-low byte; ```DE``` - General-purpose 16-bit word, D-high byte, E-low byte; ```FG``` - General-purpose 16-bit word, F-high byte, G-low byte* | *```A``` - General-purpose 16-bit word ;```BC``` - General-purpose 16-bit word, B-high byte, C-low byte; ```DE``` - General-purpose 16-bit word, D-high byte, E-low byte; ```FG``` - General-purpose 16-bit word, F-high byte, G-low byte* |
+| ```tos``` - Points to the top of the register stack in the memory| ```acc``` - Points to the accumulator register*| *```A``` - General-purpose 16-bit word; ```BC``` - General-purpose 16-bit word, B-high byte, C-low byte; ```DE``` - General-purpose 16-bit word, D-high byte, E-low byte; ```FG``` - General-purpose 16-bit word, F-high byte, G-low byte* | *```A``` - General-purpose 16-bit word; ```BC``` - General-purpose 16-bit word, B-high byte, C-low byte; ```DE``` - General-purpose 16-bit word, D-high byte, E-low byte; ```FG``` - General-purpose 16-bit word, F-high byte, G-low byte* |
 | | | | |
 | **Memory** |   |   |   |
 | ```load [mem]``` | ```load [mem]``` | ```load %reg, [mem]``` | ```load %reg, [mem]``` |
