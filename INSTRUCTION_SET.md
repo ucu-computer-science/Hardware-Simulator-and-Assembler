@@ -6,13 +6,19 @@
 
 All instructions are 16-bit. As we have 32 instructions, we require 5 bits to represent the opcode, with 11 bits left for zero, one or two operands.
 
+- - -
+
 Using Intel-style instructions with results of computations
 being saved into the first operand:
 
 ```operation destination, <----- source ```
 
+- - -
+
 *We are not using direct memory access unless we have to (like in accumulator architecture).
 This emphasizes the complexity of CISC instructions and eases the actual programming*
+
+- - -
 
 ## Registers that are included in every architecture:
 
@@ -26,7 +32,9 @@ This emphasizes the complexity of CISC instructions and eases the actual program
     * Stack pointer ```esp```
     * Stack base pointer ```ebp```
 
-### Instructions for each architecture with short descriptions
+- - -
+
+## Instructions for each architecture with short descriptions
 
 | RISC STACK | RISC ACCUMULATOR | RISC REGISTER | CISC REGISTER |
 |------------|------------------|---------------|---------------|
