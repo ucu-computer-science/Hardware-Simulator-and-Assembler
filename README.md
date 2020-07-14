@@ -13,7 +13,7 @@
 
 * Create a (simple) assembly language for others to use
 
-*Architectures:*
+## Architectures:
 
 * Instruction Set Architecture (Register Architecture)
 
@@ -52,7 +52,7 @@
 
 * Python
 
-* Dominate for generating HTML pages
+* [Dominate](https://github.com/Knio/dominate) for generating HTML pages
 
 ### Examples and resources: :fallen_leaf:
 
