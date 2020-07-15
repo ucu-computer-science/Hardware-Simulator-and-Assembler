@@ -47,6 +47,9 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 | ```load [mem]``` | ```load [mem]``` | ```load %reg, [mem]``` | ```load %reg, [mem]```
 | *Loads word from memory at location ```mem``` and pushes into the memory on ```tos```* | *Loads word from memory at location ```mem``` into an ```acc``` register* | *Loads word from memory at location ```mem``` into register ```reg```* |  *Loads word from memory at location ```mem``` into register ```reg```* |
 |||||
+| ```store [mem]``` | ```store [mem]``` | ```store [mem], %reg``` | ```store [mem], %reg``` |
+| *Pops the word from ```tos``` and stores it in the memory at location ```mem```* | *Copies word from the ```acc``` register and stores it in the memory at location ```mem```* | *Copies word from the register ```reg``` and stores it in memory  at location ```mem```* | *Copies word from the register ```reg``` and stores it in memory  at location ```mem```* |
+|||||
 | ```swap``` ||||
 | *Swaps the values of the two top elements of the register stack* ||||
 |||||
@@ -55,9 +58,6 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 |||||
 | ```dup2``` ||||
 | *Duplicates the second from the top element, pushing it on to the ```tos```* ||||
-|||||
-| ```store [mem]``` | ```store [mem]``` | ```store [mem], %reg``` | ```store [mem], %reg``` |
-| *Pops the word from ```tos``` and stores it in the memory at location ```mem```* | *Copies word from the ```acc``` register and stores it in the memory at location ```mem```* | *Copies word from the register ```reg``` and stores it in memory  at location ```mem```* | *Copies word from the register ```reg``` and stores it in memory  at location ```mem```* |
 |||||
 | ```mov $num``` | ```mov $num``` | ```mov %reg, $num``` | ```mov %reg, $num``` |
 | | | ```mov %reg1, %reg2``` | ```mov %reg1, %reg2``` |
