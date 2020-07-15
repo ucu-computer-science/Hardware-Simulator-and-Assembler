@@ -23,14 +23,14 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 ## Registers that are included in every architecture:
 
 * ### Flag register:
-    * Carry flag ```CF```
-    * Zero flag ```ZF```
-    * Overflow flag ```OF```
-    * Sign flag ```SF```
+    * Carry flag ```cf```
+    * Zero flag ```zf```
+    * Overflow flag ```of```
+    * Sign flag ```sf```
 
 * ### Memory stack registers:
-    * Stack pointer ```esp```
-    * Stack base pointer ```ebp```
+    * Stack pointer ```sp```
+    * Link register ```lr```  (Only in RISC)
 
 * Instruction Pointer ```ip```
 
@@ -44,7 +44,7 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 | *```tos``` - Points to the top of the register stack in the memory* | *```acc``` - Points to the accumulator register*| *```A``` - General-purpose 16-bit word; ```BC``` - General-purpose 16-bit word, B-high byte, C-low byte; ```DE``` - General-purpose 16-bit word, D-high byte, E-low byte; ```FG``` - General-purpose 16-bit word, F-high byte, G-low byte* | *```A``` - General-purpose 16-bit word; ```BC``` - General-purpose 16-bit word, B-high byte, C-low byte; ```DE``` - General-purpose 16-bit word, D-high byte, E-low byte; ```FG``` - General-purpose 16-bit word, F-high byte, G-low byte* |
 | | | | |
 | **Memory** |   |   |   |
-| ```load [mem]``` | ```load [mem]``` | ```load %reg, [mem]``` | ```load %reg, [mem]``` |
+| ```load [mem]``` | ```load [mem]``` | ```load %reg, [mem]``` | ```load %reg, [mem]```
 | *Loads word from memory at location ```mem``` and pushes into the memory on ```tos```* | *Loads word from memory at location ```mem``` into an ```acc``` register* | *Loads word from memory at location ```mem``` into register ```reg```* |  *Loads word from memory at location ```mem``` into register ```reg```* |
 |||||
 | ```swap``` ||||
@@ -59,8 +59,9 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 | ```store [mem]``` | ```store [mem]``` | ```store [mem], %reg``` | ```store [mem], %reg``` |
 | *Pops the word from ```tos``` and stores it in the memory at location ```mem```* | *Copies word from the ```acc``` register and stores it in the memory at location ```mem```* | *Copies word from the register ```reg``` and stores it in memory  at location ```mem```* | *Copies word from the register ```reg``` and stores it in memory  at location ```mem```* |
 |||||
+| ```mov $num``` | ```mov $num``` | ```mov %reg, $num``` | ```mov %reg, $num``` |
 | | | ```mov %reg1, %reg2``` | ```mov %reg1, %reg2``` |
-| | | *Copies the value of ```reg2``` into ```reg1```* | *Copies the value of ```reg2``` into ```reg1```* |
+| *Pushes the value of ```num``` into the ```tos```* | *Puts the value of the ```num``` in the ```acc```* | *Copies the value of ```reg2``` (or ```num```) into ```reg1```* | *Copies the value of ```reg2``` (or ```num```) into ```reg1```* |
 |||||
 | ```push``` | ```push``` | ```push %reg``` | ```push %reg``` |
 | *Pops the ```tos```, pushes the value into the memory stack* | *Pushes the value of the ```acc``` register on to the top of the memory stack* | *Pushes the value of ```reg``` on the top of the memory stack* | *Pushes the value of ```reg``` on the top of the memory stack* |
@@ -93,11 +94,13 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 |||||
 | ```mul``` | ```mul [mem]``` | ```mul %reg1, %reg2``` | ```mul %reg1, %reg2``` |
 | | | | ```mul %reg, [mem]```|
-| *Pops two items from ```tos```, multiplies them, and pushes the result into ```tos```* | *Multiplies value from the location ```mem``` and value from the register ```acc```, saving the result in the register ```acc```* | *Multiplies value from the register ```reg1``` and value from the register ```reg2```, saving the result in the register ```reg1```* | *Multiplies value from the register ```reg1```(from the register ```reg```) and value from the register ```reg2```(at location ```mem```), saving the result in the register ```reg1```(in the register ```reg```)* |
+| | | | ```mul %reg, $num```|
+| *Pops two items from ```tos```, multiplies them, and pushes the result into ```tos```* | *Multiplies value from the location ```mem``` and value from the register ```acc```, saving the result in the register ```acc```* | *Multiplies value from the register ```reg1``` and value from the register ```reg2```, saving the result in the register ```reg1```* | *Multiplies value from the register ```reg1```and value from the register ```reg2```(or at location ```mem```, or with ```num```), saving the result in the register ```reg1``` (in the register ```reg```)* |
 |||||
 | ```div``` | ```div [mem]``` | ```div %reg1, %reg2``` | ```div %reg1, %reg2``` |
 |  |  |  | ```div %reg, [mem]``` |
-| *Pops two items from ```tos```, dividing the first one by the second, and pushes the result into ```tos```* | *Divides value from the register ```acc``` by value at the location ```mem```, saving the result in the register ```acc```* | *Divides value from the register ```reg1``` by value from the register ```reg2```, saving the result in the register ```reg1```* | *Divides value from the register ```reg1``` (or the register ```reg```) by value from the register ```reg2```(or at location ```mem```), saving the result in the register ```reg1```(or in the register ```reg```)* |
+| | | | ```div %reg, $num``|
+| *Pops two items from ```tos```, dividing the first one by the second, and pushes the result into ```tos```* | *Divides value from the register ```acc``` by value at the location ```mem```, saving the result in the register ```acc```* | *Divides value from the register ```reg1``` by value from the register ```reg2```, saving the result in the register ```reg1```* | *Divides value from the register ```reg1``` (or the register ```reg```) by value from the register ```reg2```(or at location ```mem```, or by constant ```num```), saving the result in the register ```reg1```(or in the register ```reg```)* |
 |  |  |  |  |
 | **Logical** |   |   |   |
 | ```and``` | ```and [mem]``` | ```and %reg1, %reg2``` | ```and %reg1, %reg2``` |
@@ -182,16 +185,16 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 
 - - -
 
-### Jumps considered harmful:
+### Jump tables considered harmful:
 | Instruction name | Assembly instruction | Flags checked |
 |-------|----|-----|
-| equal | JE | ```zf``` |
-| not equal | JNE | ! ```zf``` |
-| unsigned below | JL | ```cf``` |
-| unsigned below or equal | JLE | ```cf``` or ```zf``` |
-| unsigned above or equal | JGE | ! ```cf``` |
-| unsigned above | JG | !```cf``` and ! ```zf``` |
-| signed less than | JL | ```sf``` != ```of``` |
-| signed less or equal | JLE | (```sf``` != ```of```) or ```zf``` |
-| signed greater or equal | JGE | ```sf```==```of``` |
-| signed greater than | JG | (```sf```==```of```) and ! ```zf``` |
+| equal | ```je``` | ```zf``` |
+| not equal | ```jne``` | ! ```zf``` |
+| unsigned below | ```jl``` | ```cf``` |
+| unsigned below or equal | ```jle``` | ```cf``` or ```zf``` |
+| unsigned above or equal | ```jge``` | ! ```cf``` |
+| unsigned above | ```jg``` | !```cf``` and ! ```zf``` |
+| signed less than | ```jl``` | ```sf``` != ```of``` |
+| signed less or equal | ```jle``` | (```sf``` != ```of```) or ```zf``` |
+| signed greater or equal | ```jge``` | ```sf```==```of``` |
+| signed greater than | ```jg``` | (```sf```==```of```) and ! ```zf``` |
