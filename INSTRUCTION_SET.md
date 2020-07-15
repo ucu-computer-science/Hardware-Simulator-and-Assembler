@@ -31,7 +31,7 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 * ### Memory stack registers:
     * Stack pointer ```esp```
     * Stack base pointer ```ebp```
-   
+
 * Instruction Pointer ```ip```
 
 - - -
@@ -46,6 +46,15 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 | **Memory** |   |   |   |
 | ```load [mem]``` | ```load [mem]``` | ```load %reg, [mem]``` | ```load %reg, [mem]``` |
 | *Loads word from memory at location ```mem``` and pushes into the memory on ```tos```* | *Loads word from memory at location ```mem``` into an ```acc``` register* | *Loads word from memory at location ```mem``` into register ```reg```* |  *Loads word from memory at location ```mem``` into register ```reg```* |
+|||||
+| ```swap``` ||||
+| *Swaps the values of the two top elements of the register stack* ||||
+|||||
+| ```dup``` ||||
+| *Duplicates the first from the top element, pushing it on to the ```tos```* ||||
+|||||
+| ```dup2``` ||||
+| *Duplicates the second from the top element, pushing it on to the ```tos```* ||||
 |||||
 | ```store [mem]``` | ```store [mem]``` | ```store [mem], %reg``` | ```store [mem], %reg``` |
 | *Pops the word from ```tos``` and stores it in the memory at location ```mem```* | *Copies word from the ```acc``` register and stores it in the memory at location ```mem```* | *Copies word from the register ```reg``` and stores it in memory  at location ```mem```* | *Copies word from the register ```reg``` and stores it in memory  at location ```mem```* |
@@ -74,13 +83,13 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 |  | ```sub %acc``` |  | ```sub [mem1], [mem2]``` |
 | *Pops two items from ```tos```, subtracting the second one from the first, and pushes the result into the register on ```tos```* | *Subtracts value stored at location ```mem``` (or register ```acc```) from value stored in ```acc``` register, saving the result in the ```acc``` register* | *Subtracts value at the memory location ```mem``` from the register ```reg```, saving the result in the register ```reg```* | *Subtracts value at the memory location ```mem``` (or at memory location ```mem1```) from the register ```reg``` (or from memory location ```mem1```), saving it in the register ```reg``` (or at the memmory location ```mem1```)* |
 |||||
-| ```inc``` | ```inc [mem]``` | ```inc %reg``` | ```inc %reg``` |
-|  | ```inc %acc``` |  | ```inc [mem]``` |
-| *Pops the value from ```tos```, increments it, and pushes on ```tos```*| *Increments value from the register ```acc```, saving it in the register ```acc```* | *Increments value from the register ```reg```, saving the result in the register ```reg```* | *Increments value from the register ```reg``` (or at the location ```mem```), saving the result in the register ```reg``` (or at the location ```mem```)* |
+| | | | ```inc %reg``` |
+| | | | ```inc [mem]``` |
+| | | | *Increments value from the register ```reg``` (or at the location ```mem```), saving the result in the register ```reg``` (or at the location ```mem```)* |
 |||||
-| ```dec``` | ```dec [mem]``` | ```dec %reg``` | ```dec %reg``` |
-|  |  |  | ```dec [mem]``` |
-| *Pops the value from ```tos```, decrements it, and pushes on ```tos```* | *Decrements value from the register ```acc```, saving it in the register ```acc```* | *Decrements value from the register ```reg```, saving the result in the register ```reg```* | *Decrements value from the register ```reg``` (or at the location ```mem```), saving the result in the register ```reg``` (or at the location ```mem```)* |
+| | | | ```dec %reg``` |
+| | | | ```dec [mem]``` |
+| | |  | *Decrements value from the register ```reg``` (or at the location ```mem```), saving the result in the register ```reg``` (or at the location ```mem```)* |
 |||||
 | ```mul``` | ```mul [mem]``` | ```mul %reg1, %reg2``` | ```mul %reg1, %reg2``` |
 | | | | ```mul %reg, [mem]```|
@@ -173,7 +182,7 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 
 - - -
 
-### Jump table
+### Jumps considered harmful:
 | Instruction name | Assembly instruction | Flags checked |
 |-------|----|-----|
 | equal | JE | ```zf``` |
