@@ -41,7 +41,7 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 | RISC STACK | RISC ACCUMULATOR | RISC REGISTER | CISC REGISTER |
 |------------|------------------|---------------|---------------|
 | **Registers** ||||
-| *```tos``` - Points to the top of the register stack in the memory* | *```acc``` - Points to the accumulator register*| *```R00``` - General-purpose 16-bit word, RO0H-high byte, RO0L-low byte; ```R01``` - General-purpose 16-bit word, RO1H-high byte, RO1L-low byte; ```R02``` - General-purpose 16-bit word, RO2H-high byte, RO2L-low byte; ```R03``` - General-purpose 16-bit word, RO3H-high byte, RO3L-low byte;* | *```R00``` - General-purpose 16-bit word, RO0H-high byte, RO0L-low byte; ```R01``` - General-purpose 16-bit word, RO1H-high byte, RO1L-low byte; ```R02``` - General-purpose 16-bit word, RO2H-high byte, RO2L-low byte; ```R03``` - General-purpose 16-bit word, RO3H-high byte, RO3L-low byte;* |
+| *```tos``` - Points to the top of the register stack in the memory* | *```acc``` - Points to the accumulator register*| *```R00``` - General-purpose 16-bit word, R00H-high byte, R00L-low byte; ```R01``` - General-purpose 16-bit word, R01H-high byte, R01L-low byte; ```R02``` - General-purpose 16-bit word, R02H-high byte, R02L-low byte; ```R03``` - General-purpose 16-bit word, R03H-high byte, R03L-low byte;* | *```R00``` - General-purpose 16-bit word, R00H-high byte, R00L-low byte; ```R01``` - General-purpose 16-bit word, R01H-high byte, R01L-low byte; ```R02``` - General-purpose 16-bit word, R02H-high byte, R02L-low byte; ```R03``` - General-purpose 16-bit word, R03H-high byte, R03L-low byte;* |
 | | | | |
 | **Memory** |   |   |   |
 | ```load [mem]``` | ```load [mem]``` | ```load %reg, [mem]``` | ```load %reg, [mem]```
