@@ -1,5 +1,4 @@
 # POC Project: Instruction sets simulation and assembly
-Someday, there will be some clever words. :leaves:
 
 ---
 
@@ -14,7 +13,7 @@ Someday, there will be some clever words. :leaves:
 
 * Create a (simple) assembly language for others to use
 
-*Architectures:*
+## Architectures:
 
 * Instruction Set Architecture (Register Architecture)
 
@@ -46,14 +45,14 @@ Someday, there will be some clever words. :leaves:
   
   3. Special commands
 
-_(There also exists some SIMD, but it is scary, ~~so we will not talk about that~~ we will talk about that a bit later)_
++ SIMD
 
 
 ### What we will (possibly) use: :maple_leaf:
 
 * Python
 
-* Qt for GUI
+* [Dominate](https://github.com/Knio/dominate) for generating HTML pages
 
 ### Examples and resources: :fallen_leaf:
 
