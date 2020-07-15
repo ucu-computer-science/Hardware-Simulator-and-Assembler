@@ -99,7 +99,7 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 |||||
 | ```div``` | ```div [mem]``` | ```div %reg1, %reg2``` | ```div %reg1, %reg2``` |
 |  |  |  | ```div %reg, [mem]``` |
-| | | | ```div %reg, $num``|
+| | | | ```div %reg, $num```|
 | *Pops two items from ```tos```, dividing the first one by the second, and pushes the result into ```tos```* | *Divides value from the register ```acc``` by value at the location ```mem```, saving the result in the register ```acc```* | *Divides value from the register ```reg1``` by value from the register ```reg2```, saving the result in the register ```reg1```* | *Divides value from the register ```reg1``` (or the register ```reg```) by value from the register ```reg2```(or at location ```mem```, or by constant ```num```), saving the result in the register ```reg1```(or in the register ```reg```)* |
 |  |  |  |  |
 | **Logical** |   |   |   |
