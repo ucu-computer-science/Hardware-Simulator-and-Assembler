@@ -7,14 +7,14 @@
 
 - - -
 
-* Stack architecture uses 6 bits for 34 instructions
-    * ```|0|x|x|x|x|x| represents opcode instruction without immediate constants afterwards```
-    * ```|1|x|x|x|x|x| represents opcode instruction with immediate constants afterwards```
-    * Registers:
-        * ```CF``` - carry flag register
-        * ```SP```- stack pointer
-        * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
-        * ```TOS``` – top of the stack register
+Stack architecture uses 6 bits for 37 instructions
+* ```|0|x|x|x|x|x| represents opcode instruction without immediate constants afterwards```
+* ```|1|x|x|x|x|x| represents opcode instruction with immediate constants afterwards```
+* Registers:
+    * ```CF``` - carry flag register
+    * ```SP```- stack pointer
+    * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
+    * ```TOS``` – top of the stack register
 
 Instructions look like:
 
@@ -26,14 +26,14 @@ And immediate constants contain two 6-bit bytes:
 
 - - -
 
-* Accumulator architecture uses 8 bits for 41 instructions
-    * Registers:
-        * Flag register with least significant bits representing flags -
-        ```CF```, ```ZF```, ```OF```, ```SF```
-        * ```SP```- stack pointer
-        * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
-        * ```IR``` - index register (used for addressing the memory, every instruction implicitly uses ```%acc```, ```[%IR]```)
-        * ```ACC``` – accumulator register
+Accumulator architecture uses 8 bits for 49 instructions
+* Registers:
+    * Flag register with least significant bits representing flags -
+    ```CF```, ```ZF```, ```OF```, ```SF```
+    * ```SP```- stack pointer
+    * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
+    * ```IR``` - index register (used for addressing the memory, every instruction implicitly uses ```%acc```, ```[%IR]```)
+    * ```ACC``` – accumulator register
 
 Instructions look like:
 
@@ -45,14 +45,14 @@ And immediate constants contain two 8-bit bytes:
 
 - - -
 
-* Register RISC architecture uses 16-bit instructions with first 6 bits for opcode
-    * 8 Registers are encoded in 3 bits:
-        * ```FR``` Flag register with least significant bits representing flags -
-          ```CF```, ```ZF```, ```OF```, ```SF```
-        * ```R01, R02, R03, R04 (BP alias)``` with L and H bytes each
-        * ```SP```- stack pointer
-        * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
-        * ```LR``` - link register (for storing the address of the caller)
+Register RISC architecture uses 16-bit instructions with first 6 bits for opcode
+* 8 Registers are encoded in 3 bits:
+    * ```FR``` Flag register with least significant bits representing flags -
+      ```CF```, ```ZF```, ```OF```, ```SF```
+    * ```R01, R02, R03, R04 (BP alias)``` with L and H bytes each
+    * ```SP```- stack pointer
+    * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
+    * ```LR``` - link register (for storing the address of the caller)
 
 Instructions look like:
 
@@ -72,13 +72,13 @@ And load immediate constants instructions look like:
 
 - - -
 
-* Register CISC architecture uses 1-6 bytes for instructions:
-    * 7 Registers are encoded in 3 bits:
-        * ```FR``` Flag register with least significant bits representing flags -
-          ```CF```, ```ZF```, ```OF```, ```SF```
-        * ```R01, R02, R03, R04 (BP alias)``` with L and H bytes each
-        * ```SP```- stack pointer
-        * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
+Register CISC architecture uses 1-6 bytes for instructions:
+* 7 Registers are encoded in 3 bits:
+    * ```FR``` Flag register with least significant bits representing flags -
+      ```CF```, ```ZF```, ```OF```, ```SF```
+    * ```R01, R02, R03, R04 (BP alias)``` with L and H bytes each
+    * ```SP```- stack pointer
+    * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
 
 Instructions look like this:
 
