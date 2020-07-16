@@ -52,7 +52,7 @@ Register RISC architecture uses 16-bit instructions with first 6 bits for opcode
     * ```R01, R02, R03, R04 (BP alias)``` with L and H bytes each
     * ```SP```- stack pointer
     * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
-    * ```LR``` - link register (for storing the address of the caller)
+    * ```LR``` - link register (stores call return address)
 
 Instructions look like:
 
