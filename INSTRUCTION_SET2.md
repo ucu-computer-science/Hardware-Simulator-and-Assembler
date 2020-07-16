@@ -2,7 +2,7 @@
 
 * % –– register (```%reg```)
 * [] –– memory location (```[mem]```)
-* $ –– constant value (```$42```)
+* $ –– immediate value, constant (```$42```)
 
 
 - - -
@@ -111,12 +111,12 @@ being saved into the first operand:
 | | | | |
 | **Memory** |   |   |   |
 | ```load``` | ```load``` (Loads the memory cell ```IR``` is pointing to)| ```load %reg1, [%reg2]``` | ```load %reg1, [%reg2]```|
-| ```load %FR ``` | ```load %IR``` | | ```loado %reg1, [%reg2+$num]``` |
-| ```load [num]``` | ```load %СF``` | | |
-|  | ```load [num]``` | |
+| ```load %FR ``` | ```load %IR``` | | ```loado %reg1, [%reg2+$off]``` |
+| ```load [imm]``` | ```load %СF``` | | |
+|  | ```load [imm]``` | |
 |||||
 | ```store``` | ```store``` (Stores in the memory cell ```IR``` is pointing to) | ```store [%reg1], %reg2``` | ```store [%reg1], %reg2``` |
-| ```store [num] ``` | ```store [num]``` | | ```storeo [%reg1+$num], %reg2```|
+| ```store [imm] ``` | ```store [imm]``` | | ```storeo [%reg1+$off], %reg2```|
 | ```store %FR``` | ```store %IR``` | | |
 |||||
 | ```swap``` ||||
@@ -125,7 +125,7 @@ being saved into the first operand:
 |||||
 | ```dup2``` ||||
 |||||
-| ```mov $num``` | ```mov $num``` | ```mov %reg, $num``` | ```mov %reg, $num``` |
+| ```mov $imm``` | ```mov $imm``` | ```mov %reg, $imm``` | ```mov %reg, $off``` |
 | | | ```mov %reg1, %reg2``` | ```mov %reg1, %reg2``` |
 |||||
 | ```push``` | ```push``` | ```push %reg``` | ```push %reg``` |
@@ -134,36 +134,36 @@ being saved into the first operand:
 | ```pop``` | ```pop``` | ```pop %reg``` | ```pop %reg``` |
 |  | ```pop %IR``` (pops the address of the next instruction from the register) | |  |
 |||||
-| | | | ```enter $num``` |
+| | | | ```enter $imm``` |
 |||||
 | | | | ```leave``` |
 | | | | |
 | **Arithmetic** |   |   |   |
 | ```add``` | ```add``` | ```add %reg1, %reg2, %reg3``` | ```add %reg1, [%reg2]``` |
-|||| ```addo %reg1, [%reg2+$num]```|
+|||| ```addo %reg1, [%reg2+$off]```|
 | | | | ```add %reg1, %reg2``` |
 |||||
 | ```sub``` | ```sub``` | ```sub %reg1, %reg2, %reg3``` | ```sub %reg1, [%reg2]``` |
-|||| ```subo %reg1, [%reg2+$num]```|
+|||| ```subo %reg1, [%reg2+$off]```|
 | | | | ```sub %reg1, %reg2``` |
 |||||
 | | ```inc %IR``` | | ```inc %reg``` |
 | | | | ```inc [%reg]``` |
-| | | | ```inc [%reg+$num]``` |
+| | | | ```inc [%reg+$off]``` |
 |||||
 | | ```dec %IR``` | | ```dec %reg``` |
 | | | | ```dec [%reg]``` |
-| | | | ```dec [%reg+$num]``` |
+| | | | ```dec [%reg+$off]``` |
 |||||
 | ```mul``` | ```mul``` | ```mul %reg1, %reg2, %reg3``` | ```mul %reg1, %reg2``` |
 | | | | ```mul %reg1, [%reg2]```|
-| | | | ```mul %reg, $num```|
-|||| ```mulo %reg1, [%reg2+$num]```|
+| | | | ```mul %reg, $imm```|
+|||| ```mulo %reg1, [%reg2+$off]```|
 |||||
 | ```div``` | ```div``` | ```div %reg1, %reg2, %reg3``` | ```div %reg1, %reg2``` |
 |  |  |  | ```div %reg1, [%reg2]``` |
-| | | | ```div %reg, $num```|
-|||| ```divo %reg1, [%reg2+$num]```|
+| | | | ```div %reg, $imm```|
+|||| ```divo %reg1, [%reg2+$off]```|
 | | | | |
 | **Logical** |   |   |   |
 | ```and``` | ```and``` | ```and %reg1, %reg2, %reg3``` | ```and %reg1, %reg2``` |
@@ -179,73 +179,73 @@ being saved into the first operand:
 | | | | ```not [%reg]``` |
 | | | | |
 | **Shifts** | | | |
-| ```lsh $num``` | ```lsh $num``` | ```lsh %reg1, %reg2 , %reg3``` | ```lsh %reg, $num``` |
-|  |  |  | ```lsh [%reg], $num``` |
-|  |  |  | ```lsh [%reg+$num1], $num2``` |
+| ```lsh $imm``` | ```lsh $imm``` | ```lsh %reg1, %reg2 , %reg3``` | ```lsh %reg, $imm``` |
+|  |  |  | ```lsh [%reg], $imm``` |
+|  |  |  | ```lsh [%reg+$off], $imm``` |
 |||||
-| ```rsh $num``` | ```rsh $num``` | ```rsh %reg1, %reg2, %reg3``` | ```rsh %reg, $num```|
-|  |  |  | ```rsh [%reg], $num```|
-|  |  |  | ```rsh [%reg+$num1], $num2``` |
+| ```rsh $imm``` | ```rsh $imm``` | ```rsh %reg1, %reg2, %reg3``` | ```rsh %reg, $imm```|
+|  |  |  | ```rsh [%reg], $imm```|
+|  |  |  | ```rsh [%reg+$off], $imm``` |
 | | | | |
 | **Flow control** |   |   |   |
 | ```call label``` | ```call label``` | ```call label``` | ```call label``` |
-| ```call $num``` | ```call $num``` | ```call $num``` | ```call $num``` |
+| ```call $imm``` | ```call $imm``` | ```call $imm``` | ```call $imm``` |
 | ```call``` | ```call``` | ```call %reg``` | ```call %reg``` |
 |||||
 | ```ret``` | ```ret``` | ```ret``` | ```ret``` |
 |||||
 | **Compares** ||||
 | ```cmpe (compare equals)``` | ```cmp``` | ```cmp %reg1, %reg2``` | ```cmp %reg1, %reg2``` |
-| ```cmpe $num``` ||| ```cmp %reg, $num``` |
-| ```cmpb (compare bigger)``` | ```cmp $num``` | ```cmp %reg, $num``` | ```cmp %reg1, [%reg2]``` |
-| ```cmpb $num``` ||| ```cmp %reg1, [%reg2+$num]``` |
+| ```cmpe $imm``` ||| ```cmp %reg, $imm``` |
+| ```cmpb (compare bigger)``` | ```cmp $imm``` | ```cmp %reg, $imm``` | ```cmp %reg1, [%reg2]``` |
+| ```cmpb $imm``` ||| ```cmp %reg1, [%reg2+$off]``` |
 | *Pushes 0/1 on top of the stack if False/True* |  |  |  |
 |||||
 | ```test``` | ```test``` | ```test %reg1, %reg2``` | ```test %reg1, %reg2``` |
-| ```test $num``` | ```test $num``` |  | ```test %reg1, [%reg2]``` |
-| | | | ```test %reg1, [%reg2+$num]``` |
+| ```test $imm``` | ```test $imm``` |  | ```test %reg1, [%reg2]``` |
+| | | | ```test %reg1, [%reg2+$off]``` |
 |||||
 | **Jumps** ||||
-| ```jmp $num``` | ```jmp $num``` | ```jmp $num```| ```jmp $num```|
+| ```jmp $imm``` | ```jmp $imm``` | ```jmp $imm```| ```jmp $imm```|
 | ```jmp``` | ```jmp``` | ```jmp %reg```| ```jmp %reg```|
 |||||
-| | ```je $num``` | ```je $num``` | ```je $num``` |
+| | ```je $imm``` | ```je $imm``` | ```je $imm``` |
 | | ```je``` | ```je %reg``` | ```je %reg``` |
 | | | | |
-| | ```jne $num``` | ```jne $num``` | ```jne $num``` |
+| | ```jne $imm``` | ```jne $imm``` | ```jne $imm``` |
 | | ```jne``` | ```jne %reg``` | ```jne %reg```|
 | | | | |
-| | ```jg $num``` | ```jg $num``` | ```jg $num``` |
+| | ```jg $imm``` | ```jg $imm``` | ```jg $imm``` |
 | | ```jg```| ```jg %reg```|```jg %reg```|
 | | | | |
-| | ```jge $num``` | ```jge $num``` | ```jge $num``` |
+| | ```jge $imm``` | ```jge $imm``` | ```jge $imm``` |
 | | ```jge```| ```jge %reg``` | ```jge %reg``` |
 | | | | |
-| | ```jl $num``` | ```jl $num``` | ```jl $num``` |
+| | ```jl $imm``` | ```jl $imm``` | ```jl $imm``` |
 | | ```jl``` | ```jl %reg``` | ```jl %reg``` |
 | | | | |
-| | ```jle $num``` | ```jle $num``` | ```jle $num``` |
+| | ```jle $imm``` | ```jle $imm``` | ```jle $imm``` |
 | | ```jle``` | ```jle %reg``` | ```jle %reg``` |
 | | | | |
 | **I/O Separate Space** |   |   |   |
-| ```in $num``` | ```in $num``` | ```in %reg, $num``` | ```in $reg, $num``` |
-|  |  |  | ```in [%reg], $num```|
-|  |  |  | ```ino [%reg+$num1], $num2```|
+| ```in $port``` | ```in $port``` | ```in %reg, $port``` | ```in $reg, $port``` |
+|  |  |  | ```in [%reg], $port```|
+|  |  |  | ```ino [%reg+$off], $port```|
 |||||
-| ```out $num1, $num2``` | ```out $num1, $num2``` | ```out $num1, $num2``` | ```out $num1, $num2``` |
-| ```out $num``` | ```out $num``` | ```out $num, %reg``` | ```out $num, %reg```|
-|  |  |  | ```out $num, [%reg]```|
-|  |  |  | ```outo $num1, [%reg+$num2]```|
+| ```out $port, $imm``` | ```out $port, $imm``` | ```out $port, $imm``` | ```out $port, $imm``` |
+| ```out $port``` | ```out $port``` | ```out $port, %reg``` | ```out $port, %reg```|
+|  |  |  | ```out $port, [%reg]```|
+|  |  |  | ```outo $port, [%reg+$off]```|
 |  |  |  |  |
 | **SIMD** |   |   |   |
-|||| ```load4 %reg``` |
-|||| ```store4 %reg``` |
-|||| ```add4 %reg1, %reg2``` |
-|||| ```sub4 %reg1, %reg2``` |
-|||| ```mul4 %reg1, %reg2``` |
-|||| ```div4 %reg1, %reg2``` |
-|||| ```cmp4 %reg1, %reg2``` |
-|||| ```test4 %reg1, %reg2``` |
+| | | | ```load4 %reg``` |
+| | | | ```store4 %reg``` |
+| | | | ```add4 %reg1, %reg2``` |
+| | | | ```sub4 %reg1, %reg2``` |
+| | | | ```mul4 %reg1, %reg2``` |
+| | | | ```div4 %reg1, %reg2``` |
+| | | | ```cmp4 %reg1, %reg2``` |
+| | | | ```test4 %reg1, %reg2``` |
 
 - - -
 
