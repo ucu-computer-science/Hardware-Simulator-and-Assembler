@@ -107,7 +107,7 @@ being saved into the first operand:
 | RISC STACK | RISC ACCUMULATOR | RISC REGISTER | CISC REGISTER |
 |------------|------------------|---------------|---------------|
 | **Registers** ||||
-| ```TOS``` | ```ACC``` | ```R00, R00H, R00L```; ```R01, R01H, R01L```; ```R02, R02H, R02L```; ```R03, R03H, R03L``` | ```R00, R00H, R00L```; ```R01, R01H, R01L```; ```R02, R02H, R02L```; ```R03, R03H, R03L``` |
+| ```TOS```; ```CF```; ```SP```; ```IP```  | ```ACC```; ```IR```; ```FR```; ```SP```; ```IP``` | ```R00: R00H, R00L```; ```R01: R01H, R01L```; ```R02: R02H, R02L```; ```R03: R03H, R03L```; ```LR```; ```FR```; ```SP```; ```IP```   | ```R00: R00H, R00L```; ```R01: R01H, R01L```; ```R02: R02H, R02L```; ```R03: R03H, R03L```; ```FR```; ```SP```; ```IP```  |
 | | | | |
 | **Memory** |   |   |   |
 | ```load``` | ```load``` (Loads the memory cell ```IR``` is pointing to)| ```load %reg1, [%reg2]``` | ```load %reg1, [%reg2]```|
