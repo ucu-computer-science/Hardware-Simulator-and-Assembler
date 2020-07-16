@@ -49,7 +49,7 @@ Register RISC architecture uses 16-bit instructions with first 6 bits for opcode
 * 8 Registers are encoded in 3 bits:
     * ```FR``` Flag register with least significant bits representing flags -
       ```CF```, ```ZF```, ```OF```, ```SF```
-    * ```R01, R02, R03, R04 (BP alias)``` with L and H bytes each
+    * ```R00, R01, R02, R03 (BP alias)``` with L and H bytes each
     * ```SP```- stack pointer
     * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
     * ```LR``` - link register (stores call return address)
@@ -76,7 +76,7 @@ Register CISC architecture uses 1-6 bytes for instructions:
 * 7 Registers are encoded in 3 bits:
     * ```FR``` Flag register with least significant bits representing flags -
       ```CF```, ```ZF```, ```OF```, ```SF```
-    * ```R01, R02, R03, R04 (BP alias)``` with L and H bytes each
+    * ```R00, R01, R02, R03 (BP alias)``` with L and H bytes each
     * ```SP```- stack pointer
     * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
 
