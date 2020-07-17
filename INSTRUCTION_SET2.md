@@ -109,16 +109,16 @@ being saved into the first operand:
 | RISC STACK | RISC ACCUMULATOR | RISC REGISTER | CISC REGISTER |
 |------------|------------------|---------------|---------------|
 | **Registers** ||||
-| ```TOS```; ```CF```; ```SP```; ```IP```  | ```ACC```; ```IR```; ```FR```; ```SP```; ```IP``` | ```R00: R00H, R00L```; ```R01: R01H, R01L```; ```R02: R02H, R02L```; ```R03: R03H, R03L```; ```LR```; ```FR```; ```SP```; ```IP```   | ```R00: R00H, R00L```; ```R01: R01H, R01L```; ```R02: R02H, R02L```; ```R03: R03H, R03L```; ```FR```; ```SP```; ```IP```  |
+| ```TOS```; ```CF```; ```SP```; ```IP```  | ```ACC```; ```IR```; ```FR```; ```SP```; ```IP``` | ```R00: R00H, R00L```; ```R01: R01H, R01L```; ```R02: R02H, R02L```; ```R03: R03H, R03L```; ```LR```; ```FR```; ```SP```; ```IP```   | ```R00: R00H, R00L```; ```R01: R01H, R01L```; ```R02: R02H, R02L```; ```R03: R03H, R03L```; ```FR```; ```BP``; ```SP```; ```IP```  |
 | | | | |
 | **Memory** |   |   |   |
-| ```load``` | ```load``` (Loads the memory cell ```IR``` is pointing to)| ```load %reg1, [%reg2]``` | ```load %reg1, [%reg2]```|
-| ```load %FR ``` | ```load %FR``` | | ```loado %reg1, [%reg2+$off]``` |
+| ```load``` | ```load``` (Loads the memory cell ```IR``` is pointing to)| ```load %reg1, [%reg2]``` | |
+| ```load %FR ``` | ```load %FR``` | | |
 | ```load [imm]``` | ```load %IR``` | | |
 |  | ```load [imm]``` | |
 |||||
-| ```store``` | ```store``` (Stores in the memory cell ```IR``` is pointing to) | ```store [%reg1], %reg2``` | ```store [%reg1], %reg2``` |
-| ```store [imm] ``` | ```store [imm]``` | | ```storeo [%reg1+$off], %reg2```|
+| ```store``` | ```store``` (Stores in the memory cell ```IR``` is pointing to) | ```store [%reg1], %reg2``` | |
+| ```store [imm] ``` | ```store [imm]``` | | |
 | ```store %FR``` | ```store %IR``` | | |
 || ```store %FR``` |||
 |||||
@@ -128,8 +128,14 @@ being saved into the first operand:
 |||||
 | ```dup2``` ||||
 |||||
-| ```mov $imm``` | ```mov $imm``` | ```mov %reg, $imm``` | ```mov %reg, $off``` |
+| ```mov $imm``` | ```mov $imm``` | ```mov %reg, $imm``` | ```mov %reg, $imm``` |
 | | | ```mov %reg1, %reg2``` | ```mov %reg1, %reg2``` |
+||||```mov %reg1, [%reg2]```|
+||||```mov %reg1, [%reg2+$off]```|
+||||```mov [%reg1], %reg2```|
+||||```mov [%reg1], $imm```|
+||||```mov [%reg1+$off], %reg2```|
+||||```mov [%reg1+$off], $imm```|
 |||||
 | ```push``` | ```push``` | ```push %reg``` | ```push %reg``` |
 |  | ```push %IR``` (pushes the address of the next instruction into the register) | | |
@@ -146,12 +152,14 @@ being saved into the first operand:
 | | | | |
 | **Arithmetic** |   |   |   |
 | ```add``` | ```add``` | ```add %reg1, %reg2, %reg3``` | ```add %reg1, [%reg2]``` |
-|||| ```addo %reg1, [%reg2+$off]```|
 | | | | ```add %reg1, %reg2``` |
+|||| ```add %reg1, [%reg2+$off]```|
+|||| ```add [%reg1], %reg2```|
 |||||
 | ```sub``` | ```sub``` | ```sub %reg1, %reg2, %reg3``` | ```sub %reg1, [%reg2]``` |
-|||| ```subo %reg1, [%reg2+$off]```|
 | | | | ```sub %reg1, %reg2``` |
+|||| ```sub %reg1, [%reg2+$off]```|
+|||| ```sub [%reg1], %reg2```|
 |||||
 | | ```inc %IR``` | | ```inc %reg``` |
 | | | | ```inc [%reg]``` |
@@ -163,23 +171,29 @@ being saved into the first operand:
 |||||
 | ```mul``` | ```mul``` | ```mul %reg1, %reg2, %reg3``` | ```mul %reg1, %reg2``` |
 | | | | ```mul %reg1, [%reg2]```|
+| | | | ```mul [%reg1], %reg2```|
+|  |  |  | ```div [%reg1], %reg2``` |
 | | | | ```mul %reg, $imm```|
-|||| ```mulo %reg1, [%reg2+$off]```|
+|||| ```mul %reg1, [%reg2+$off]```|
 |||||
 | ```div``` | ```div``` | ```div %reg1, %reg2, %reg3``` | ```div %reg1, %reg2``` |
 |  |  |  | ```div %reg1, [%reg2]``` |
+|  |  |  | ```div [%reg1], %reg2``` |
 | | | | ```div %reg, $imm```|
-|||| ```divo %reg1, [%reg2+$off]```|
+|||| ```div %reg1, [%reg2+$off]```|
 | | | | |
 | **Logical** |   |   |   |
 | ```and``` | ```and``` | ```and %reg1, %reg2, %reg3``` | ```and %reg1, %reg2``` |
 |  |  |  | ```and %reg1, [%reg2]``` |
+|  |  |  | ```and [%reg1], %reg2``` |
 |||||
 | ```or``` | ```or``` | ```or %reg1, %reg2, %reg3``` | ```or %reg1, %reg2``` |
 | | | | ```or %reg1, [%reg2]``` |
+| | | | ```or [%reg1], %reg2``` |
 |||||
 | ```xor``` | ```xor``` | ```xor %reg1, %reg2, %reg3``` | ```xor %reg1, %reg2``` |
 | |  |  | ```xor %reg1, [%reg2]``` |
+| |  |  | ```xor [%reg1], %reg2``` |
 |||||
 | ```not``` | ```not``` (only with ```acc```)| ```not %reg1, %reg2``` | ```not %reg1``` |
 | | | | ```not [%reg]``` |
@@ -195,8 +209,9 @@ being saved into the first operand:
 | | | | |
 | **Flow control** |   |   |   |
 | ```call label``` | ```call label``` | ```call label``` | ```call label``` |
-| ```call $imm``` | ```call $imm``` | ```call $imm``` | ```call $imm``` |
-| ```call``` | ```call``` | ```call %reg``` | ```call %reg``` |
+| ```call $imm``` | ```call $imm``` | ```call [$imm]``` | ```call [imm]``` |
+| ```call``` | ```call``` | ```call [%reg]``` | ```call [%reg]``` |
+| | | | ```callo [%reg+$off]``` |
 |||||
 | ```ret``` | ```ret``` | ```ret``` | ```ret``` |
 |||||
@@ -205,53 +220,53 @@ being saved into the first operand:
 | ```cmpe $imm``` ||| ```cmp %reg, $imm``` |
 | ```cmpb (compare bigger)``` | ```cmp $imm``` | ```cmp %reg, $imm``` | ```cmp %reg1, [%reg2]``` |
 | ```cmpb $imm``` ||| ```cmp %reg1, [%reg2+$off]``` |
-| *Pushes 0/1 on top of the stack if False/True* |  |  |  |
+| *Pushes 0*16/1*16 words on top of the stack if False/True* |  |  |  |
 |||||
 | ```test``` | ```test``` | ```test %reg1, %reg2``` | ```test %reg1, %reg2``` |
 | ```test $imm``` | ```test $imm``` |  | ```test %reg1, [%reg2]``` |
 | | | | ```test %reg1, [%reg2+$off]``` |
+| | |  | ```test [%reg1], %reg2``` |
 |||||
 | **Jumps** ||||
-| ```jmp $imm``` | ```jmp $imm``` | ```jmp $imm```| ```jmp $imm```|
-| ```jmp``` | ```jmp``` | ```jmp %reg```| ```jmp %reg```|
+| ```jmp [$off]``` | ```jmp [$off]``` | ```jmp [$off]```| ```jmp [$off]```|
+| *Jumps to the IP+off address in memory* | *Jumps to the IP+off address in memory* | *Jumps to the IP+off address in memory* | *Jumps to the IP+off address in memory* |
+| ```jmp``` | ```jmp``` | ```jmp [%reg]```| ```jmp [%reg]```|
+| *Jumps to the ```tos``` address in memory* | *Jumps to the ```acc``` address in memory* | *Jumps to the ```reg``` address in memory* | *Jumps to the ```reg``` address in memory* |
+| | | | ```jmp [%reg+$off]```|
+| | | | *Jumps to the ```reg + off``` address in memory* |
 |||||
-| | ```je $imm``` | ```je $imm``` | ```je $imm``` |
-| | ```je``` | ```je %reg``` | ```je %reg``` |
+| | ```je [$off]``` | ```je [$off]``` | ```je [$off]``` |
 | | | | |
-| | ```jne $imm``` | ```jne $imm``` | ```jne $imm``` |
-| | ```jne``` | ```jne %reg``` | ```jne %reg```|
+| | ```jne [$off]``` | ```jne [$off]``` | ```jne [$off]``` |
 | | | | |
-| | ```jg $imm``` | ```jg $imm``` | ```jg $imm``` |
-| | ```jg```| ```jg %reg```|```jg %reg```|
+| | ```jg [$off]``` | ```jg [$off]``` | ```jg [$off]``` |
 | | | | |
-| | ```jge $imm``` | ```jge $imm``` | ```jge $imm``` |
-| | ```jge```| ```jge %reg``` | ```jge %reg``` |
+| | ```jge [$off]``` | ```jge [$off]``` | ```jge [$off]``` |
 | | | | |
-| | ```jl $imm``` | ```jl $imm``` | ```jl $imm``` |
-| | ```jl``` | ```jl %reg``` | ```jl %reg``` |
+| | ```jl [$off]``` | ```jl [$off]``` | ```jl [$off]``` |
 | | | | |
-| | ```jle $imm``` | ```jle $imm``` | ```jle $imm``` |
-| | ```jle``` | ```jle %reg``` | ```jle %reg``` |
+| | ```jle [$off]``` | ```jle [$off]``` | ```jle [$off]``` |
 | | | | |
 | **I/O Separate Space** |   |   |   |
 | ```in $port``` | ```in $port``` | ```in %reg, $port``` | ```in $reg, $port``` |
 |  |  |  | ```in [%reg], $port```|
-|  |  |  | ```ino [%reg+$off], $port```|
+|  |  |  | ```in [%reg+$off], $port```|
 |||||
 | ```out $port, $imm``` | ```out $port, $imm``` | ```out $port, $imm``` | ```out $port, $imm``` |
 | ```out $port``` | ```out $port``` | ```out $port, %reg``` | ```out $port, %reg```|
 |  |  |  | ```out $port, [%reg]```|
-|  |  |  | ```outo $port, [%reg+$off]```|
+|  |  |  | ```out $port, [%reg+$off]```|
 |  |  |  |  |
 | **SIMD** |   |   |   |
-| | | | ```load4 %reg``` |
-| | | | ```store4 %reg``` |
-| | | | ```add4 %reg1, %reg2``` |
-| | | | ```sub4 %reg1, %reg2``` |
-| | | | ```mul4 %reg1, %reg2``` |
-| | | | ```div4 %reg1, %reg2``` |
-| | | | ```cmp4 %reg1, %reg2``` |
-| | | | ```test4 %reg1, %reg2``` |
+| | | | ```load4 [%reg]``` |
+| | | | ```store4 [%reg]``` |
+| | | | ```add4 [%reg1], [%reg2]``` |
+| | | | ```sub4 [%reg1], [%reg2]``` |
+| | | | ```mul4 [%reg1], [%reg2]``` |
+| | | | ```div4 [%reg1], [%reg2]``` |
+| | | | ```cmp4 [%reg1], [%reg2]``` |
+| | | | ```test4 [%reg1], [%reg2]``` |
+| | | | *The first register represents the start of the first 4-word vector in memory. The second register represents the start of the second 4-word vector in memory. Values inside the vector are required to go one after another in the memory* |
 
 - - -
 
