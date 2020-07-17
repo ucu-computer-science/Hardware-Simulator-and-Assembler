@@ -112,13 +112,14 @@ being saved into the first operand:
 | | | | |
 | **Memory** |   |   |   |
 | ```load``` | ```load``` (Loads the memory cell ```IR``` is pointing to)| ```load %reg1, [%reg2]``` | ```load %reg1, [%reg2]```|
-| ```load %FR ``` | ```load %IR``` | | ```loado %reg1, [%reg2+$off]``` |
-| ```load [imm]``` | ```load %СF``` | | |
+| ```load %FR ``` | ```load %FR``` | | ```loado %reg1, [%reg2+$off]``` |
+| ```load [imm]``` | ```load %IR``` | | |
 |  | ```load [imm]``` | |
 |||||
 | ```store``` | ```store``` (Stores in the memory cell ```IR``` is pointing to) | ```store [%reg1], %reg2``` | ```store [%reg1], %reg2``` |
 | ```store [imm] ``` | ```store [imm]``` | | ```storeo [%reg1+$off], %reg2```|
 | ```store %FR``` | ```store %IR``` | | |
+|| ```store %FR``` |||
 |||||
 | ```swap``` ||||
 |||||
@@ -131,9 +132,11 @@ being saved into the first operand:
 |||||
 | ```push``` | ```push``` | ```push %reg``` | ```push %reg``` |
 |  | ```push %IR``` (pushes the address of the next instruction into the register) | | |
+| ```pushf``` | ```pushf``` | | |
 |||||
 | ```pop``` | ```pop``` | ```pop %reg``` | ```pop %reg``` |
 |  | ```pop %IR``` (pops the address of the next instruction from the register) | |  |
+| ```popf``` | ```popf``` | | |
 |||||
 | | | | ```enter $imm``` |
 |||||
