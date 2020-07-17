@@ -32,7 +32,7 @@ Accumulator architecture uses 8 bits for 49 instructions
     ```CF```, ```ZF```, ```OF```, ```SF```
     * ```SP```- stack pointer
     * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
-    * ```IR``` - index register (used for addressing the memory, every instruction implicitly uses ```%acc```, ```[%IR]```)
+    * ```IR``` - index register (used for addressing the memory, some instructions implicitly use ```%acc``` or ```[%IR]```)
     * ```ACC``` – accumulator register
 
 Instructions look like:
