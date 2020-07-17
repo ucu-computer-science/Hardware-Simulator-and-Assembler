@@ -211,7 +211,7 @@ being saved into the first operand:
 | ```call label``` | ```call label``` | ```call label``` | ```call label``` |
 | ```call $imm``` | ```call $imm``` | ```call [$imm]``` | ```call [imm]``` |
 | ```call``` | ```call``` | ```call [%reg]``` | ```call [%reg]``` |
-| | | | ```callo [%reg+$off]``` |
+| | | | ```call [%reg+$off]``` |
 |||||
 | ```ret``` | ```ret``` | ```ret``` | ```ret``` |
 |||||
