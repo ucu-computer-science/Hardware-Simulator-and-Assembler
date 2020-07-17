@@ -28,7 +28,7 @@ And immediate constants contain two 6-bit bytes:
 
 Accumulator architecture uses 8 bits for 49 instructions
 * Registers:
-    * Flag register with least significant bits representing flags -
+    * ```FR``` Flag register with least significant bits representing flags -
     ```CF```, ```ZF```, ```OF```, ```SF```
     * ```SP```- stack pointer
     * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
