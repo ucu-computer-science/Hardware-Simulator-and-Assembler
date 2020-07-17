@@ -49,7 +49,7 @@ And immediate constants contain two 8-bit bytes:
 Register RISC architecture uses 16-bit instructions with first 6 bits for opcode (40 instructions)
 * 8 Registers are encoded in 3 bits:
     * ```FR``` Flag register with least significant bits representing flags -
-      ```CF```, ```ZF```, ```OF```, ```SF```
+      ```CF```, ```ZF```, ```OF```, ```SF``` (not a general-purpose register)
     * ```R00, R01, R02, R03 (BP alias)``` with L and H bytes each
     * ```SP```- stack pointer
     * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
@@ -76,7 +76,7 @@ And load immediate constants instructions look like:
 Register CISC architecture uses 1-6 bytes for instructions:
 * 7 Registers are encoded in 3 bits:
     * ```FR``` Flag register with least significant bits representing flags -
-      ```CF```, ```ZF```, ```OF```, ```SF```
+      ```CF```, ```ZF```, ```OF```, ```SF``` (not a general-purpose register)
     * ```R00, R01, R02, R03 (BP alias)``` with L and H bytes each
     * ```SP```- stack pointer
     * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
