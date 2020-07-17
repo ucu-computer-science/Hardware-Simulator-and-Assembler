@@ -133,6 +133,7 @@ being saved into the first operand:
 | ```push``` | ```push``` | ```push %reg``` | ```push %reg``` |
 |  | ```push %IR``` (pushes the address of the next instruction into the register) | | |
 | ```pushf``` | ```pushf``` | | |
+|  |  | | ```push $imm``` |
 |||||
 | ```pop``` | ```pop``` | ```pop %reg``` | ```pop %reg``` |
 |  | ```pop %IR``` (pops the address of the next instruction from the register) | |  |
