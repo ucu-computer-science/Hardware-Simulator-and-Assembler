@@ -11,7 +11,8 @@ Stack architecture uses 6 bits for 37 instructions
 * ```|0|x|x|x|x|x| represents opcode instruction without immediate constants afterwards```
 * ```|1|x|x|x|x|x| represents opcode instruction with immediate constants afterwards```
 * Registers:
-    * ```CF``` - carry flag register
+    * ```FR``` Flag register with least significant bits representing flags -
+    ```CF```, ```ZF```, ```OF```, ```SF```
     * ```SP```- stack pointer
     * ```IP``` - instruction pointer (can't be directly affected with arithmetical instructions)
     * ```TOS``` – top of the stack register
