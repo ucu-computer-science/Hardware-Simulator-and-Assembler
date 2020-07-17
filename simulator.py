@@ -42,11 +42,9 @@ class Simulator:
         parser = argparse.ArgumentParser()
         parser.add_argument("--file", help="provide the binary code filepath")
         parser.add_argument("--isa",
-                            help="specify the ISA architecture: RISC1 (Stack), RISC2 (Accumulator), RISC3 (Register), CISC (Register)",
-                            action="store_true")
+                            help="specify the ISA architecture: RISC1 (Stack), RISC2 (Accumulator), RISC3 (Register), CISC (Register)")
         parser.add_argument("--architecture",
-                            help="specify the data/program architecture: von Neumann, Harvard, HarvardM",
-                            action="store_true")
+                            help="specify the data/program architecture: von Neumann, Harvard, HarvardM")
         parser.add_argument("--offset", help="provide the offset for the instructions in the memory")
 
         # Parsing the command line arguments
@@ -67,7 +65,6 @@ class Simulator:
             raise SimulatorError("Provide the type of data/program architecture for simulation.")
 
         self.memory = Memory(args.architecture)
-        self.create_registers(args.isa)
         CPU(args.isa, args.file)
 
 
@@ -188,3 +185,4 @@ class SimulatorError(Exception):
 
 if __name__ == '__main__':
     simulator = Simulator()
+
