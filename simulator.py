@@ -11,6 +11,8 @@ import curses
 from curses import wrapper
 
 # from functions import functions_dictionary
+from memory import Memory
+from register import Register
 
 
 class Simulator:
@@ -100,7 +102,7 @@ class CPU:
 
         # Determining the size of the instructions to read
         instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
-        self.instruction_size = instruction_sizes[self.isa.lower]
+        self.instruction_size = instruction_sizes[self.isa.lower()]
 
         # Create the registers for the specified architecture
         self.create_registers()
@@ -108,6 +110,9 @@ class CPU:
         # Set the instruction pointer to the starting point of the program
         self.IP = 0 + offset
         self.load_program(filename)
+
+        # Draw the main interface
+        self.start_screen()
 
         # Starts the execution of the program code loaded
         self.start_program()
@@ -234,7 +239,7 @@ class CPU:
         """
         opcode_dict = dict()
         for key in self.opcodes:
-            opcode_dict[self.opcodes[key][0:]] = tuple([key] + [self.opcodes[key][1
+            opcode_dict[self.opcodes[key][0:]] = tuple([key] + [self.opcodes[key][1:]])
 
         # Read the opcode part of the instruction
         if self.read_state == "opcode":
@@ -336,88 +341,8 @@ class CPU:
 
     def access_value(self, parameter):
         """
-        Access value depending on a parametr
+        Access value depending on a parameter
         """
-
-
-class Memory:
-    """
-    Memory simulator class
-    Handles memory addressing, puts the values and returns them on CPU calls
-    Serves as the container for the program code as well
-    """
-
-    def __init__(self, memory_architecture):
-        """
-        Creates a new memory structure.
-        :param memory_architecture: chosen program/data architecture.
-        :return: NoneType
-        """
-        self.memory_size = 2*1024
-        self.slots = bytearray(self.memory_size)
-
-    def write(self, location, data):
-        """
-        Writes the data in bytes to the memory starting at location
-        :param location: start location, where data should be stored
-        :param data: data for writing into the memory
-        :return: NoneType
-        """
-        if (len(data) > (self.memory_size - location)):
-            raise SimulatorError("Memory overflow")
-
-        self.slots[location:len(data)] = data
-
-    def read_data(self, start_location, end_location):
-        return self.slots[start_location:end_location]
-
-    def __str__(self):
-        return self.slots
-
-
-class Register:
-    """
-    Register simulator class
-    Handles the creation of registers of different
-    types and their available options
-    """
-
-    def __init__(self, name, general_purpose=False):
-        """
-        Initializes register object, holding 16 bits,
-        specifying its visibility for dev purposes
-        :return: NoneType
-        """
-        self.name = name
-        self._state = bytearray(2)
-        self.accessibility = general_purpose
-
-    def get_low(self):
-        """
-        Returns the low byte if the register is accessible
-        :return: last 8 bits of the register
-        """
-        if self.accessibility:
-            return self._state[1]
-        return SimulatorError("Register is not accessible")
-
-    def get_high(self):
-        """
-        Return the high byte if the register is accessible
-        :return: first 8 bits of the register
-        """
-        if self.accessibility:
-            return self._state[0]
-        return SimulatorError("Register is not accessible")
-
-    def get(self):
-        """
-        Returns the state of the register if it is accessible
-        :return: all bits of the register
-        """
-        if self.accessible:
-            return self._state
-        return SimulatorError("Register is not accessible")
 
 
 class SimulatorError(Exception):
