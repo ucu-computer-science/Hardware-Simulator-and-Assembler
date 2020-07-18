@@ -3,7 +3,7 @@
     "risc2": {},
     "risc3": {
         "load": ["000001", "reg", "memreg"],
-        "store": ["000010", "memreg", "reg"],,
+        "store": ["000010", "memreg", "reg"],
         "mov_low": ["000011", "reg", "imm"],
         "mov_high": ["000100", "reg", "imm"],
         "mov": ["000101", "reg", "reg"],

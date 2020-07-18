@@ -90,8 +90,12 @@ class CPU:
         self.instruction = ''
 
         self.functions_dict = {}
+
         with open("instructions.json", "r") as file:
-            self.opcodes = json.load(file)[self.isa]
+            self.opcodes = json.load(file)[self.isa.lower()]
+
+        with open("registers.json", "r") as file:
+            self.registers_list = json.load(file)[self.isa.lower()]
 
         self.std_screen = curses.initscr()
 
@@ -115,7 +119,7 @@ class CPU:
         # Add title and menu elements
         self.std_screen.addstr("Hardware Simulator", curses.A_REVERSE | curses.color_pair(2))
         self.std_screen.addstr(curses.LINES - 1, 0,
-                              "Press 'q' to exit",
+                              "Press 'q' to exit, 'n' to execute the next instruction",
                               curses.A_REVERSE)
 
         # Create the box for the instruction in binary
@@ -125,10 +129,10 @@ class CPU:
         self.instruction_box = self.instruction_window.subwin(1, 17, 6, 3)
 
         # Create the box for the registers info
-        self.register_window = curses.newwin(11, 64, 5, 30)
+        self.register_window = curses.newwin(11, 24, 5, 30)
         self.register_window.box()
         # Create the sub-window for the actual registers representation
-        self.register_box = self.register_window.subwin(9, 60, 6, 31)
+        self.register_box = self.register_window.subwin(9, 22, 6, 31)
 
         # Create the registers for the specified architecture
         self.create_registers()
@@ -145,10 +149,14 @@ class CPU:
         self.register_box.noutrefresh()
         curses.doupdate()
 
+        # Fill the register box with current registers and their values
+        self.register_box.addstr(" Registers:\n")
         items = [(value.name, value._state.hex()) for key, value in self.registers_dict.items()]
         for i in range(1, len(items)):
-            self.register_box.addstr(f"{items[i-1][0].ljust(4, ' ')}: {items[i-1][1]}  {items[i][0].ljust(4, ' ')}: {items[i][1]}\n")
+            self.register_box.addstr(f" {(items[i-1][0]+':').ljust(4, ' ')} {items[i-1][1]}  "
+                                     f"{(items[i][0]+':').ljust(4, ' ')} {items[i][1]}\n")
 
+        # Starts the execution of the program code loaded
         self.start_program()
 
         # Closes the simulator and restores the console settings
@@ -160,45 +168,13 @@ class CPU:
         :param isa_architecture: chosen ISA
         :return: NoneType
         """
-        # Registers common for every ISA architecture
-        self.registers_dict = dict()
-        self.SP = Register("SP")
-        self.registers_dict[b'100'] = self.SP
-        self.IP = Register("IP")
-        self.registers_dict[b'101'] = self.IP
+        self.registers = dict()
+        self.register_codes = dict()
 
-        # Setting up "RISC-Stack" ISA registers
-        if self.isa.lower() == "risc1":
-            pass
-
-        # Setting up "RISC-Accumulator" ISA registers
-        elif self.isa.lower() =="risc2":
-            pass
-
-        # Setting up "RISC-Register" ISA registers
-        elif self.isa.lower() =="risc3":
-
-            # Link Register
-            self.LR = Register("LR")
-            self.registers_dict[b'110'] = self.LR
-
-            # Flag Register
-            self.FR = Register("FR")
-            self.registers_dict[b'111'] = self.FR
-
-            # Setting up general purpose R00-R03 registers
-            self.R00 = Register("R00", general_purpose=True)
-            self.registers_dict[b'000'] = self.R00
-            self.R01 = Register("R01", general_purpose=True)
-            self.registers_dict[b'001'] = self.R01
-            self.R02 = Register("R02", general_purpose=True)
-            self.registers_dict[b'010'] = self.R02
-            self.R03 = Register("R03", general_purpose=True)
-            self.registers_dict[b'011'] = self.R03
-
-        # Setting up "CISC-Register" ISA registers
-        else:
-            pass
+        for register in self.registers_list:
+            temp = Register(register[0], general_purpose=(register[1]==1))
+            self.registers[register[2]] = temp
+            self.register_codes[register[2]] = temp
 
     def load_program(self, filename):
         """
@@ -251,7 +227,10 @@ class CPU:
         :param instruction: binary instruction to be executed
         :return: NoneType
         """
-        self.opcodes
+        opcode_dict = dict()
+        for key in self.opcodes:
+            opcode_dict[tuple(self.opcodes[key])] = key
+
         opcode = self.instruction[0:6]
 
         # Load immediate constant
@@ -320,6 +299,11 @@ class CPU:
         self.std_screen.keypad(False)
         curses.curs_set(True)
         curses.endwin()
+
+    def access_value(self, parameter):
+        """
+        Access value depending on a parametr
+        """
 
 
 class Memory:
