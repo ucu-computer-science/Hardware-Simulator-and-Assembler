@@ -100,9 +100,13 @@ class CPU:
         self.memory = Memory(architecture)
         self.instruction = ''
         self.read_state = "opcode"
+        self.opcode_dict = dict()
 
         with open("instructions.json", "r") as file:
             self.opcodes = json.load(file)[self.isa.lower()]
+
+        for key, value in self.opcodes.items():
+            self.opcode_dict[value[0]] = tuple([key] + value[1:])
 
         with open("registers.json", "r") as file:
             self.registers_list = json.load(file)[self.isa.lower()]
@@ -160,10 +164,10 @@ class CPU:
                               curses.A_REVERSE)
 
         # Create the box for the instruction in binary
-        self.instruction_window = curses.newwin(3, 19, 5, 2)
+        self.instruction_window = curses.newwin(5, 19, 5, 2)
         self.instruction_window.box()
         # Create the sub-window for the actual instruction in binary representation
-        self.instruction_box = self.instruction_window.subwin(1, 17, 6, 3)
+        self.instruction_box = self.instruction_window.subwin(3, 17, 6, 3)
 
         # Create the box for the registers info
         self.register_window = curses.newwin(8, 25, 5, 30)
@@ -217,15 +221,15 @@ class CPU:
         :return: NoneType
         """
         # Read first instruction of the program from the memory
-        self.instruction = self.memory.read_data(self.IP, self.IP+self.instruction_size[0])
+        self.__read_instruction()
 
         # Continue executing instructions until we reach
         # the end of the program (all-zeros byte)
         while self.instruction != bitarray('0'*16):
+            key = ''
 
             # Draw the updated screen
             self.draw_screen()
-            key = ''
 
             # Move on to the next instruction if the 'n' key is pressed
             while key not in ('N', 'n'):
@@ -238,19 +242,17 @@ class CPU:
             # Execute this instruction, and move on to the next one, reading it
             self.execute()
             self.IP += 16
-            self.instruction = self.memory.read_data(self.IP, self.IP+self.instruction_size[0])
-            # Draw the updated screen
-            self.draw_screen()
+            self.__read_instruction()
 
-    def execute(self):
+
+        # Draw the updated screen
+        self.draw_screen()
+
+    def __read_instruction(self):
         """
-        Executes an instruction
-        :param instruction: binary instruction to be executed
-        :return: NoneType
+        Reads the instruction and the opcode in it
         """
-        opcode_dict = dict()
-        for key, value in self.opcodes.items():
-            opcode_dict[value[0]] = tuple([key] + value[1:])
+        self.instruction = self.memory.read_data(self.IP, self.IP + self.instruction_size[0])
 
         # Read the opcode part of the instruction
         if self.read_state == "opcode":
@@ -259,6 +261,13 @@ class CPU:
             pass
         elif self.read_state == "constant2":
             pass
+
+    def execute(self):
+        """
+        Executes an instruction
+        :param instruction: binary instruction to be executed
+        :return: NoneType
+        """
 
         # Figure out the operands for the RISC-Stack ISA
         if self.isa.lower() == "risc1":
@@ -292,7 +301,7 @@ class CPU:
 
         # Read all the operands after the opcode
         operands = [self.register_codes[self.instruction[start_point:start_point+3].to01()]]
-        operands_aliases = opcode_dict[self.opcode.to01()][1:]
+        operands_aliases = self.opcode_dict[self.opcode.to01()][1:]
         for operand in operands_aliases:
 
             # If the operand is the register, add its value and go to the next operand
@@ -313,7 +322,7 @@ class CPU:
 
         logger.info(operands)
         # Execute needed function and save its result to the first operand
-        function = functions_dictionary[opcode_dict[self.opcode.to01()][0]]
+        function = functions_dictionary[self.opcode_dict[self.opcode.to01()][0]]
         function(operands)
 
     def draw_screen(self):
@@ -328,8 +337,9 @@ class CPU:
 
         # Clearing the instruction box and inserting the new instruction
         self.instruction_box.clear()
-        # print(self.instruction.decode())
-        self.instruction_box.addstr(self.instruction.to01())
+        self.instruction_box.addstr("Next instruction:")
+        self.instruction_box.addstr(f"{self.instruction.to01()}\n")
+        self.instruction_box.addstr(self.opcode_dict[self.opcode.to01()][0])
 
         # Fill the register box with current registers and their values
         self.register_box.clear()

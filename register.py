@@ -3,6 +3,7 @@
 #
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
+
 from bitarray import bitarray
 
 

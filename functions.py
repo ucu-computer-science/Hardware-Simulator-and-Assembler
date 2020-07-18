@@ -1,4 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Assembly Simulator project 2020
+# GNU General Public License v3.0
+
 import logging
+from bitarray import bitarray
 
 logging.basicConfig(filename="log.txt",
                     filemode='a',
@@ -7,7 +14,6 @@ logging.basicConfig(filename="log.txt",
                     level=logging.DEBUG)
 
 logger = logging.getLogger('funclogger')
-from bitarray import bitarray
 
 
 def load(operands):
@@ -60,7 +66,6 @@ def add(operands):
                 flag = 0
 
     operands[0]._state = result[::-1]
-
 
 
 def sub(operands):
