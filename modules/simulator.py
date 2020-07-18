@@ -90,6 +90,7 @@ class CPU:
     Actually handles the program logic
     Provides all arithmetics and memory manipulations
     """
+
     def __init__(self, isa, architecture, filename, offset=0):
         """
         Creates a new CPU.
@@ -161,8 +162,8 @@ class CPU:
         # Add title and menu elements
         self.std_screen.addstr("Hardware Simulator", curses.A_REVERSE | curses.color_pair(2))
         self.std_screen.addstr(curses.LINES - 1, 0,
-                              "Press 'q' to exit, 'n' to execute the next instruction",
-                              curses.A_REVERSE)
+                               "Press 'q' to exit, 'n' to execute the next instruction",
+                               curses.A_REVERSE)
 
         # Create the box for the instruction in binary
         self.instruction_window = curses.newwin(5, 19, 5, 2)
@@ -180,8 +181,8 @@ class CPU:
         self.register_box.addstr(" Registers:\n")
         items = [(value.name, value._state.tobytes().hex()) for key, value in self.registers.items()]
         for i in range(1, len(items), 2):
-            self.register_box.addstr(f" {(items[i-1][0]+':').ljust(4, ' ')} {items[i-1][1]}  "
-                                     f"{(items[i][0]+':').ljust(4, ' ')} {items[i][1]}\n")
+            self.register_box.addstr(f" {(items[i - 1][0] + ':').ljust(4, ' ')} {items[i - 1][1]}  "
+                                     f"{(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}\n")
 
         # Refresh all the internal datastructures bottom-up, update the screen
         self.std_screen.noutrefresh()
@@ -201,7 +202,7 @@ class CPU:
         self.register_codes = dict()
 
         for register in self.registers_list:
-            temp = Register(register[0], general_purpose=(register[1]==1))
+            temp = Register(register[0], general_purpose=(register[1] == 1))
             self.registers[register[2]] = temp
             self.register_codes[register[2]] = temp
 
@@ -226,7 +227,7 @@ class CPU:
 
         # Continue executing instructions until we reach
         # the end of the program (all-zeros byte)
-        while self.instruction != bitarray('0'*16):
+        while self.instruction != bitarray('0' * 16):
             key = ''
 
             # Draw the updated screen
@@ -244,7 +245,6 @@ class CPU:
             self.execute()
             self.IP += 16
             self.__read_instruction()
-
 
         # Draw the updated screen
         self.draw_screen()
@@ -301,30 +301,45 @@ class CPU:
             pass
 
         # Read all the operands after the opcode
-        operands = [self.register_codes[self.instruction[start_point:start_point+3].to01()]]
+        # Making sure, that the first one specifies destination of the operation
         operands_aliases = self.opcode_dict[self.opcode.to01()][1:]
+        operands = [self.register_codes[self.instruction[start_point:start_point + 3].to01()]]
+
+        # Set 'write' access to the memory to False by default
+        memory_write_access = False
+
+        # If destination -> memory
+        if operands_aliases[0] == "memreg":
+            memory_write_access = True
+
         for operand in operands_aliases:
 
             # If the operand is the register, add its value and go to the next operand
             if operand == "reg":
-                operands.append(self.register_codes[self.instruction[start_point:start_point+3].to01()]._state)
+                operands.append(self.register_codes[self.instruction[start_point:start_point + 3].to01()]._state)
                 start_point += 3
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
-                tmp_register = self.register_codes[self.instruction[start_point:start_point+3].to01()]._state
+                tmp_register = self.register_codes[self.instruction[start_point:start_point + 3].to01()]._state
                 operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand == "imm":
-                operands.append(bitarray(self.instruction[start_point:start_point+immediate_length]))
+                operands.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
                 start_point += immediate_length
 
         logger.info(operands)
         # Execute needed function and save its result to the first operand
         function = functions_dictionary[self.opcode_dict[self.opcode.to01()][0]]
-        function(operands)
+
+        # Write into the memory
+        if memory_write_access:
+            self.memory.slots[operands[0]._state: operands[0]._state + self.instruction_size[0]] = function(operands)
+        # Perform any other instruction
+        else:
+            function(operands)
 
     def draw_screen(self):
         """
@@ -348,8 +363,8 @@ class CPU:
         items = [(value.name, value._state.tobytes().hex()) for key, value in self.registers.items()]
         logger.info(items)
         for i in range(1, len(items), 2):
-            self.register_box.addstr(f" {(items[i-1][0]+':').ljust(4, ' ')} {items[i-1][1]}  "
-                                     f"{(items[i][0]+':').ljust(4, ' ')} {items[i][1]}\n")
+            self.register_box.addstr(f" {(items[i - 1][0] + ':').ljust(4, ' ')} {items[i - 1][1]}  "
+                                     f"{(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}\n")
 
         # Refreshing the contents of screen elements and updating the whole screen
         self.std_screen.noutrefresh()

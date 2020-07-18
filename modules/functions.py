@@ -17,11 +17,29 @@ logger = logging.getLogger('funclogger')
 
 
 def load(operands):
-    operands[0]._state = operands[1]
+    """
+    Loads value from memory to register
+    Zero operand is register (destination)
+    First is its vale
+    Second is the value to be stored
+
+    :param operands: list of operands
+    :return: NoneType
+    """
+    operands[0]._state = operands[2]
 
 
 def store(operands):
-    operands[0] = operands[1]._state
+    """
+    Returns value, which later will be stored in the memory by CPU
+    Zero operand is register with memory location
+    First is its vale
+    Second is the value to be stored
+
+    :param operands: list of operands
+    :return: bitarray
+    """
+    return operands[2]._state
 
 
 def mov_low(operands):
