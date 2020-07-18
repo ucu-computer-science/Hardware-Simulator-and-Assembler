@@ -25,14 +25,47 @@ def store(operands):
 
 
 def mov_low(operands):
+    """
+    Writes immediate constant into the low byte of the register,
+    setting high byte to all zeros
+
+    Zero operand is a register object, for writing information into it
+    First one is the value of that register
+    Second one is the value of the immediate constant
+
+    :param operands: list of operands
+    :return: NoneType
+    """
     operands[0]._state = bitarray("0"*8) + operands[2]
 
 
 def mov_high(operands):
+    """
+    Writes immediate constant into the high byte of the register,
+    does not affect the low byte
+
+    Zero operand is a register object, for writing information into it
+    First one is the value of that register
+    Second one is the value of the immediate constant
+
+    :param operands: list of operands
+    :return: NoneType
+    """
     operands[0]._state[:8] = operands[2]
 
 
 def mov(operands):
+    """
+    Writes register value into another register
+
+    Zero operand is a register object, for writing information into it
+    First one is the value of that register
+    Second one is the value of the second register, which will be written
+    into the first one
+
+    :param operands: list of operands
+    :return: NoneType
+    """
     operands[0]._state = operands[2]
 
 
@@ -45,6 +78,17 @@ def pop(operands):
 
 
 def add(operands):
+    """
+    Performs addition of two registers, saving the result in the third one
+
+    Zero operand is a the first register object, for writing information into it
+    First one is the value of that register
+    Second one is the value of the second register (first operand in addition)
+    Third one is the value of the third register (second operand in addition)
+
+    :param operands: list of operands
+    :return: NoneType
+    """
     result = bitarray("0"*16)
     flag = 0
 
@@ -69,14 +113,47 @@ def add(operands):
 
 
 def sub(operands):
+    """
+    Performs subtraction of two registers, saving the result in the third one
+
+    Zero operand is a the first register object, for writing information into it
+    First one is the value of that register
+    Second one is the value of the second register (first operand in subtraction)
+    Third one is the value of the third register (second operand in subtraction)
+
+    :param operands: list of operands
+    :return: NoneType
+    """
     operands[0]._state = bin(int(operands[1]._state) - int(operands[2]._state))
 
 
 def mul(operands):
+    """
+    Performs multiplication of two registers, saving the result in the third one
+
+    Zero operand is a the first register object, for writing information into it
+    First one is the value of that register
+    Second one is the value of the second register (first operand in multiplication)
+    Third one is the value of the third register (second operand in multiplication)
+
+    :param operands: list of operands
+    :return: NoneType
+    """
     operands[0]._state = bin(int(operands[1]._state) * int(operands[2]._state))
 
 
 def div(operands):
+    """
+    Performs division of two registers, saving the result in the third one
+
+    Zero operand is a the first register object, for writing information into it
+    First one is the value of that register
+    Second one is the value of the second register (first operand in division)
+    Third one is the value of the third register (second operand in division)
+
+    :param operands: list of operands
+    :return: NoneType
+    """
     operands[0]._state = bin(int(operands[1]._state) / int(operands[2]._state))
 
 
