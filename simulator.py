@@ -287,18 +287,18 @@ class CPU:
 
             # If the operand is the register, add its value and go to the next operand
             if operand == "reg":
-                operands.append(bytes(self.register_codes[self.instruction[start_point:start_point+3].decode()]._state))
+                operands.append(self.register_codes[self.instruction[start_point:start_point+3].decode()]._state.decode())
                 start_point += 3
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
                 tmp_register = self.register_codes[self.instruction[start_point:start_point+3].decode()]._state
-                operands.append(bytes(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0])))
+                operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]).decode())
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand == "imm":
-                operands.append(bytes(self.instruction[start_point:start_point+immediate_length]))
+                operands.append(self.instruction[start_point:start_point+immediate_length].decode())
                 start_point += immediate_length
 
         # Execute needed function and save its result to the first operand
