@@ -88,6 +88,7 @@ class CPU:
         self.isa = isa
         self.memory = Memory(architecture)
         self.instruction = ''
+        self.read_state = "opcode"
 
         self.functions_dict = {}
 
@@ -97,6 +98,27 @@ class CPU:
         with open("registers.json", "r") as file:
             self.registers_list = json.load(file)[self.isa.lower()]
 
+        # Determining the size of the instructions to read
+        instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
+        self.instruction_size = instruction_sizes[self.isa.lower]
+
+        # Create the registers for the specified architecture
+        self.create_registers()
+
+        # Set the instruction pointer to the starting point of the program
+        self.IP = 0 + offset
+        self.load_program(filename)
+
+        # Starts the execution of the program code loaded
+        self.start_program()
+
+        # Closes the simulator and restores the console settings
+        self.close()
+
+    def start_screen(self):
+        """
+        Draws the screen elements the first time
+        """
         self.std_screen = curses.initscr()
 
         # Setting up the curses module so that keys would not be echoed instantly to the screen
@@ -134,12 +156,12 @@ class CPU:
         # Create the sub-window for the actual registers representation
         self.register_box = self.register_window.subwin(9, 22, 6, 31)
 
-        # Create the registers for the specified architecture
-        self.create_registers()
-
-        # Sets the instruction pointer to the starting point of the program
-        self.IP = 0 + offset
-        self.load_program(filename)
+        # Fill the register box with current registers and their values
+        self.register_box.addstr(" Registers:\n")
+        items = [(value.name, value._state.hex()) for key, value in self.registers.items()]
+        for i in range(1, len(items)):
+            self.register_box.addstr(f" {(items[i-1][0]+':').ljust(4, ' ')} {items[i-1][1]}  "
+                                     f"{(items[i][0]+':').ljust(4, ' ')} {items[i][1]}\n")
 
         # Refresh all the internal datastructures bottom-up, update the screen
         self.std_screen.noutrefresh()
@@ -148,19 +170,6 @@ class CPU:
         self.instruction_box.noutrefresh()
         self.register_box.noutrefresh()
         curses.doupdate()
-
-        # Fill the register box with current registers and their values
-        self.register_box.addstr(" Registers:\n")
-        items = [(value.name, value._state.hex()) for key, value in self.registers_dict.items()]
-        for i in range(1, len(items)):
-            self.register_box.addstr(f" {(items[i-1][0]+':').ljust(4, ' ')} {items[i-1][1]}  "
-                                     f"{(items[i][0]+':').ljust(4, ' ')} {items[i][1]}\n")
-
-        # Starts the execution of the program code loaded
-        self.start_program()
-
-        # Closes the simulator and restores the console settings
-        self.close()
 
     def create_registers(self):
         """
@@ -192,12 +201,8 @@ class CPU:
         Handles the execution of the actual program
         :return: NoneType
         """
-        # Determining the size of the instruction to read
-        instruction_sizes = {"risc1": 6, "risc2": 8, "risc3": 16, "risc4": 8}
-        instruction_size = instruction_sizes[self.isa.lower()]
-
         # Read first instruction of the program from the memory
-        self.instruction = self.memory.read_data(self.IP, self.IP+16)
+        self.instruction = self.memory.read_data(self.IP, self.IP+self.instruction_size[0])
 
         # Continue executing instructions until we reach
         # the end of the program (all-zeros byte)
@@ -219,7 +224,7 @@ class CPU:
             # Execute this instruction, and move on to the next one, reading it
             self.execute()
             self.IP += 16
-            self.instruction = self.memory.read_data(self.IP, self.IP+16)
+            self.instruction = self.memory.read_data(self.IP, self.IP+self.instruction_size[0])
 
     def execute(self):
         """
@@ -229,41 +234,70 @@ class CPU:
         """
         opcode_dict = dict()
         for key in self.opcodes:
-            opcode_dict[tuple(self.opcodes[key])] = key
+            opcode_dict[self.opcodes[key][0:]] = tuple([key] + [self.opcodes[key][1
 
-        opcode = self.instruction[0:6]
+        # Read the opcode part of the instruction
+        if self.read_state == "opcode":
+            self.opcode = self.instruction[0:self.instruction_size[0]]
+        elif self.read_state == "constant1":
+            pass
+        elif self.read_state == "constant2":
+            pass
 
-        # Load immediate constant
-        if opcode[0:3] == b"00":
-            reg_code = self.instruction[5:8]
-            immediate = self.instruction[8:]
+        # Figure out the operands for the RISC-Stack ISA
+        if self.isa.lower() == "risc1":
+            pass
 
-            # Load low byte
-            if opcode[0:5] == b"00001":
-                self.self.registers_dict[reg_code]._state[8:] = immediate
-            # Load high byte
+        # Figure out the operands for the RISC-Accumulator ISA
+        if self.isa.lower() == "risc2":
+            pass
+
+        # Figure out the operands for the RISC-Register ISA
+        if self.isa.lower() == "risc3":
+
+            # TODO: create more groups of instructions depending on the
+            #  size of the immediate constant and the start of the operands
+
+            # Load the special case moves for RISC-Register architecture
+            low_high_load_risc = ["mov_low1", "mov_low2", "mov_high1", "mov_high2"]
+            low_high_load_risc = [self.opcodes.get(name)[0] for name in low_high_load_risc]
+
+            # Load low/high bytes check for RISC-register architecture
+            if self.opcode in low_high_load_risc:
+                start_point = 5
+                immediate_length = 8
             else:
-                self.self.registers_dict[reg_code]._state[:8] = immediate
+                start_point = 6
+                immediate_length = 8
 
-        # For three registers (dest = src1, src2)
-        elif opcode[0:3] == b"01":
-            reg1_code = self.instruction[6:9]
-            reg2_code = self.instruction[9:12]
-            reg3_code = self.instruction[12:15]
+        # Figure out the operands for the CISC-Register ISA
+        if self.isa.lower() == "cisc":
+            pass
 
-            self.registers_dict[reg1_code]._state = functions_dict[opcode](
-                                                self.registers_dict[reg2_code],
-                                                self.registers_dict[reg3_code])
+        # Read all the operands after the opcode
+        operands = []
+        operands_aliases = opcode_dict[self.opcode][1:]
+        for operand in operands_aliases:
 
+            # If the operand is the register, add its value and go to the next operand
+            if operand == "reg":
+                operands.append(self.register_codes[self.instruction[start_point+3]]._state)
+                start_point += 3
 
-        # For a register and immediate constant
-        elif opcode[0:3] == b"10":
-            reg_code = self.instruction[6:9]
-            immediate = self.instruction[9:]
+            # If the operand is the memory addressed by register, add its value and go to the next operand
+            elif operand == "memreg":
+                tmp_register = self.register_codes[self.instruction[start_point+3]]._state
+                operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
+                start_point += 3
 
-        # For immediate constant
-        else:
-            immediate = self.instruction[6:]
+            # If the operand is the immediate constant, add its value and go to the next operand
+            elif operand == "imm":
+                operands.append(immediate)
+                start_point += immediate_length
+
+        # Execute needed function and save its result to the first operand
+        function = functions_dict[opcode_dict[self.opcode][0]]
+        operands[0] = function(operands)
 
     def draw_screen(self):
         """

@@ -4,8 +4,10 @@
     "risc3": {
         "load": ["000001", "reg", "memreg"],
         "store": ["000010", "memreg", "reg"],
-        "mov_low": ["000011", "reg", "imm"],
-        "mov_high": ["000100", "reg", "imm"],
+        "mov_low1": ["000110", "reg", "imm"],
+        "mov_low2": ["000111", "reg", "imm"],
+        "mov_high1": ["001000", "reg", "imm"],
+        "mov_high2": ["001001", "reg", "imm"],
         "mov": ["000101", "reg", "reg"],
         "push": ["000110", "reg"],
         "pop": ["000111", "reg"],
