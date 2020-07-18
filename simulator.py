@@ -122,11 +122,11 @@ class CPU:
         self.start_screen()
 
         # Starts the execution of the program code loaded
-        self.start_program()
+        close_program = self.start_program()
 
         key = ''
         # Closes the simulator and restores the console settings
-        while key not in ('Q', 'q'):
+        while key not in ('Q', 'q') and not close_program:
             key = self.instruction_window.getkey()
         self.close()
 
@@ -166,14 +166,14 @@ class CPU:
         self.instruction_box = self.instruction_window.subwin(1, 17, 6, 3)
 
         # Create the box for the registers info
-        self.register_window = curses.newwin(11, 25, 5, 30)
+        self.register_window = curses.newwin(8, 25, 5, 30)
         self.register_window.box()
         # Create the sub-window for the actual registers representation
-        self.register_box = self.register_window.subwin(9, 23, 6, 31)
+        self.register_box = self.register_window.subwin(6, 23, 6, 31)
 
         # Fill the register box with current registers and their values
         self.register_box.addstr(" Registers:\n")
-        items = [(value.name, value._state.hex()) for key, value in self.registers.items()]
+        items = [(value.name, value._state.tobytes().hex()) for key, value in self.registers.items()]
         for i in range(1, len(items), 2):
             self.register_box.addstr(f" {(items[i-1][0]+':').ljust(4, ' ')} {items[i-1][1]}  "
                                      f"{(items[i][0]+':').ljust(4, ' ')} {items[i][1]}\n")
@@ -225,7 +225,6 @@ class CPU:
 
             # Draw the updated screen
             self.draw_screen()
-
             key = ''
 
             # Move on to the next instruction if the 'n' key is pressed
@@ -234,12 +233,14 @@ class CPU:
 
                 # Finish the program if the 'q' key is pressed
                 if key in ('Q', 'q'):
-                    return
+                    return True
 
             # Execute this instruction, and move on to the next one, reading it
             self.execute()
             self.IP += 16
             self.instruction = self.memory.read_data(self.IP, self.IP+self.instruction_size[0])
+            # Draw the updated screen
+            self.draw_screen()
 
     def execute(self):
         """
@@ -290,18 +291,18 @@ class CPU:
             pass
 
         # Read all the operands after the opcode
-        operands = [self.register_codes[self.instruction[start_point:start_point+3]]]
-        operands_aliases = opcode_dict[self.opcode][1:]
+        operands = [self.register_codes[self.instruction[start_point:start_point+3].to01()]]
+        operands_aliases = opcode_dict[self.opcode.to01()][1:]
         for operand in operands_aliases:
 
             # If the operand is the register, add its value and go to the next operand
             if operand == "reg":
-                operands.append(self.register_codes[self.instruction[start_point:start_point+3]]._state)
+                operands.append(self.register_codes[self.instruction[start_point:start_point+3].to01()]._state)
                 start_point += 3
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
-                tmp_register = self.register_codes[self.instruction[start_point:start_point+3]]._state
+                tmp_register = self.register_codes[self.instruction[start_point:start_point+3].to01()]._state
                 operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
                 start_point += 3
 
@@ -312,7 +313,7 @@ class CPU:
 
         logger.info(operands)
         # Execute needed function and save its result to the first operand
-        function = functions_dictionary[opcode_dict[self.opcode.decode()][0]]
+        function = functions_dictionary[opcode_dict[self.opcode.to01()][0]]
         function(operands)
 
     def draw_screen(self):

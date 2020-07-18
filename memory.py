@@ -21,7 +21,7 @@ class Memory:
         :return: NoneType
         """
         self.memory_size = 2*1024
-        self.slots = bitarray(self.memory_size*8)
+        self.slots = bitarray("0"*self.memory_size*8)
 
     def write(self, location, data):
         """

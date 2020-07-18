@@ -20,7 +20,7 @@ class Register:
         :return: NoneType
         """
         self.name = name
-        self._state = bitarray(""*16)
+        self._state = bitarray('0'*16)
         self.accessibility = general_purpose
 
     def get_low(self):

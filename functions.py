@@ -19,8 +19,7 @@ def store(operands):
 
 
 def mov_low(operands):
-    operands[0]._state[:8] = bitarray("0"*8)
-    operands[0]._state[8:] = operands[2]
+    operands[0]._state = bitarray("0"*8) + operands[2]
 
 
 def mov_high(operands):
@@ -28,7 +27,7 @@ def mov_high(operands):
 
 
 def mov(operands):
-    operands[0]._state = operands[1]
+    operands[0]._state = operands[2]
 
 
 def push(operands):
