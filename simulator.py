@@ -93,53 +93,58 @@ class CPU:
         self.std_screen = curses.initscr()
 
         # Setting up the curses module so that keys would not be echoed instantly to the screen
-        curses.noecho()
-        # Shifting from standard buffer mode to instant action on key press
-        curses.cbreak()
-        # Turning on keypad mode for easier custom keys support
-        self.std_screen.keypad(True)
-        # Turning the flickering pointer off
-        curses.curs_set(False)
+        # curses.noecho()
+        # # Shifting from standard buffer mode to instant action on key press
+        # curses.cbreak()
+        # # Turning on keypad mode for easier custom keys support
+        # self.std_screen.keypad(True)
+        # # Turning the flickering pointer off
+        # curses.curs_set(False)
+        #
+        # if curses.has_colors():
+        #     curses.start_color()
+        #
+        # # Initialize a few main color pairs (foreground color, background color)
+        # curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+        # curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        # curses.init_pair(3, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        #
+        # # Add title and menu elements
+        # self.std_screen.addstr("Hardware Simulator", curses.A_REVERSE | curses.color_pair(2))
+        # self.std_screen.addstr(curses.LINES - 1, 0,
+        #                       "Press 'q' to exit",
+        #                       curses.A_REVERSE)
+        #
+        # # Create the box for the instruction in binary
+        # self.instruction_window = curses.newwin(3, 19, 5, 2)
+        # self.instruction_window.box()
+        # # Create the sub-window for the actual instruction in binary representation
+        # self.instruction_box = self.instruction_window.subwin(1, 17, 6, 3)
+        #
+        # # Create the box for the registers info
+        # self.register_window = curses.newwin(11, 64, 5, 30)
+        # self.register_window.box()
+        # # Create the sub-window for the actual registers representation
+        # self.register_box = self.register_window.subwin(9, 60, 6, 31)
 
-        if curses.has_colors():
-            curses.start_color()
-
-        # Initialize a few main color pairs (foreground color, background color)
-        curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
-        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        curses.init_pair(3, curses.COLOR_BLUE, curses.COLOR_BLACK)
-
-        # Add title and menu elements
-        self.std_screen.addstr("Hardware Simulator", curses.A_REVERSE | curses.color_pair(2))
-        self.std_screen.addstr(curses.LINES - 1, 0,
-                              "Press 'q' to exit",
-                              curses.A_REVERSE)
-
-        # Create the box for the instruction in binary
-        self.instruction_window = curses.newwin(3, 19, 5, 2)
-        self.instruction_window.box()
-        # Create the sub-window for the actual instruction in binary representation
-        self.instruction_box = self.instruction_window.subwin(1, 17, 6, 3)
-
-        # Create the box for the registers info
-        self.register_window = curses.newwin(11, 24, 5, 30)
-        self.register_window.box()
-        # Create the sub-window for the actual registers representation
-        self.register_box = self.register_window.subwin(9, 22, 6, 31)
-
-        # Refresh all the internal datastructures bottom-up, update the screen
-        self.std_screen.noutrefresh()
-        self.instruction_window.noutrefresh()
-        self.instruction_box.noutrefresh()
-        self.register_window.noutrefresh()
-        self.register_box.noutrefresh()
-        curses.doupdate()
-
+        # Create the registers for the specified architecture
         self.create_registers()
 
         # Sets the instruction pointer to the starting point of the program
         self.IP = 0 + offset
         self.load_program(filename)
+
+        # Refresh all the internal datastructures bottom-up, update the screen
+        # self.std_screen.noutrefresh()
+        # self.instruction_window.noutrefresh()
+        # self.register_window.noutrefresh()
+        # self.instruction_box.noutrefresh()
+        # self.register_box.noutrefresh()
+        # curses.doupdate()
+
+        items = [(key, value._state.hex()) for key, value in self.registers_dict.items()]
+        for i in range(1, len(items)):
+            print(f"{items[i-1][0]}: {items[i-1][1]}  {items[i][0]}: {items[i][1]}\n")
 
         self.start_program()
 
@@ -154,9 +159,9 @@ class CPU:
         """
         # Registers common for every ISA architecture
         self.registers_dict = dict()
-        self.SP = Register()
+        self.SP = Register(self.memory)
         self.registers_dict[b'100'] = self.SP
-        self.IP = Register()
+        self.IP = Register(self.memory)
         self.registers_dict[b'101'] = self.IP
 
         # Setting up "RISC-Stack" ISA registers
@@ -171,21 +176,21 @@ class CPU:
         elif self.isa.lower() =="risc3":
 
             # Link Register
-            self.LR = Register()
+            self.LR = Register(self.memory)
             self.registers_dict[b'110'] = self.LR
 
             # Flag Register
-            self.FR = Register()
+            self.FR = Register(self.memory)
             self.registers_dict[b'111'] = self.FR
 
             # Setting up general purpose R00-R03 registers
-            self.R00 = Register(general_purpose=True)
+            self.R00 = Register(self.memory, general_purpose=True)
             self.registers_dict[b'000'] = self.R00
-            self.R01 = Register(general_purpose=True)
+            self.R01 = Register(self.memory, general_purpose=True)
             self.registers_dict[b'001'] = self.R01
-            self.R02 = Register(general_purpose=True)
+            self.R02 = Register(self.memory, general_purpose=True)
             self.registers_dict[b'010'] = self.R02
-            self.R03 = Register(general_purpose=True)
+            self.R03 = Register(self.memory, general_purpose=True)
             self.registers_dict[b'011'] = self.R03
 
         # Setting up "CISC-Register" ISA registers
@@ -217,17 +222,16 @@ class CPU:
 
         # Continue executing instructions until we reach
         # the end of the program (all-zeros byte)
-        print(bytes(self.instruction))
         while bytes(self.instruction) != b"\0"*16:
 
             # Draw the updated screen
-            self.draw_screen()
+            # self.draw_screen()
 
             key = ''
 
             # Move on to the next instruction if the 'n' key is pressed
             while key not in ('N', 'n'):
-                key = self.instruction_window.getkey()
+                # key = self.instruction_window.getkey()
 
                 # Finish the program if the 'q' key is pressed
                 if key in ('Q', 'q'):
@@ -253,10 +257,10 @@ class CPU:
 
             # Load low byte
             if opcode[0:5] == b"00001":
-                self.self.registers_dict[reg_code][8:] = immediate
+                self.self.registers_dict[reg_code]._state[8:] = immediate
             # Load high byte
             else:
-                self.self.registers_dict[reg_code][:8] = immediate
+                self.self.registers_dict[reg_code]._state[:8] = immediate
 
         # For three registers (dest = src1, src2)
         elif opcode[0:3] == b"01":
@@ -264,7 +268,7 @@ class CPU:
             reg2_code = self.instruction[9:12]
             reg3_code = self.instruction[12:15]
 
-            self.registers_dict[reg1_code] = functions_dict[opcode](
+            self.registers_dict[reg1_code]._state = functions_dict[opcode](
                                                 self.registers_dict[reg2_code],
                                                 self.registers_dict[reg3_code])
 
@@ -356,14 +360,16 @@ class Register:
     types and their available options
     """
 
-    def __init__(self, general_purpose=False):
+    def __init__(self, name, memory_slots, general_purpose=False):
         """
         Initializes register object, holding 16 bits,
         specifying its visibility for dev purposes
         :return: NoneType
         """
+        self.name = name
         self._state = bytearray(2)
         self.accessibility = general_purpose
+        self.memory_slots = memory_slots
 
     def get_low(self):
         """
@@ -391,6 +397,13 @@ class Register:
         if self.accessible:
             return self._state
         return SimulatorError("Register is not accessible")
+
+    def get_from_memory(self):
+        """
+        Return data from memory,
+        regarding state of the register as location in memory.
+        """
+        return self.memory_slots[int(self._state)]
 
 
 class SimulatorError(Exception):
