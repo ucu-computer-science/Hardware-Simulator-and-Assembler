@@ -4,6 +4,8 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
+from bitarray import bitarray
+
 
 class Memory:
     """
@@ -19,7 +21,7 @@ class Memory:
         :return: NoneType
         """
         self.memory_size = 2*1024
-        self.slots = bytearray(self.memory_size)
+        self.slots = bitarray(self.memory_size*8)
 
     def write(self, location, data):
         """

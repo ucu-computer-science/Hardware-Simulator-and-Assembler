@@ -8,11 +8,20 @@ import os
 import json
 import argparse
 import curses
-from curses import wrapper
+import logging
+from bitarray import bitarray
 
 from functions import functions_dictionary
 from memory import Memory
 from register import Register
+
+logging.basicConfig(filename="log.txt",
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
+
+logger = logging.getLogger('logger')
 
 
 class Simulator:
@@ -199,8 +208,8 @@ class CPU:
             raise SimulatorError("Provide a valid file path")
 
         # Writing program instructions into to memory
-        with open(filename, "rb") as file:
-            self.memory.write(self.IP, file.read().replace(b'\n', b''))
+        with open(filename, "r") as file:
+            self.memory.write(self.IP, bitarray(file.read().replace('\n', '')))
 
     def start_program(self):
         """
@@ -212,7 +221,7 @@ class CPU:
 
         # Continue executing instructions until we reach
         # the end of the program (all-zeros byte)
-        while bytes(self.instruction) != b"\0"*16:
+        while self.instruction != bitarray('0'*16):
 
             # Draw the updated screen
             self.draw_screen()
@@ -287,20 +296,21 @@ class CPU:
 
             # If the operand is the register, add its value and go to the next operand
             if operand == "reg":
-                operands.append(self.register_codes[self.instruction[start_point:start_point+3].decode()]._state.decode())
+                operands.append(self.register_codes[self.instruction[start_point:start_point+3].decode()]._state)
                 start_point += 3
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
                 tmp_register = self.register_codes[self.instruction[start_point:start_point+3].decode()]._state
-                operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]).decode())
+                operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand == "imm":
-                operands.append(self.instruction[start_point:start_point+immediate_length].decode())
+                operands.append(bytearray(self.instruction[start_point:start_point+immediate_length]))
                 start_point += immediate_length
 
+        logger.info(operands)
         # Execute needed function and save its result to the first operand
         function = functions_dictionary[opcode_dict[self.opcode.decode()][0]]
         function(operands)
@@ -324,6 +334,7 @@ class CPU:
         self.register_box.clear()
         self.register_box.addstr(" Registers:\n")
         items = [(value.name, value._state.hex()) for key, value in self.registers.items()]
+        logger.info(items)
         for i in range(1, len(items), 2):
             self.register_box.addstr(f" {(items[i-1][0]+':').ljust(4, ' ')} {items[i-1][1]}  "
                                      f"{(items[i][0]+':').ljust(4, ' ')} {items[i][1]}\n")

@@ -1,3 +1,14 @@
+import logging
+
+logging.basicConfig(filename="log.txt",
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
+
+logger = logging.getLogger('funclogger')
+
+
 def load(operands):
     operands[0]._state = operands[1]
 
@@ -7,15 +18,15 @@ def store(operands):
 
 
 def mov_low(operands):
-	operands[0]._state = ("00000000" + operands[1]).encode()
+    operands[0]._state = bytearray(1) + operands[2]
 
 
 def mov_high(operands):
-    operands[0]._state = (operands[1] + operands[0][8:]).encode()
+    operands[0]._state = operands[2] + operands[1][1]
 
 
 def mov(operands):
-    operands[0]._state = operands[1].encode()
+    operands[0]._state = operands[1]
 
 
 def push(operands):
@@ -94,8 +105,8 @@ def div(operands):
 #     pass
 
 
-functions_dictionary = {"load":load, "mov_low1":mov_low,
-                        "mov_low2": mov_low, "mov_high1":mov_high,
-                        "mov_high2":mov_high, "mov":mov,
-                        "push":push, "pop":pop, "add":add,
-                        "sub":sub, "mul":push, "div":div}
+functions_dictionary = {"load": load, "mov_low1": mov_low,
+                        "mov_low2": mov_low, "mov_high1": mov_high,
+                        "mov_high2": mov_high, "mov": mov,
+                        "push": push, "pop": pop, "add": add,
+                        "sub": sub, "mul": push, "div": div}
