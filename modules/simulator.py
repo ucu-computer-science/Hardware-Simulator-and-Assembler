@@ -6,16 +6,17 @@
 
 import os
 import json
+import os
 import argparse
 import curses
 import logging
 from bitarray import bitarray
 
-from functions import functions_dictionary
-from memory import Memory
-from register import Register
+from modules.functions import functions_dictionary
+from modules.memory import Memory
+from modules.register import Register
 
-logging.basicConfig(filename="log.txt",
+logging.basicConfig(filename="../log.txt",
                     filemode='a',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                     datefmt='%H:%M:%S',
@@ -102,13 +103,13 @@ class CPU:
         self.read_state = "opcode"
         self.opcode_dict = dict()
 
-        with open("instructions.json", "r") as file:
+        with open(os.path.join("modules", "instructions.json"), "r") as file:
             self.opcodes = json.load(file)[self.isa.lower()]
 
         for key, value in self.opcodes.items():
             self.opcode_dict[value[0]] = tuple([key] + value[1:])
 
-        with open("registers.json", "r") as file:
+        with open(os.path.join("modules", "registers.json"), "r") as file:
             self.registers_list = json.load(file)[self.isa.lower()]
 
         # Determining the size of the instructions to read
