@@ -7,11 +7,11 @@ def store(operands):
 
 
 def mov_low1(operands):
-	operands[0]._state = b"00000000" + operands[1]
+	operands[0]._state = "00000000" + operands[1]
 
 
 def mov_low2(operands):
-	operands[0]._state = b"00000000" + operands[1]
+	operands[0]._state = "00000000" + operands[1]
 
 
 def mov_high1(operands):
@@ -51,6 +51,55 @@ def div(operands):
 
 
 def and(operands):
+    pass
+
+
+def or(operands):
+    pass
+
+
+def xor(operands):
+    pass
+
+
+def not(operands):
+    pass
+
+
+def lsh(operands):
+    pass
+
+
+def rsh(operands):
+    pass
+
+
+def call1(operands):
+    pass
+
+
+def call2(operands):
+    pass
+
+
+def call3(operands):
+    pass
+
+
+def ret(operands):
+    pass
+
+
+def cmp1(operands):
+    pass
+
+
+def cmp2(operands):
+    pass
+
+
+def test(operands):
+    pass
 
 
 functions_dictionary = {"load":load, "mov_low1":mov_low1,
