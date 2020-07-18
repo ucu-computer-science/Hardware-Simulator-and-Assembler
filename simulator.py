@@ -115,7 +115,10 @@ class CPU:
         # Starts the execution of the program code loaded
         self.start_program()
 
+        key = ''
         # Closes the simulator and restores the console settings
+        while key not in ('Q', 'q'):
+            key = self.instruction_window.getkey()
         self.close()
 
     def start_screen(self):
@@ -154,15 +157,15 @@ class CPU:
         self.instruction_box = self.instruction_window.subwin(1, 17, 6, 3)
 
         # Create the box for the registers info
-        self.register_window = curses.newwin(11, 24, 5, 30)
+        self.register_window = curses.newwin(11, 25, 5, 30)
         self.register_window.box()
         # Create the sub-window for the actual registers representation
-        self.register_box = self.register_window.subwin(9, 22, 6, 31)
+        self.register_box = self.register_window.subwin(9, 23, 6, 31)
 
         # Fill the register box with current registers and their values
         self.register_box.addstr(" Registers:\n")
         items = [(value.name, value._state.hex()) for key, value in self.registers.items()]
-        for i in range(1, len(items)):
+        for i in range(1, len(items), 2):
             self.register_box.addstr(f" {(items[i-1][0]+':').ljust(4, ' ')} {items[i-1][1]}  "
                                      f"{(items[i][0]+':').ljust(4, ' ')} {items[i][1]}\n")
 
@@ -197,7 +200,7 @@ class CPU:
 
         # Writing program instructions into to memory
         with open(filename, "rb") as file:
-            self.memory.write(self.IP, file.read().strip(b'\n'))
+            self.memory.write(self.IP, file.read().replace(b'\n', b''))
 
     def start_program(self):
         """
@@ -237,7 +240,7 @@ class CPU:
         """
         opcode_dict = dict()
         for key, value in self.opcodes.items():
-            opcode_dict[value[0]] = tuple([key] + [value[1:]])
+            opcode_dict[value[0]] = tuple([key] + value[1:])
 
         # Read the opcode part of the instruction
         if self.read_state == "opcode":
@@ -284,18 +287,18 @@ class CPU:
 
             # If the operand is the register, add its value and go to the next operand
             if operand == "reg":
-                operands.append(self.register_codes[self.instruction[start_point:start_point+3].decode()]._state)
+                operands.append(bytes(self.register_codes[self.instruction[start_point:start_point+3].decode()]._state))
                 start_point += 3
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
                 tmp_register = self.register_codes[self.instruction[start_point:start_point+3].decode()]._state
-                operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
+                operands.append(bytes(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0])))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand == "imm":
-                operands.append(immediate)
+                operands.append(bytes(self.instruction[start_point:start_point+immediate_length]))
                 start_point += immediate_length
 
         # Execute needed function and save its result to the first operand
@@ -314,8 +317,16 @@ class CPU:
 
         # Clearing the instruction box and inserting the new instruction
         self.instruction_box.clear()
-        print(self.instruction.decode())
+        # print(self.instruction.decode())
         self.instruction_box.addstr(self.instruction.decode())
+
+        # Fill the register box with current registers and their values
+        self.register_box.clear()
+        self.register_box.addstr(" Registers:\n")
+        items = [(value.name, value._state.hex()) for key, value in self.registers.items()]
+        for i in range(1, len(items), 2):
+            self.register_box.addstr(f" {(items[i-1][0]+':').ljust(4, ' ')} {items[i-1][1]}  "
+                                     f"{(items[i][0]+':').ljust(4, ' ')} {items[i][1]}\n")
 
         # Refreshing the contents of screen elements and updating the whole screen
         self.std_screen.noutrefresh()
