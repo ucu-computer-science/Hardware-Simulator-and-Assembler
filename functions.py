@@ -39,7 +39,28 @@ def pop(operands):
 
 
 def add(operands):
-    operands[0]._state = bin(int(operands[1]._state) - int(operands[2]._state))
+    result = bitarray("0"*16)
+    flag = 0
+
+    for i in range(len(operands[2])):
+        if flag:
+            result[i] = "1"
+
+        addition = int(operands[2][len(operands[2])-i-1]) + int(operands[3][len(operands[3])-i-1])
+        if addition == 2:
+            flag = 1
+
+        else:
+            if int(result[i]) + addition == 2:
+                flag = 1
+            elif int(result[i]) + addition == 1:
+                result[i] = "1"
+                flag = 0
+            else:
+                flag = 0
+
+    operands[0]._state = result[::-1]
+
 
 
 def sub(operands):
