@@ -7,6 +7,7 @@ logging.basicConfig(filename="log.txt",
                     level=logging.DEBUG)
 
 logger = logging.getLogger('funclogger')
+from bitarray import bitarray
 
 
 def load(operands):
@@ -18,11 +19,12 @@ def store(operands):
 
 
 def mov_low(operands):
-    operands[0]._state = bytearray(1) + operands[2]
+    operands[0]._state[:8] = bitarray("0"*8)
+    operands[0]._state[8:] = operands[2]
 
 
 def mov_high(operands):
-    operands[0]._state = operands[2] + operands[1][1]
+    operands[0]._state[:8] = operands[2]
 
 
 def mov(operands):

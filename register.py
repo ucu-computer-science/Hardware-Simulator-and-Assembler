@@ -3,6 +3,7 @@
 #
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
+from bitarray import bitarray
 
 
 class Register:
@@ -19,7 +20,7 @@ class Register:
         :return: NoneType
         """
         self.name = name
-        self._state = bytearray(2)
+        self._state = bitarray(""*16)
         self.accessibility = general_purpose
 
     def get_low(self):
@@ -28,7 +29,7 @@ class Register:
         :return: last 8 bits of the register
         """
         if self.accessibility:
-            return self._state[1]
+            return self._state[8:]
         return RegisterError("Register is not accessible")
 
     def get_high(self):
@@ -37,7 +38,7 @@ class Register:
         :return: first 8 bits of the register
         """
         if self.accessibility:
-            return self._state[0]
+            return self._state[:8]
         return RegisterError("Register is not accessible")
 
     def get(self):
@@ -45,7 +46,7 @@ class Register:
         Returns the state of the register if it is accessible
         :return: all bits of the register
         """
-        if self.accessible:
+        if self.accessibility:
             return self._state
         return RegisterError("Register is not accessible")
 
