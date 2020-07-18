@@ -1,9 +1,9 @@
 def load(operands):
-    pass
+    operands[0]._state = operands[1]
 
 
 def store(operands):
-    pass
+    operands[0] = operands[1]._state
 
 
 def mov_low(operands):
@@ -27,7 +27,7 @@ def pop(operands):
 
 
 def add(operands):
-    operands[0]._state = bin(int(perands[1]._state) + int(operands[2]._state))
+    operands[0]._state = bin(int(operands[1]._state) - int(operands[2]._state))
 
 
 def sub(operands):
