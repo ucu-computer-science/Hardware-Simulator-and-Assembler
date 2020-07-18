@@ -280,7 +280,7 @@ class CPU:
             pass
 
         # Read all the operands after the opcode
-        operands = []
+        operands = [self.register_codes[self.instruction[start_point+3]]]
         operands_aliases = opcode_dict[self.opcode][1:]
         for operand in operands_aliases:
 
@@ -302,7 +302,7 @@ class CPU:
 
         # Execute needed function and save its result to the first operand
         function = functions_dict[opcode_dict[self.opcode][0]]
-        operands[0] = function(operands)
+        function(operands)
 
     def draw_screen(self):
         """
