@@ -275,7 +275,7 @@ class CPU:
 
             # Load the special case moves for RISC-Register architecture
             low_high_load_risc = ["mov_low1", "mov_low2", "mov_high1", "mov_high2"]
-            low_high_load_risc = [self.opcodes.get(name)[0] for name in low_high_load_risc]
+            low_high_load_risc = [bitarray(self.opcodes.get(name)[0]) for name in low_high_load_risc]
 
             # Load low/high bytes check for RISC-register architecture
             if self.opcode in low_high_load_risc:
@@ -290,24 +290,24 @@ class CPU:
             pass
 
         # Read all the operands after the opcode
-        operands = [self.register_codes[self.instruction[start_point:start_point+3].decode()]]
-        operands_aliases = opcode_dict[self.opcode.decode()][1:]
+        operands = [self.register_codes[self.instruction[start_point:start_point+3]]]
+        operands_aliases = opcode_dict[self.opcode][1:]
         for operand in operands_aliases:
 
             # If the operand is the register, add its value and go to the next operand
             if operand == "reg":
-                operands.append(self.register_codes[self.instruction[start_point:start_point+3].decode()]._state)
+                operands.append(self.register_codes[self.instruction[start_point:start_point+3]]._state)
                 start_point += 3
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
-                tmp_register = self.register_codes[self.instruction[start_point:start_point+3].decode()]._state
+                tmp_register = self.register_codes[self.instruction[start_point:start_point+3]]._state
                 operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand == "imm":
-                operands.append(bytearray(self.instruction[start_point:start_point+immediate_length]))
+                operands.append(bitarray(self.instruction[start_point:start_point+immediate_length]))
                 start_point += immediate_length
 
         logger.info(operands)
@@ -328,12 +328,12 @@ class CPU:
         # Clearing the instruction box and inserting the new instruction
         self.instruction_box.clear()
         # print(self.instruction.decode())
-        self.instruction_box.addstr(self.instruction.decode())
+        self.instruction_box.addstr(self.instruction.to01())
 
         # Fill the register box with current registers and their values
         self.register_box.clear()
         self.register_box.addstr(" Registers:\n")
-        items = [(value.name, value._state.hex()) for key, value in self.registers.items()]
+        items = [(value.name, value._state.tobytes().hex()) for key, value in self.registers.items()]
         logger.info(items)
         for i in range(1, len(items), 2):
             self.register_box.addstr(f" {(items[i-1][0]+':').ljust(4, ' ')} {items[i-1][1]}  "
