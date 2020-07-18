@@ -10,7 +10,7 @@ import argparse
 import curses
 from curses import wrapper
 
-# from functions import functions_dictionary
+from functions import functions_dictionary
 from memory import Memory
 from register import Register
 
@@ -91,8 +91,6 @@ class CPU:
         self.memory = Memory(architecture)
         self.instruction = ''
         self.read_state = "opcode"
-
-        self.functions_dict = {}
 
         with open("instructions.json", "r") as file:
             self.opcodes = json.load(file)[self.isa.lower()]
@@ -238,12 +236,12 @@ class CPU:
         :return: NoneType
         """
         opcode_dict = dict()
-        for key in self.opcodes:
-            opcode_dict[self.opcodes[key][0:]] = tuple([key] + [self.opcodes[key][1:]])
+        for key, value in self.opcodes.items():
+            opcode_dict[value[0]] = tuple([key] + [value[1:]])
 
         # Read the opcode part of the instruction
         if self.read_state == "opcode":
-            self.opcode = self.instruction[0:self.instruction_size[0]]
+            self.opcode = self.instruction[0:self.instruction_size[1]]
         elif self.read_state == "constant1":
             pass
         elif self.read_state == "constant2":
@@ -280,18 +278,18 @@ class CPU:
             pass
 
         # Read all the operands after the opcode
-        operands = [self.register_codes[self.instruction[start_point+3]]]
-        operands_aliases = opcode_dict[self.opcode][1:]
+        operands = [self.register_codes[self.instruction[start_point:start_point+3].decode()]]
+        operands_aliases = opcode_dict[self.opcode.decode()][1:]
         for operand in operands_aliases:
 
             # If the operand is the register, add its value and go to the next operand
             if operand == "reg":
-                operands.append(self.register_codes[self.instruction[start_point+3]]._state)
+                operands.append(self.register_codes[self.instruction[start_point:start_point+3].decode()]._state)
                 start_point += 3
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
-                tmp_register = self.register_codes[self.instruction[start_point+3]]._state
+                tmp_register = self.register_codes[self.instruction[start_point:start_point+3].decode()]._state
                 operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
                 start_point += 3
 
@@ -301,7 +299,7 @@ class CPU:
                 start_point += immediate_length
 
         # Execute needed function and save its result to the first operand
-        function = functions_dict[opcode_dict[self.opcode][0]]
+        function = functions_dictionary[opcode_dict[self.opcode.decode()][0]]
         function(operands)
 
     def draw_screen(self):
