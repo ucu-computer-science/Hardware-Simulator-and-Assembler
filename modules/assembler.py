@@ -147,8 +147,10 @@ class Assembler:
             if self.__valid_type(operand, op_type:=types[index]):
 
                 # Encode the operand properly and add it to the line
-                if op_type == "reg" or op_type == "memreg":
+                if op_type == "reg":
                     binary_line += self.register_names[operand[1:]]
+                elif op_type == "memreg":
+                    binary_line += self.register_names[operand[2:-1]]
                 elif op_type.startswith("imm"):
                     num = int(operand[1:])
                     bit_len = int(op_type[3:])

@@ -123,8 +123,8 @@ def add(operands):
     elif result == "0":
         result = "0" * 16
         operands[4]._state[13] = "1"  # Zero flag
-    else:
-        result = result.rjust(16, "0")
+
+    result = result.rjust(16, "0")
 
     operands[0]._state = bitarray(result)
 

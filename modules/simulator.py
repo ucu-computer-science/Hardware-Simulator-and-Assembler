@@ -13,7 +13,7 @@ import logging
 from bitarray import bitarray
 from bitarray.util import ba2hex
 
-from modules.functions import functions_dictionary
+from modules.functions import functions_dictionary, twos_complement
 from modules.memory import Memory
 from modules.register import Register
 
@@ -111,14 +111,14 @@ class CPU:
             self.registers_list = json.load(file)[self.isa.lower()]
 
         # Determining the size of the instructions to read
-        instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
+        instruction_sizes = {"risc1": (6, 6, 1), "risc2": (8, 8, 1), "risc3": (16, 6, 2), "cisc": (8, 8, 1)}
         self.instruction_size = instruction_sizes[self.isa.lower()]
 
         # Create the registers for the specified architecture
         self.create_registers()
 
         # Set the instruction pointer to the starting point of the program
-        self.IP = 0 + offset
+        self.registers["IP"]._state = bitarray(bin(twos_complement(128 + offset, 16))[2:].rjust(16, '0'))
         self.load_program(filename)
 
         # Draw the main interface
@@ -158,7 +158,7 @@ class CPU:
 
         # Writing program instructions into to memory
         with open(filename, "r") as file:
-            self.memory.write(self.IP, bitarray(file.read().replace('\n', '')))
+            self.memory.write(twos_complement(int(self.registers["IP"]._state.to01(), 2), 16), bitarray(file.read().replace('\n', '')))
 
     def start_program(self):
         """
@@ -186,7 +186,8 @@ class CPU:
 
             # Execute this instruction, and move on to the next one, reading it
             self.execute()
-            self.IP += 16
+            ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + 2, 16)
+            self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
             self.__read_instruction()
 
         # Draw the updated screen
@@ -196,7 +197,8 @@ class CPU:
         """
         Reads the instruction and the opcode in it
         """
-        self.instruction = self.memory.read_data(self.IP, self.IP + self.instruction_size[0])
+        start_read_location = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
+        self.instruction = self.memory.read_data(start_read_location, start_read_location + self.instruction_size[2])
 
         # Read the opcode part of the instruction
         if self.read_state == "opcode":

@@ -36,7 +36,7 @@ class Memory:
         self.slots[location*8:location*8+len(data)] = data
 
     def read_data(self, start_location, end_location):
-        return self.slots[start_location:end_location]
+        return self.slots[start_location*8:end_location*8]
 
     def __str__(self):
         return self.slots
