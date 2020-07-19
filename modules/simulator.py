@@ -11,13 +11,14 @@ import argparse
 import curses
 import logging
 from bitarray import bitarray
+from bitarray.util import ba2hex
 
 from modules.functions import functions_dictionary
 from modules.memory import Memory
 from modules.register import Register
 
-logging.basicConfig(filename="../log.txt",
-                    filemode='a',
+logging.basicConfig(filename="log.txt",
+                    filemode='w',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                     datefmt='%H:%M:%S',
                     level=logging.DEBUG)
@@ -130,62 +131,9 @@ class CPU:
         # Closes the simulator and restores the console settings
         while key not in ('Q', 'q') and not close_program:
             key = self.instruction_window.getkey()
+
         self.close()
-
-    def start_screen(self):
-        """
-        Draws the screen elements the first time
-        """
-        # Setting up the curses module so that keys would not be echoed instantly to the screen
-        self.std_screen = curses.initscr()
-        curses.noecho()
-        # Shifting from standard buffer mode to instant action on key press
-        curses.cbreak()
-        # Turning on keypad mode for easier custom keys support
-        self.std_screen.keypad(True)
-        # Turning the flickering pointer off
-        curses.curs_set(False)
-
-        if curses.has_colors():
-            curses.start_color()
-
-        # Initialize a few main color pairs (foreground color, background color)
-        curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
-        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        curses.init_pair(3, curses.COLOR_BLUE, curses.COLOR_BLACK)
-
-        # Add title and menu elements
-        self.std_screen.addstr("Hardware Simulator", curses.A_REVERSE | curses.color_pair(2))
-        self.std_screen.addstr(curses.LINES - 1, 0,
-                               "Press 'q' to exit, 'n' to execute the next instruction",
-                               curses.A_REVERSE)
-
-        # Create the box for the instruction in binary
-        self.instruction_window = curses.newwin(5, 19, 5, 2)
-        self.instruction_window.box()
-        # Create the sub-window for the actual instruction in binary representation
-        self.instruction_box = self.instruction_window.subwin(3, 17, 6, 3)
-
-        # Create the box for the registers info
-        self.register_window = curses.newwin(8, 25, 5, 30)
-        self.register_window.box()
-        # Create the sub-window for the actual registers representation
-        self.register_box = self.register_window.subwin(6, 23, 6, 31)
-
-        # Fill the register box with current registers and their values
-        self.register_box.addstr(" Registers:\n")
-        items = [(value.name, value._state.tobytes().hex()) for key, value in self.registers.items()]
-        for i in range(1, len(items), 2):
-            self.register_box.addstr(f" {(items[i - 1][0] + ':').ljust(4, ' ')} {items[i - 1][1]}  "
-                                     f"{(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}\n")
-
-        # Refresh all the internal datastructures bottom-up, update the screen
-        self.std_screen.noutrefresh()
-        self.instruction_window.noutrefresh()
-        self.register_window.noutrefresh()
-        self.instruction_box.noutrefresh()
-        self.register_box.noutrefresh()
-        curses.doupdate()
+        print(len(self.memory.slots))
 
     def create_registers(self):
         """
@@ -326,7 +274,6 @@ class CPU:
                 operands.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
                 start_point += immediate_length
 
-        logger.info(operands)
         # Execute needed function and save its result to the first operand
         function = functions_dictionary[self.opcode_dict[self.opcode.to01()][0]]
 
@@ -340,15 +287,64 @@ class CPU:
         else:
             function(operands)
 
+    def start_screen(self):
+        """
+        Draws the screen elements the first time
+        """
+        # Setting up the curses module so that keys would not be echoed instantly to the screen
+        self.std_screen = curses.initscr()
+        curses.noecho()
+        # Shifting from standard buffer mode to instant action on key press
+        curses.cbreak()
+        # Turning on keypad mode for easier custom keys support
+        self.std_screen.keypad(True)
+        # Turning the flickering pointer off
+        curses.curs_set(False)
+
+        if curses.has_colors():
+            curses.start_color()
+
+        # Initialize a few main color pairs (foreground color, background color)
+        curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_BLUE, curses.COLOR_BLACK)
+
+        # Add title and menu elements
+        self.std_screen.addstr("Hardware Simulator", curses.A_REVERSE | curses.color_pair(2))
+        self.std_screen.addstr(curses.LINES - 1, 0,
+                               "Press 'q' to exit, 'n' to execute the next instruction",
+                               curses.A_REVERSE)
+
+        # Create the box for the instruction in binary
+        self.instruction_window = curses.newwin(5, 19, 2, 2)
+        self.instruction_window.box()
+        # Create the sub-window for the actual instruction in binary representation
+        self.instruction_box = self.instruction_window.subwin(3, 17, 3, 3)
+
+        # Create the box for the registers info
+        self.register_window = curses.newwin(8, 25, 2, 30)
+        self.register_window.box()
+        # Create the sub-window for the actual registers representation
+        self.register_box = self.register_window.subwin(6, 23, 3, 31)
+
+        # Create the box for the memory representation
+        self.memory_window = curses.newwin(19, 130, 10, 2)
+        self.memory_window.box()
+        # Create the window for the memory print
+        self.memory_box = self.memory_window.subwin(17, 128, 11, 3)
+
+        # Refresh all the internal datastructures bottom-up, update the screen
+        self.std_screen.noutrefresh()
+        self.instruction_window.noutrefresh()
+        self.register_window.noutrefresh()
+        self.memory_window.noutrefresh()
+        curses.doupdate()
+
     def draw_screen(self):
         """
         Updates the contents of the screen
         :return: NoneType
         """
-
-        # TODO: Code snippets for me to check tomorrow
-        # delch(cur_pos[0], cur_pos[1]-1)
-        # addch(node.char)
 
         # Clearing the instruction box and inserting the new instruction
         self.instruction_box.clear()
@@ -360,17 +356,20 @@ class CPU:
         self.register_box.clear()
         self.register_box.addstr(" Registers:\n")
         items = [(value.name, value._state.tobytes().hex()) for key, value in self.registers.items()]
-        logger.info(items)
         for i in range(1, len(items), 2):
             self.register_box.addstr(f" {(items[i - 1][0] + ':').ljust(4, ' ')} {items[i - 1][1]}  "
                                      f"{(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}\n")
 
+        # Refresh the memory on screen
+        self.memory_box.clear()
+        for i in range(0, len(self.memory.slots), 8):
+            self.memory_box.addstr(ba2hex(self.memory.slots[i:i+8]))
+
         # Refreshing the contents of screen elements and updating the whole screen
         self.std_screen.noutrefresh()
-        self.instruction_window.noutrefresh()
         self.instruction_box.noutrefresh()
-        self.register_window.noutrefresh()
         self.register_box.noutrefresh()
+        self.memory_box.noutrefresh()
         curses.doupdate()
 
     def close(self):

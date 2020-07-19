@@ -20,8 +20,8 @@ class Memory:
         :param memory_architecture: chosen program/data architecture.
         :return: NoneType
         """
-        self.memory_size = 2*1024
-        self.slots = bitarray("0"*self.memory_size*8)
+        self.memory_size = 1024*8
+        self.slots = bitarray("0"*self.memory_size)
 
     def write(self, location, data):
         """
@@ -33,7 +33,7 @@ class Memory:
         if (len(data) > (self.memory_size - location)):
             raise MemoryError("Memory overflow")
 
-        self.slots[location:len(data)] = data
+        self.slots[location*8:location*8+len(data)] = data
 
     def read_data(self, start_location, end_location):
         return self.slots[start_location:end_location]

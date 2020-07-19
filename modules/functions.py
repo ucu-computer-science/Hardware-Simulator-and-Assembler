@@ -23,7 +23,7 @@ def load(operands):
     """
     Loads value from memory to register
     Zero operand is register (destination)
-    First is its vale
+    First is its value
     Second is the value to be stored
 
     :param operands: list of operands
@@ -36,7 +36,7 @@ def store(operands):
     """
     Returns value, which later will be stored in the memory by CPU
     Zero operand is register with memory location
-    First is its vale
+    First is its value
     Second is the value to be stored
 
     :param operands: list of operands
