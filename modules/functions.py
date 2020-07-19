@@ -111,9 +111,9 @@ def add(operands):
     :param operands: list of operands
     :return: NoneType
     """
-    reg1 = int(operands[2].to01(), 2)
-    reg2 = int(operands[3].to01(), 2)
-    result = str(bin(reg1 + reg2))[2:]
+    reg1 = twos_complement(int(operands[2].to01(), 2), len(operands[2]))
+    reg2 = twos_complement(int(operands[3].to01(), 2), len(operands[3]))
+    result = bin(twos_complement(reg1 + reg2, len(operands[1])))[2:]
 
     if len(result) > 16:
         operands[4]._state[12] = "1"  # Carry flag
@@ -326,6 +326,8 @@ def twos_complement(val, bits):
             val = val - (1 << bits)
     return val
 
+print(bin(twos_complement(200, 8)))
+print(bin(twos_complement(-1, 8)))
 
 functions_dictionary = {"load": load, "mov_low": mov_low,
                         "mov_high": mov_high, "mov": mov,
