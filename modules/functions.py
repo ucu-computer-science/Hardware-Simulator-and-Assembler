@@ -124,8 +124,7 @@ def add(operands):
         result = "0" * 16
         operands[4]._state[13] = "1"  # Zero flag
     else:
-        while len(result) != 16:
-            result = "0" + result
+        result = result.rjust(16, "0")
 
     operands[0]._state = bitarray(result)
 
@@ -155,8 +154,7 @@ def sub(operands):
         result = "0" * 16
         operands[4]._state[13] = "1"  # Zero flag
     else:
-        while len(result) != 16:
-            result = "0" + result
+        result = result.rjust(16, "0")
 
     operands[0]._state = bitarray(str(bin(result))[2:])
 
@@ -187,8 +185,7 @@ def mul(operands):
         result = "0" * 16
         operands[4]._state[13] = "1"  # Zero flag
     else:
-        while len(result) != 16:
-            result = "0" + result
+        result = result.rjust(16, "0")
 
     operands[0]._state = bitarray(result)
 
@@ -219,8 +216,7 @@ def div(operands):
         result = "0" * 16
         operands[4]._state[13] = "1"  # Zero flag
     else:
-        while len(result) != 16:
-            result = "0" + result
+        result = result.rjust(16, "0")
 
     operands[0]._state = bitarray(result)
 
