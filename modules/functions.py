@@ -319,9 +319,16 @@ def twos_complement(val, bits):
     :param val: int - int value of the bit number
     :param bits: int - length of the bit number
     """
-    if (val & (1 << (bits - 1))) != 0:
-        val -= (1 << bits)
+    if val < 0:
+        val = (1 << bits) + val
+    else:
+        if (val & (1 << (bits - 1))) != 0:
+            val = val - (1 << bits)
     return val
+
+
+print(bin(twos_complement(1, 8)))
+print(bin(twos_complement(-1, 8)))
 
 
 functions_dictionary = {"load": load, "mov_low": mov_low,
