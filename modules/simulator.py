@@ -323,7 +323,8 @@ class CPU:
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
-            elif operand == "imm":
+            elif operand[:3] == "imm":
+                immediate_length = int(operand[3:])
                 operands.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
                 start_point += immediate_length
 
