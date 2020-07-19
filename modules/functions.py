@@ -313,6 +313,17 @@ def bit_not(operands):
 #     pass
 
 
+def twos_complement(val, bits):
+    """
+    Works with signed bit numbers
+    :param val: int - int value of the bit number
+    :param bits: int - length of the bit number
+    """
+    if (val & (1 << (bits - 1))) != 0:
+        val -= (1 << bits)
+    return val
+
+
 functions_dictionary = {"load": load, "mov_low": mov_low,
                         "mov_high": mov_high, "mov": mov,
                         "push": push, "pop": pop, "add": add,

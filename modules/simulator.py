@@ -106,7 +106,6 @@ class CPU:
         with open(os.path.join("modules", "instructions.json"), "r") as file:
             self.opcode_dict = json.load(file)[self.isa.lower()]
 
-
         with open(os.path.join("modules", "registers.json"), "r") as file:
             self.registers_list = json.load(file)[self.isa.lower()]
 
@@ -137,9 +136,8 @@ class CPU:
         """
         Draws the screen elements the first time
         """
-        self.std_screen = curses.initscr()
-
         # Setting up the curses module so that keys would not be echoed instantly to the screen
+        self.std_screen = curses.initscr()
         curses.noecho()
         # Shifting from standard buffer mode to instant action on key press
         curses.cbreak()
