@@ -145,8 +145,7 @@ def sub(operands):
     """
     reg1 = int(operands[2].to01(), 2)
     reg2 = int(operands[3].to01(), 2)
-    result = reg1 - reg2
-    result = str(bin(reg1 + reg2))[2:]
+    result = str(bin(reg1 - reg2))[2:]
 
     if len(result) > 16:
         operands[4]._state[12] = "1"  # Carry flag
@@ -175,7 +174,23 @@ def mul(operands):
     :param operands: list of operands
     :return: NoneType
     """
-    operands[0]._state = bin(int(operands[1]._state) * int(operands[2]._state))
+    reg1 = int(operands[2].to01(), 2)
+    reg2 = int(operands[3].to01(), 2)
+    result = str(bin(reg1 * reg2))[2:]
+
+    if len(result) > 16:
+        operands[4]._state[12] = "1"  # Carry flag
+        result = result[-16:]
+    elif len(result) == 16:
+        operands[4]._state[14] = "1"  # Overflow flag
+    elif result == "0":
+        result = "0" * 16
+        operands[4]._state[13] = "1"  # Zero flag
+    else:
+        while len(result) != 16:
+            result = "0" + result
+
+    operands[0]._state = bitarray(result)
 
 
 def div(operands):
@@ -191,23 +206,79 @@ def div(operands):
     :param operands: list of operands
     :return: NoneType
     """
-    operands[0]._state = bin(int(operands[1]._state) / int(operands[2]._state))
+    reg1 = int(operands[2].to01(), 2)
+    reg2 = int(operands[3].to01(), 2)
+    result = str(bin(reg1 // reg2))[2:]
+
+    if len(result) > 16:
+        operands[4]._state[12] = "1"  # Carry flag
+        result = result[-16:]
+    elif len(result) == 16:
+        operands[4]._state[14] = "1"  # Overflow flag
+    elif result == "0":
+        result = "0" * 16
+        operands[4]._state[13] = "1"  # Zero flag
+    else:
+        while len(result) != 16:
+            result = "0" + result
+
+    operands[0]._state = bitarray(result)
 
 
-# def and(operands):
-#     pass
-#
-#
-# def or(operands):
-#     pass
-#
-#
-# def xor(operands):
-#     pass
-#
-#
-# def not(operands):
-#     pass
+def bit_and(operands):
+    reg1 = int(operands[2].to01(), 2)
+    reg2 = int(operands[3].to01(), 2)
+    result = str(bin(reg1 & reg2))[2:]
+
+    if result == "0":
+        operands[4]._state[13] = "1"  # Zero flag
+
+    while len(result) != 16:
+        result = "0" + result
+
+    operands[0]._state = bitarray(result)
+
+
+def bit_or(operands):
+    reg1 = int(operands[2].to01(), 2)
+    reg2 = int(operands[3].to01(), 2)
+    result = str(bin(reg1 | reg2))[2:]
+
+    if result == "0":
+        operands[4]._state[13] = "1"  # Zero flag
+
+    while len(result) != 16:
+        result = "0" + result
+
+    operands[0]._state = bitarray(result)
+
+
+def bit_xor(operands):
+    reg1 = int(operands[2].to01(), 2)
+    reg2 = int(operands[3].to01(), 2)
+    result = str(bin(reg1 ^ reg2))[2:]
+
+    if result == "0":
+        operands[4]._state[13] = "1"  # Zero flag
+
+    while len(result) != 16:
+        result = "0" + result
+
+    operands[0]._state = bitarray(result)
+
+
+def bit_not(operands):
+    result = operands[1].to01()
+    result.replace("1", "2")
+    result.replace("0", "1")
+    result.replace("2", "0")
+
+    if result == "0" * 16:
+        operands[4]._state[13] = "1"  # Zero flag
+
+    operands[0]._state = bitarray(result)
+
+
 #
 #
 # def lsh(operands):
@@ -249,4 +320,6 @@ def div(operands):
 functions_dictionary = {"load": load, "mov_low": mov_low,
                         "mov_high": mov_high, "mov": mov,
                         "push": push, "pop": pop, "add": add,
-                        "sub": sub, "mul": push, "div": div}
+                        "sub": sub, "mul": push, "div": div,
+                        "and": bit_and, "or": bit_or,
+                        "xor": bit_xor, "not": bit_not}
