@@ -42,7 +42,7 @@ def store(operands):
     :param operands: list of operands
     :return: bitarray
     """
-    return operands[2]._state
+    return operands[2]
 
 
 def mov_low(operands):
@@ -322,4 +322,5 @@ functions_dictionary = {"load": load, "mov_low": mov_low,
                         "push": push, "pop": pop, "add": add,
                         "sub": sub, "mul": push, "div": div,
                         "and": bit_and, "or": bit_or,
-                        "xor": bit_xor, "not": bit_not}
+                        "xor": bit_xor, "not": bit_not,
+                        "store": store}

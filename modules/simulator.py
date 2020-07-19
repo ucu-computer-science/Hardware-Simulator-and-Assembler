@@ -318,7 +318,7 @@ class CPU:
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
-                tmp_register = self.register_codes[self.instruction[start_point:start_point + 3].to01()]._state
+                tmp_register = int(self.register_codes[self.instruction[start_point:start_point + 3].to01()]._state.to01(), 2)
                 operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
                 start_point += 3
 
@@ -337,7 +337,7 @@ class CPU:
 
         # Write into the memory
         if memory_write_access:
-            self.memory.slots[operands[0]._state: operands[0]._state + self.instruction_size[0]] = function(operands)
+            self.memory.write(int(operands[0]._state.to01(), 2), function(operands))
         # Perform any other instruction
         else:
             function(operands)
@@ -386,12 +386,6 @@ class CPU:
         self.std_screen.keypad(False)
         curses.curs_set(True)
         curses.endwin()
-
-    def access_value(self, parameter):
-        """
-        Access value depending on a parameter
-        """
-        pass
 
 
 class SimulatorError(Exception):
