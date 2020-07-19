@@ -68,7 +68,7 @@
 
 ```bash
 git clone https://github.com/dariaomelkina/poc_project
-python3 modules/simulator.py --file modules/a.bin --isa RISC3 --architecture Harvard
+python3 modules/simulator.py --file modules/program_examples/move_add.bin --isa RISC3 --architecture Harvard
 ```
 
 ---

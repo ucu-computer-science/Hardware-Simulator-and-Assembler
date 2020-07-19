@@ -1,4 +1,5 @@
 {
+    "comments": "Each ISA architecture contains a list of registers for it, including: name, general_purpose bool, encoding",
     "risc1": {},
     "risc2": {},
     "risc3": [

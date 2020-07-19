@@ -1,4 +1,5 @@
 {
+    "comments": "Each architecture contains a dict of instructions: name, encoding, and list of operands",
     "risc1": {},
     "risc2": {},
     "risc3": {
