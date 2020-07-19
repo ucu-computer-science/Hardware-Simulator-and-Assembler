@@ -5,7 +5,7 @@ from bitarray import bitarray
 with open(os.path.join("modules", "registers.json"), "r") as file:
     registers_list = json.load(file)["risc3"]
 
-print(registers_list)
+# print(registers_list)
 
 registers = dict()
 register_codes = dict()
@@ -14,9 +14,9 @@ for register in registers_list:
     temp = (register[0], 1)
     registers[register[0]] = temp
     register_codes[register[2]] = temp
-
-print(registers)
-print(register_codes)
+#
+# print(registers)
+# print(register_codes)
 
 
 def bit_and(operands):
@@ -39,14 +39,17 @@ def twos_complement(val, bits):
     :param val: int - int value of the bit number
     :param bits: int - length of the bit number
     """
-    if (val & (1 << (bits - 1))) != 0:
-        val -= (1 << bits)
+    if val < 0:
+        val = (1 << bits) + val
+    else:
+        if (val & (1 << (bits - 1))) != 0:
+            val = val - (1 << bits)
     return val
 
 
 binary_string = '1001'  # or whatever... no '0b' prefix
 out = twos_complement(int(binary_string, 2), len(binary_string))
-print(out)
+# print(out)
 
 def from_int_to_signed_binary(int_value, len_int_value):
     max_diff = 2**(len_int_value-1)
@@ -54,7 +57,7 @@ def from_int_to_signed_binary(int_value, len_int_value):
 
 
 
-print(from_int_to_signed_binary(-7, 4))
+# print(from_int_to_signed_binary(-7, 4))
 
 def add(operands):
     """
@@ -72,7 +75,7 @@ def add(operands):
     reg1 = twos_complement(int(operands[2].to01(), 2), len(operands[2]))
     reg2 = twos_complement(int(operands[3].to01(), 2), len(operands[3]))
     print(reg1, reg2)
-    result = bin(twos_complement(reg1 + reg2, len(operands[1])))[2:]
+    result = bin(twos_complement(reg1 + reg2, 16))
     print(result)
 
     if len(result) > 16:
@@ -88,4 +91,8 @@ def add(operands):
 
     return result, operands
 
-print(add([1, bitarray("0000000000000001"), bitarray("0111111111111111"), bitarray("0000000000000001"), ["0"]*16]))
+print(add([1, bitarray("0000000000000001"), bitarray("1111111101100000"), bitarray("1111111110000000"), ["0"]*16]))
+
+print(twos_complement(-126, 8))
+
+int(bitarray("0000000000000001"), 2)
