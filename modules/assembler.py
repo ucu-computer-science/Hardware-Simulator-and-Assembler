@@ -152,6 +152,10 @@ class Assembler:
                 elif op_type.startswith("imm"):
                     num = int(operand[1:])
                     bit_len = int(op_type[3:])
+
+                    if not (-1*2**(bit_len-1) < num < 2**(bit_len-1)):
+                        raise AssemblerError("Immediate constant provided too big")
+
                     binary_line += bin(twos_complement(num, bit_len))[2:].rjust(int(op_type[3:]), '0')
 
             else:
