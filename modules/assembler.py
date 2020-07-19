@@ -22,8 +22,8 @@ class Assembler:
         # Creating the command line parser and main arguments
         parser = argparse.ArgumentParser()
         parser.add_argument("-f","--file", help="provide the assembly program filepath")
-        parser.add_argument("--isa",
-                            help="specify the ISA architecture: RISC1 (Stack), RISC2 (Accumulator), RISC3 (Register), CISC (Register)")
+        parser.add_argument("--isa", help="specify the ISA architecture: RISC1 (Stack), "
+                                 "RISC2 (Accumulator), RISC3 (Register), CISC (Register)")
         parser.add_argument("-o", "--output", help="Specify the output file")
 
         # Parsing the command line arguments
@@ -55,6 +55,10 @@ class Assembler:
             registers = json.load(file)[args.isa.lower()]
             self.register_names = {register[0]: register[2] for register in registers}
 
+        # Determining the size of the instructions to read
+        instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
+        self.instruction_size = instruction_sizes[args.isa.lower()]
+
         binary_code = self.translate(program_text)
 
         # If there was an output path provided, save the binary code there
@@ -75,7 +79,6 @@ class Assembler:
         Translates the assembly code into binary code
         :param text: str - assembly code
         """
-        # breakpoint()
         binary_code = ""
 
         # Divide the program into lines
@@ -85,6 +88,11 @@ class Assembler:
             binary_line = ""
             arguments = line.split(" ")
             assembly_instruction, operands = arguments[0], arguments[1:]
+
+            for ind, operand in enumerate(operands[:-1]):
+                if not operand.endswith(','):
+                    raise AssemblerError("Provide valid operands for this instruction (commas included)")
+                operands[ind] = operand[:-1]
 
             # Check if the instruction actually exists for this architecture
             if assembly_instruction not in self.instructions:
@@ -102,6 +110,11 @@ class Assembler:
                 # we check every possible option until we find the one we needed
                 for instruction_info in instructions_info:
                     try:
+
+                        # Low and High byte moves have 5-bit opcodes, a special case
+                        if assembly_instruction in ["mov_low", "mov_high"] and len(instruction_info[0]) != 5:
+                            instruction_info[0] = instruction_info[0][:-1]
+
                         binary_line = self.__encode_operands(operands, instruction_info)
                         break
                     except AssemblerError:
@@ -121,9 +134,11 @@ class Assembler:
         :param operands: list - list of operands-strings
         :param instruction_info: list - of instruction encoding and operand types
         """
-        # breakpoint()
         binary_line = instruction_info[0]
         types = instruction_info[1]
+
+        if len(operands) != len(types):
+            raise AssemblerError("Provide valid operands for this instruction")
 
         # Check if the operand provided is of the type needed, if yes, encode and add it to the current line
         for index, operand in enumerate(operands):
@@ -132,26 +147,25 @@ class Assembler:
                 # Encode the operand properly and add it to the line
                 if op_type == "reg" or op_type == "memreg":
                     binary_line += self.register_names[operand[1:]]
-                elif op_type == "imm":
-                    binary_line += bin(int(operand[1:]))[2:]
+                elif op_type.startswith("imm"):
+                    binary_line += bin(int(operand[1:]))[2:].rjust(int(op_type[3:]), '0')
 
             else:
                 raise AssemblerError("Provide valid operands for this instruction")
 
-        return binary_line
+        return binary_line.ljust(self.instruction_size[0], '0')
 
     def __valid_type(self, assembly_op, op_type):
         """
         Checks if the operand provided in assembly code is of valid type for this instruction
         """
-        # breakpoint()
         # If the operand signifies a register, it should start
         # with a '%' sign and the name should exist in this architecture
         if op_type == "reg":
             return assembly_op.startswith("%") and assembly_op[1:] in self.register_names
 
         # If the operand is an immediate constant, it should start with a '$' sign and contain numbers only
-        elif op_type == "imm":
+        elif op_type.startswith("imm"):
             return assembly_op.startswith("$") and assembly_op[1:].isnumeric()
 
         # If the operand is a memory location addressed by a register, it shoould look like [%reg]
