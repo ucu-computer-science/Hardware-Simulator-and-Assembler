@@ -9,6 +9,8 @@ import json
 import argparse
 from collections import defaultdict
 
+from modules.functions import twos_complement
+
 
 class Assembler:
     """
@@ -148,7 +150,9 @@ class Assembler:
                 if op_type == "reg" or op_type == "memreg":
                     binary_line += self.register_names[operand[1:]]
                 elif op_type.startswith("imm"):
-                    binary_line += bin(int(operand[1:]))[2:].rjust(int(op_type[3:]), '0')
+                    num = int(operand[1:])
+                    bit_len = int(op_type[3:])
+                    binary_line += bin(twos_complement(num, bit_len))[2:].rjust(int(op_type[3:]), '0')
 
             else:
                 raise AssemblerError("Provide valid operands for this instruction")
@@ -166,12 +170,25 @@ class Assembler:
 
         # If the operand is an immediate constant, it should start with a '$' sign and contain numbers only
         elif op_type.startswith("imm"):
-            return assembly_op.startswith("$") and assembly_op[1:].isnumeric()
+            return assembly_op.startswith("$") and self.__is_number(assembly_op[1:])
 
         # If the operand is a memory location addressed by a register, it shoould look like [%reg]
         elif op_type == "memreg":
             return (assembly_op.startswith("[") and assembly_op.endswith("]")
                     and self.__valid_type(assembly_op[1:-1], "reg"))
+
+    @staticmethod
+    def __is_number(n):
+        """
+        Checks if the number string provided is valid
+        :param n: str
+        :return: bool
+        """
+        try:
+            int(n)
+            return True
+        except ValueError:
+            return False
 
 
 class AssemblerError(Exception):

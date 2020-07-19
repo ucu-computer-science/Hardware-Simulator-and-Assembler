@@ -327,10 +327,6 @@ def twos_complement(val, bits):
     return val
 
 
-print(bin(twos_complement(1, 8)))
-print(bin(twos_complement(-1, 8)))
-
-
 functions_dictionary = {"load": load, "mov_low": mov_low,
                         "mov_high": mov_high, "mov": mov,
                         "push": push, "pop": pop, "add": add,
