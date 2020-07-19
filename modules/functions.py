@@ -107,27 +107,11 @@ def add(operands):
     :param operands: list of operands
     :return: NoneType
     """
-    result = bitarray("0"*16)
-    flag = 0
+    reg1 = int(operands[2].to01(), 2)
+    reg2 = int(operands[3].to01(), 2)
+    result = reg1 + reg2
 
-    for i in range(len(operands[2])):
-        if flag:
-            result[i] = "1"
-
-        addition = int(operands[2][len(operands[2])-i-1]) + int(operands[3][len(operands[3])-i-1])
-        if addition == 2:
-            flag = 1
-
-        else:
-            if int(result[i]) + addition == 2:
-                flag = 1
-            elif int(result[i]) + addition == 1:
-                result[i] = "1"
-                flag = 0
-            else:
-                flag = 0
-
-    operands[0]._state = result[::-1]
+    operands[0]._state = bitarray(str(bin(result))[2:])
 
 
 def sub(operands):
@@ -142,8 +126,11 @@ def sub(operands):
     :param operands: list of operands
     :return: NoneType
     """
-    operands[0]._state = bin(int(operands[1]._state) - int(operands[2]._state))
+    reg1 = int(operands[2].to01(), 2)
+    reg2 = int(operands[3].to01(), 2)
+    result = reg1 - reg2
 
+    operands[0]._state = bitarray(str(bin(result))[2:])
 
 def mul(operands):
     """

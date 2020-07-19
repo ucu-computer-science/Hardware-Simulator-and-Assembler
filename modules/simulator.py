@@ -390,6 +390,7 @@ class CPU:
         """
         Access value depending on a parameter
         """
+        pass
 
 
 class SimulatorError(Exception):
