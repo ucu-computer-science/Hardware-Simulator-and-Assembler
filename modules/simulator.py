@@ -102,13 +102,10 @@ class CPU:
         self.memory = Memory(architecture)
         self.instruction = ''
         self.read_state = "opcode"
-        self.opcode_dict = dict()
 
         with open(os.path.join("modules", "instructions.json"), "r") as file:
-            self.opcodes = json.load(file)[self.isa.lower()]
+            self.opcode_dict = json.load(file)[self.isa.lower()]
 
-        for key, value in self.opcodes.items():
-            self.opcode_dict[value[0]] = tuple([key] + value[1:])
 
         with open(os.path.join("modules", "registers.json"), "r") as file:
             self.registers_list = json.load(file)[self.isa.lower()]
@@ -203,7 +200,7 @@ class CPU:
 
         for register in self.registers_list:
             temp = Register(register[0], general_purpose=(register[1] == 1))
-            self.registers[register[2]] = temp
+            self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
 
     def load_program(self, filename):
@@ -285,8 +282,8 @@ class CPU:
             #  size of the immediate constant and the start of the operands
 
             # Load the special case moves for RISC-Register architecture
-            low_high_load_risc = ["mov_low1", "mov_low2", "mov_high1", "mov_high2"]
-            low_high_load_risc = [bitarray(self.opcodes.get(name)[0]) for name in low_high_load_risc]
+            low_high_load_risc = ["mov_low", "mov_high"]
+            low_high_load_risc = [bitarray(code) for code in self.opcode_dict if self.opcode_dict[code][0] in low_high_load_risc]
 
             # Load low/high bytes check for RISC-register architecture
             if self.opcode in low_high_load_risc:
@@ -302,7 +299,7 @@ class CPU:
 
         # Read all the operands after the opcode
         # Making sure, that the first one specifies destination of the operation
-        operands_aliases = self.opcode_dict[self.opcode.to01()][1:]
+        operands_aliases = self.opcode_dict[self.opcode.to01()][1]
         operands = [self.register_codes[self.instruction[start_point:start_point + 3].to01()]]
 
         # Set 'write' access to the memory to False by default
@@ -333,6 +330,9 @@ class CPU:
         logger.info(operands)
         # Execute needed function and save its result to the first operand
         function = functions_dictionary[self.opcode_dict[self.opcode.to01()][0]]
+
+        # Pass Flag register to the function
+        operands.append(self.registers["FR"])
 
         # Write into the memory
         if memory_write_access:

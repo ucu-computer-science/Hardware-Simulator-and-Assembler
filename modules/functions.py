@@ -7,6 +7,9 @@
 import logging
 from bitarray import bitarray
 
+# About Flag register:
+# Flags in the register are represented like  | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | CF | ZF | OF | SF |
+
 logging.basicConfig(filename="../log.txt",
                     filemode='a',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
@@ -54,7 +57,7 @@ def mov_low(operands):
     :param operands: list of operands
     :return: NoneType
     """
-    operands[0]._state = bitarray("0"*8) + operands[2]
+    operands[0]._state = bitarray("0" * 8) + operands[2]
 
 
 def mov_high(operands):
@@ -84,7 +87,7 @@ def mov(operands):
     :param operands: list of operands
     :return: NoneType
     """
-    operands[0]._state = operands[2]
+    operands[0]._state = bitarray(operands[2].to01())
 
 
 def push(operands):
@@ -103,15 +106,28 @@ def add(operands):
     First one is the value of that register
     Second one is the value of the second register (first operand in addition)
     Third one is the value of the third register (second operand in addition)
+    Forth one os the value of Flag register
 
     :param operands: list of operands
     :return: NoneType
     """
     reg1 = int(operands[2].to01(), 2)
     reg2 = int(operands[3].to01(), 2)
-    result = reg1 + reg2
+    result = str(bin(reg1 + reg2))[2:]
 
-    operands[0]._state = bitarray(str(bin(result))[2:])
+    if len(result) > 16:
+        operands[4]._state[12] = "1"  # Carry flag
+        result = result[-16:]
+    elif len(result) == 16:
+        operands[4]._state[14] = "1"  # Overflow flag
+    elif result == "0":
+        result = "0" * 16
+        operands[4]._state[13] = "1"  # Zero flag
+    else:
+        while len(result) != 16:
+            result = "0" + result
+
+    operands[0]._state = bitarray(result)
 
 
 def sub(operands):
@@ -122,6 +138,7 @@ def sub(operands):
     First one is the value of that register
     Second one is the value of the second register (first operand in subtraction)
     Third one is the value of the third register (second operand in subtraction)
+    Forth one os the value of Flag register
 
     :param operands: list of operands
     :return: NoneType
@@ -129,8 +146,21 @@ def sub(operands):
     reg1 = int(operands[2].to01(), 2)
     reg2 = int(operands[3].to01(), 2)
     result = reg1 - reg2
+    result = str(bin(reg1 + reg2))[2:]
+
+    if len(result) > 16:
+        operands[4]._state[12] = "1"  # Carry flag
+    elif len(result) == 16:
+        operands[4]._state[14] = "1"  # Overflow flag
+    elif result == "0":
+        result = "0" * 16
+        operands[4]._state[13] = "1"  # Zero flag
+    else:
+        while len(result) != 16:
+            result = "0" + result
 
     operands[0]._state = bitarray(str(bin(result))[2:])
+
 
 def mul(operands):
     """
@@ -140,6 +170,7 @@ def mul(operands):
     First one is the value of that register
     Second one is the value of the second register (first operand in multiplication)
     Third one is the value of the third register (second operand in multiplication)
+    Forth one os the value of Flag register
 
     :param operands: list of operands
     :return: NoneType
@@ -155,6 +186,7 @@ def div(operands):
     First one is the value of that register
     Second one is the value of the second register (first operand in division)
     Third one is the value of the third register (second operand in division)
+    Forth one os the value of Flag register
 
     :param operands: list of operands
     :return: NoneType
@@ -214,8 +246,7 @@ def div(operands):
 #     pass
 
 
-functions_dictionary = {"load": load, "mov_low1": mov_low,
-                        "mov_low2": mov_low, "mov_high1": mov_high,
-                        "mov_high2": mov_high, "mov": mov,
+functions_dictionary = {"load": load, "mov_low": mov_low,
+                        "mov_high": mov_high, "mov": mov,
                         "push": push, "pop": pop, "add": add,
                         "sub": sub, "mul": push, "div": div}
