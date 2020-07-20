@@ -105,7 +105,7 @@ class CPU:
         self.read_state = "opcode"
 
         with open(os.path.join("modules", "instructions.json"), "r") as file:
-            self.opcode_dict = json.load(file)[self.isa.lower()]
+            self.instructions_dict = json.load(file)[self.isa.lower()]
 
         with open(os.path.join("modules", "registers.json"), "r") as file:
             self.registers_list = json.load(file)[self.isa.lower()]
@@ -132,7 +132,7 @@ class CPU:
         while key not in ('Q', 'q') and not close_program:
             key = self.instruction_window.getkey()
 
-        self.close()
+        self.close_screen()
         print(len(self.memory.slots))
 
     def create_registers(self):
@@ -158,7 +158,8 @@ class CPU:
 
         # Writing program instructions into to memory
         with open(filename, "r") as file:
-            self.memory.write(twos_complement(int(self.registers["IP"]._state.to01(), 2), 16), bitarray(file.read().replace('\n', '')))
+            self.memory.write(twos_complement(int(self.registers["IP"]._state.to01(), 2), 16),
+                              bitarray(file.read().replace('\n', '')))
 
     def start_program(self):
         """
@@ -215,80 +216,138 @@ class CPU:
         :return: NoneType
         """
 
-        # Figure out the operands for the RISC-Stack ISA
-        if self.isa.lower() == "risc1":
-            pass
+        # Determine the point in the binary instruction where operands start
+        start_point = self.__determine_start_point()
 
-        # Figure out the operands for the RISC-Accumulator ISA
-        if self.isa.lower() == "risc2":
-            pass
+        # Reading the list of operands encoded in the binary instruction
+        operands_aliases = self.instructions_dict[self.opcode.to01()][2]
 
-        # Figure out the operands for the RISC-Register ISA
-        if self.isa.lower() == "risc3":
+        # Determine whether the memory is going to be affected as a
+        # result of the operation and where to save it
+        memory_write_access, result_destination = self.__determine_result_dest(start_point, operands_aliases)
 
-            # TODO: create more groups of instructions depending on the
-            #  size of the immediate constant and the start of the operands
-
-            # Load the special case moves for RISC-Register architecture
-            low_high_load_risc = ["mov_low", "mov_high"]
-            low_high_load_risc = [bitarray(code) for code in self.opcode_dict if self.opcode_dict[code][0] in low_high_load_risc]
-
-            # Load low/high bytes check for RISC-register architecture
-            if self.opcode in low_high_load_risc:
-                start_point = 5
-                immediate_length = 8
-            else:
-                start_point = 6
-                immediate_length = 8
-
-        # Figure out the operands for the CISC-Register ISA
-        if self.isa.lower() == "cisc":
-            pass
-
-        # Read all the operands after the opcode
-        # Making sure, that the first one specifies destination of the operation
-        operands_aliases = self.opcode_dict[self.opcode.to01()][1]
-        operands = [self.register_codes[self.instruction[start_point:start_point + 3].to01()]]
-
-        # Set 'write' access to the memory to False by default
-        memory_write_access = False
-
-        # If destination -> memory
-        if operands_aliases[0] == "memreg":
-            memory_write_access = True
-
+        # Add operands values to the list to provide to a function later
+        operands_values = []
         for operand in operands_aliases:
 
             # If the operand is the register, add its value and go to the next operand
             if operand == "reg":
-                operands.append(self.register_codes[self.instruction[start_point:start_point + 3].to01()]._state)
+                register_code = self.instruction[start_point:start_point + 3].to01()
+                operands_values.append(self.register_codes[register_code]._state)
                 start_point += 3
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
-                tmp_register = int(self.register_codes[self.instruction[start_point:start_point + 3].to01()]._state.to01(), 2)
-                operands.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
+                register_code = self.instruction[start_point:start_point + 3].to01()
+                tmp_register = int(self.register_codes[register_code]._state.to01(), 2)
+                operands_values.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand[:3] == "imm":
                 immediate_length = int(operand[3:])
-                operands.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
+                operands_values.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
                 start_point += immediate_length
 
-        # Execute needed function and save its result to the first operand
-        function = functions_dictionary[self.opcode_dict[self.opcode.to01()][0]]
+        # Determine the needed function for this opcode and execute it, passing the flag register
+        function = functions_dictionary[self.instructions_dict[self.opcode.to01()][0]]
+        result_value = function(operands_values, flag_register=self.registers["FR"])
 
-        # Pass Flag register to the function
-        operands.append(self.registers["FR"])
-
-        # Write into the memory
+        # Write the result of the operation into the memory
         if memory_write_access:
-            self.memory.write(int(operands[0]._state.to01(), 2), function(operands))
-        # Perform any other instruction
+            self.memory.write(result_destination, result_value)
+        # Write into the result destination
         else:
-            function(operands)
+            result_destination._state = bitarray(result_value)
 
+    def __determine_start_point(self):
+        """
+        Determines the start point of the operands in theinstruction and other details
+        depending on the ISA architecture
+
+        The helper function for the 'execute' method
+
+        :return: start_point - int, representing the bit value in the instruction from which the opcodes begin
+        """
+        # Figure out the operands details for the RISC-Stack ISA
+        if self.isa.lower() == "risc1":
+            pass
+
+        # Figure out the operands details for the RISC-Accumulator ISA
+        if self.isa.lower() == "risc2":
+            pass
+
+        # Figure out the operands details for the RISC-Register ISA
+        if self.isa.lower() == "risc3":
+
+            # Load the special case moves for RISC-Register architecture
+            low_high_load_risc = ["mov_low", "mov_high"]
+            low_high_load_risc = [bitarray(code) for code in self.instructions_dict if
+                                  self.instructions_dict[code][0] in low_high_load_risc]
+
+            # Load low/high bytes check for RISC-register architecture
+            if self.opcode in low_high_load_risc:
+                start_point = 5
+            else:
+                start_point = 6
+
+        # Figure out the operands details for the CISC-Register ISA
+        if self.isa.lower() == "cisc":
+            pass
+
+        return start_point
+
+    def __determine_result_dest(self, start_point, operands_aliases):
+        """
+        Determines where to save the result and whether the memory is going to be affected
+        :param start_point: the point in the instruction where operands' encodings start
+        :param operands_aliases: list of aliases for the operands encoded in binary
+        """
+        # Set 'write' access to the memory to False by default
+        memory_write_access = False
+
+        # Determining where to save the result of the operation depending on type of the operation specified
+        # If the result is saved in the first operand
+        if (res_type := self.instructions_dict[self.opcode.to01()][1]) == "firstop":
+
+            if operands_aliases[0] == "reg":
+                # If the destination is the register
+                register_code = self.instruction[start_point:start_point + 3].to01()
+                result_destination = [self.register_codes[register_code]]
+
+            elif operands_aliases[0] == "memreg":
+                # If the destination is memory
+                memory_write_access = True
+                register_code = self.instruction[start_point:start_point + 3].to01()
+                result_destination = int(self.register_codes[register_code]._state.to01(), 2)
+
+        # If the result is pushed onto the stack
+        elif res_type == "stackpush":
+            pass
+
+        # If the result is popped from the stack
+        elif res_type == "stackpop":
+            pass
+
+        # If the result is a call to a point in the memory
+        elif res_type == "call":
+            pass
+
+        # If the result is the flag register affected (compare ops)
+        elif res_type == "flags":
+            pass
+
+        # If the result is a jump to a point in the memory
+        elif res_type == "jmp":
+            pass
+
+        # If the result is outputted to a devide
+        elif res_type == "out":
+            pass
+
+        return memory_write_access, result_destination
+
+    # Below are the methods for curses-driven command-line interface
     def start_screen(self):
         """
         Draws the screen elements the first time
@@ -352,7 +411,7 @@ class CPU:
         self.instruction_box.clear()
         self.instruction_box.addstr("Next instruction:")
         self.instruction_box.addstr(f"{self.instruction.to01()}\n")
-        self.instruction_box.addstr(self.opcode_dict[self.opcode.to01()][0])
+        self.instruction_box.addstr(self.instructions_dict[self.opcode.to01()][0])
 
         # Fill the register box with current registers and their values
         self.register_box.clear()
@@ -365,7 +424,7 @@ class CPU:
         # Refresh the memory on screen
         self.memory_box.clear()
         for i in range(0, len(self.memory.slots), 8):
-            self.memory_box.addstr(ba2hex(self.memory.slots[i:i+8]))
+            self.memory_box.addstr(ba2hex(self.memory.slots[i:i + 8]))
 
         # Refreshing the contents of screen elements and updating the whole screen
         self.std_screen.noutrefresh()
@@ -374,7 +433,7 @@ class CPU:
         self.memory_box.noutrefresh()
         curses.doupdate()
 
-    def close(self):
+    def close_screen(self):
         """
         Finishes the execution of the program, clearing the
         settings set by curses for proper terminal work
