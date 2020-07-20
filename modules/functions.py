@@ -142,8 +142,7 @@ def add(operands, flag_register):
         result = bin(twos_complement(reg1 + reg2, 18))[-16:]
     elif operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
         flag_register._state[14] = "1"  # Overflow flag
-    elif result == "0":
-        result = "0" * 16
+    elif result == "0" * 16:
         flag_register._state[13] = "1"  # Zero flag
 
     return bitarray(result)
@@ -173,8 +172,7 @@ def sub(operands, flag_register):
         result = bin(twos_complement(reg1 + reg2, 18))[-16:]
     elif operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
         flag_register._state[14] = "1"  # Overflow flag
-    elif result == "0":
-        result = "0" * 16
+    elif result == "0" * 16:
         flag_register._state[13] = "1"  # Zero flag
 
     return bitarray(result)
@@ -204,8 +202,7 @@ def mul(operands, flag_register):
         result = bin(twos_complement(reg1 + reg2, 18))[-16:]
     elif operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
         flag_register._state[14] = "1"  # Overflow flag
-    elif result == "0":
-        result = "0" * 16
+    elif result == "0" * 16:
         flag_register._state[13] = "1"  # Zero flag
 
     return bitarray(result)
@@ -235,8 +232,7 @@ def div(operands, flag_register):
         result = bin(twos_complement(reg1 + reg2, 18))[-16:]
     elif operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
         flag_register._state[14] = "1"  # Overflow flag
-    elif result == "0":
-        result = "0" * 16
+    elif result == "0" * 16:
         flag_register._state[13] = "1"  # Zero flag
 
     return bitarray(result)
@@ -266,8 +262,7 @@ def bit_and(operands, flag_register):
         result = bin(twos_complement(reg1 + reg2, 18))[-16:]
     elif operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
         flag_register._state[14] = "1"  # Overflow flag
-    elif result == "0":
-        result = "0" * 16
+    elif result == "0" * 16:
         flag_register._state[13] = "1"  # Zero flag
 
     return bitarray(result)
@@ -297,8 +292,7 @@ def bit_or(operands, flag_register):
         result = bin(twos_complement(reg1 + reg2, 18))[-16:]
     elif operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
         flag_register._state[14] = "1"  # Overflow flag
-    elif result == "0":
-        result = "0" * 16
+    elif result == "0" * 16:
         flag_register._state[13] = "1"  # Zero flag
 
     return bitarray(result)
@@ -328,8 +322,7 @@ def bit_xor(operands, flag_register):
         result = bin(twos_complement(reg1 + reg2, 18))[-16:]
     elif operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
         flag_register._state[14] = "1"  # Overflow flag
-    elif result == "0":
-        result = "0" * 16
+    elif result == "0" * 16:
         flag_register._state[13] = "1"  # Zero flag
 
     return bitarray(result)
@@ -360,42 +353,96 @@ def bit_not(operands, flag_register):
     return bitarray(result)
 
 
-#
-#
-# def lsh(operands):
-#     pass
-#
-#
-# def rsh(operands):
-#     pass
-#
-#
-# def call1(operands):
-#     pass
-#
-#
-# def call2(operands):
-#     pass
-#
-#
-# def call3(operands):
-#     pass
-#
-#
-# def ret(operands):
-#     pass
-#
-#
-# def cmp1(operands):
-#     pass
-#
-#
-# def cmp2(operands):
-#     pass
-#
-#
-# def test(operands):
-#     pass
+def lsh(operands, flag_register):
+    """
+    Performs bitwise xor on two registers, saving the result in the third one
+
+    Zero operand the value of the first register
+    First one is the value of the second register (first operand in the operation)
+    Second one is the value of the third register (second operand in the operation)
+    Third one is the value of Flag register
+
+    :param operands: list of operands
+    :param flag_register: Flag register
+    :return: new value of the first register
+    """
+    reg1 = twos_complement(int(operands[1].to01(), 2), len(operands[1]))
+    reg2 = twos_complement(int(operands[2].to01(), 2), len(operands[2]))
+    result = bin(twos_complement(reg1 << reg2, len(operands[1])))[2:]
+
+    result = result.rjust(16, "0")
+
+    if len(result) > 16:
+        flag_register._state[12] = "1"  # Carry flag
+        result = bin(twos_complement(reg1 + reg2, 18))[-16:]
+    elif operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
+        flag_register._state[14] = "1"  # Overflow flag
+    elif result == "0" * 16:
+        flag_register._state[13] = "1"  # Zero flag
+
+    return bitarray(result)
+
+
+def rsh(operands, flag_register):
+    """
+    Performs bitwise xor on two registers, saving the result in the third one
+
+    Zero operand the value of the first register
+    First one is the value of the second register (first operand in the operation)
+    Second one is the value of the third register (second operand in the operation)
+    Third one is the value of Flag register
+
+    :param operands: list of operands
+    :param flag_register: Flag register
+    :return: new value of the first register
+    """
+    reg1 = twos_complement(int(operands[1].to01(), 2), len(operands[1]))
+    reg2 = twos_complement(int(operands[2].to01(), 2), len(operands[2]))
+    result = bin(twos_complement(reg1 >> reg2, len(operands[1])))[2:]
+
+    result = result.rjust(16, "0")
+
+    if len(result) > 16:
+        flag_register._state[12] = "1"  # Carry flag
+        result = bin(twos_complement(reg1 + reg2, 18))[-16:]
+    elif operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
+        flag_register._state[14] = "1"  # Overflow flag
+    elif result == "0" * 16:
+        flag_register._state[13] = "1"  # Zero flag
+
+    return bitarray(result)
+
+
+def cmp(operands, flag_register):
+    reg1 = twos_complement(int(operands[1].to01(), 2), len(operands[1]))
+    reg2 = twos_complement(int(operands[2].to01(), 2), len(operands[2]))
+    result = bin(twos_complement(reg1 - reg2, len(operands[1])))[2:]
+
+    result = result.rjust(16, "0")
+    flag = bitarray(flag_register._state.to01())
+
+    if len(result) > 16:
+        flag[12] = "1"  # Carry flag
+    elif operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
+        flag[14] = "1"  # Overflow flag
+    elif result == "0" * 16:
+        flag[13] = "1"  # Zero flag
+
+    return flag
+
+
+def test(operands, flag_register):
+    reg1 = twos_complement(int(operands[1].to01(), 2), len(operands[1]))
+    reg2 = twos_complement(int(operands[2].to01(), 2), len(operands[2]))
+    result = bin(twos_complement(reg1 & reg2, len(operands[1])))[2:]
+
+    result = result.rjust(16, "0")
+    flag = flag_reset(flag_register._state.to01(), "OF", "CF")
+
+    if result == "0" * 16:
+        flag[13] = "1"  # Zero flag
+
+    return flag
 
 
 def twos_complement(val, bits):
@@ -412,10 +459,29 @@ def twos_complement(val, bits):
     return val
 
 
+def flag_reset(flag, *flag_names):
+    """
+    Resets and return new state of the flag,
+    if it needs to be changed before performing the operation
+
+    :param flag: string representation of the given flag
+    :param *args: names of the flags, which will be set to "0"
+    :return: bitarray with the new state of the flag
+    """
+    flag_index_dict = {"CF": 12, "ZF": 13, "OF": 14, "SF": 15}
+
+    # Set given flags to "0"
+    for flag_name in flag_names:
+        flag[flag_index_dict[flag_name]] = "0"
+
+    return bitarray(flag)
+
+
 functions_dictionary = {"load": load_store, "mov_low": mov_low,
                         "mov_high": mov_high, "mov": mov,
                         "push": push, "pop": pop, "add": add,
-                        "sub": sub, "mul": push, "div": div,
+                        "sub": sub, "mul": mul, "div": div,
                         "and": bit_and, "or": bit_or,
                         "xor": bit_xor, "not": bit_not,
-                        "store": load_store}
+                        "store": load_store, "cmp": cmp,
+                        "lsh": lsh, "rsh": rsh, "test": test}
