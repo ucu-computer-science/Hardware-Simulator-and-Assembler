@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Assembly Simulator project 2020
+# GNU General Public License v3.0
+
 from bitarray import bitarray
 
 
@@ -37,6 +43,3 @@ class Shell:
         :return: ascii-decoded slots of the shell
         """
         return self._state.tobytes().decode("ascii")
-
-
-
