@@ -100,24 +100,19 @@ class CPU:
         :return: NoneType
         """
         self.isa = isa
-        self.memory = Memory(architecture)
-        self.instruction = ''
-        self.read_state = "opcode"
 
         with open(os.path.join("modules", "instructions.json"), "r") as file:
             self.instructions_dict = json.load(file)[self.isa.lower()]
 
-        with open(os.path.join("modules", "registers.json"), "r") as file:
-            self.registers_list = json.load(file)[self.isa.lower()]
-
-        # Determining the size of the instructions to read
+        # Determining the size of the instructions to read (size of the instruction, opcode size, instruction in bytes)
         instruction_sizes = {"risc1": (6, 6, 1), "risc2": (8, 8, 1), "risc3": (16, 6, 2), "cisc": (8, 8, 1)}
         self.instruction_size = instruction_sizes[self.isa.lower()]
 
         # Create the registers for the specified architecture
         self.create_registers()
 
-        # Set the instruction pointer to the starting point of the program
+        # Set the instruction pointer to the starting point of the program and load the specified program into memory
+        self.memory = Memory(architecture)
         self.registers["IP"]._state = bitarray(bin(twos_complement(128 + offset, 16))[2:].rjust(16, '0'))
         self.load_program(filename)
 
@@ -125,15 +120,16 @@ class CPU:
         self.start_screen()
 
         # Starts the execution of the program code loaded
-        close_program = self.start_program()
+        self.instruction = ''
+        self.read_state = "opcode"
+        is_close_program = self.start_program()
 
         key = ''
         # Closes the simulator and restores the console settings
-        while key not in ('Q', 'q') and not close_program:
+        while key not in ('Q', 'q') and not is_close_program:
             key = self.instruction_window.getkey()
 
         self.close_screen()
-        print(len(self.memory.slots))
 
     def create_registers(self):
         """
@@ -141,10 +137,13 @@ class CPU:
         :param isa_architecture: chosen ISA
         :return: NoneType
         """
+        with open(os.path.join("modules", "registers.json"), "r") as file:
+            registers_list = json.load(file)[self.isa.lower()]
+
         self.registers = dict()
         self.register_codes = dict()
 
-        for register in self.registers_list:
+        for register in registers_list:
             temp = Register(register[0], general_purpose=(register[1] == 1))
             self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
