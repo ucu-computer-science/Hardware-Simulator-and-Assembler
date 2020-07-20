@@ -122,13 +122,13 @@ def add(operands):
     #  finish remaining functions
 
     if len(result) > 16:
-        operands[4][12] = "1"  # Carry flag
-        result = result[-16:]
+        operands[4]._state[12] = "1"  # Carry flag
+        result = bin(twos_complement(reg1 + reg2, 18))[-16:]
     elif operands[2].to01()[0] == operands[2].to01()[0] != result[0]:
-        operands[4][14] = "1"  # Overflow flag
+        operands[4]._state[14] = "1"  # Overflow flag
     elif result == "0":
         result = "0" * 16
-        operands[4][13] = "1"  # Zero flag
+        operands[4]._state[13] = "1"  # Zero flag
 
     operands[0]._state = bitarray(result)
 
