@@ -18,6 +18,8 @@ from modules.memory import Memory
 from modules.register import Register
 from modules.shell import Shell
 
+# Set up the logging module so it would save everything to a file
+# (we are unable to track prints in real-time due to curses)
 logging.basicConfig(filename="log.txt",
                     filemode='w',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
@@ -54,7 +56,7 @@ class Simulator:
 
     def __init__(self):
         """
-        Creates new Simulator
+        Creates a new Simulator instance
         :return: NoneType
         """
         # Creating the argument parser instance and adding the main arguments
@@ -127,7 +129,7 @@ class CPU:
         self.instruction_size = instruction_sizes[self.isa]
 
         # Create the registers for the specified register architecture
-        self.create_registers()
+        self.__create_registers()
 
         # Create data and program memory according to the specified architecture
         if architecture in ["neumann", "harvardm"]:
@@ -140,7 +142,7 @@ class CPU:
 
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
         self.registers["IP"]._state = bitarray(bin(twos_complement(128 + offset, 16))[2:].rjust(16, '0'))
-        self.load_program(filename)
+        self.__load_program(filename)
 
         # Draw the main interface
         self.start_screen()
@@ -157,10 +159,9 @@ class CPU:
 
         self.close_screen()
 
-    def create_registers(self):
+    def __create_registers(self):
         """
         Create new registers depending on the ISA architecture specified
-        :param isa_architecture: chosen ISA
         :return: NoneType
         """
         with open(os.path.join("modules", "registers.json"), "r") as file:
@@ -174,9 +175,10 @@ class CPU:
             self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
 
-    def load_program(self, filename):
+    def __load_program(self, filename):
         """
         Loads the program into memory at Instruction Pointer
+        :param filename: str - a path to the file of the binary program
         """
         if not os.path.isfile(filename):
             raise SimulatorError("Provide a valid file path")
@@ -248,10 +250,11 @@ class CPU:
 
     def execute(self):
         """
-        Executes an instruction
-        :param instruction: binary instruction to be executed
+        Executes an instruction, decoding its operands, computing the
+        result and saving it in the proper place
         :return: NoneType
         """
+        # TODO: This method is still super huge, we are going to probably have to break it up
 
         # Determine the point in the binary instruction where operands start
         start_point = self.__determine_start_point()
@@ -480,6 +483,8 @@ class CPU:
         return self.data_memory.read_data(stack_pointer_value - 2, stack_pointer_value)
 
     # Below are the methods for curses-driven command-line interface
+    # TODO: Create a basic API of data we need to transmit for the web interface to work properly
+    #  A somewhat later goal, sure, but still
     def start_screen(self):
         """
         Draws the screen elements the first time
