@@ -63,6 +63,7 @@ class Simulator:
                             help="specify the ISA architecture: RISC1 (Stack), RISC2 (Accumulator), RISC3 (Register), CISC (Register)")
         parser.add_argument("--architecture",
                             help="specify the data/program architecture: von Neumann, Harvard, HarvardM")
+        parser.add_argument("--output", help="specify the type of I/O: mmio, special")
         parser.add_argument("--offset", help="provide the offset for the instructions in the memory")
 
         # Parsing the command line arguments
@@ -71,6 +72,7 @@ class Simulator:
         # Lists of valid architecture types
         valid_isa = ['risc1', 'risc2', 'risc3', 'cisc']
         valid_architectures = ['von neumann', 'harvard', 'harvardm']
+        valid_io = ['mmio', 'special']
 
         # If some of the arguments were not provided, raise an error
         if not args.file:
@@ -82,7 +84,10 @@ class Simulator:
         if not args.architecture or args.architecture.lower() not in valid_architectures:
             raise SimulatorError("Provide the type of data/program architecture for simulation.")
 
-        CPU(args.isa, args.architecture, args.file)
+        if not args.output or args.output.lower() not in valid_io:
+            raise SimulatorError("Provide the type of Input/Output architecture for simulation")
+
+        CPU(args.isa, args.architecture, args.output, args.file)
 
 
 class CPU:
@@ -92,15 +97,18 @@ class CPU:
     Provides all arithmetics and memory manipulations
     """
 
-    def __init__(self, isa, architecture, filename, offset=0):
+    def __init__(self, isa, architecture, io_arch, filename, offset=0):
         """
         Creates a new CPU.
         :param isa: chosen ISA
-        :param program_start: location in the memory for the p
+        :param architecture: chosen Architecture type
+        :param io_arch: chosen Input/Output type
+        :param offset: location in the memory for the program code, as an offset from default
         :return: NoneType
         """
         self.isa = isa
 
+        # Opening the instruction set and choosing the one for our chosen ISA architecture
         with open(os.path.join("modules", "instructions.json"), "r") as file:
             self.instructions_dict = json.load(file)[self.isa.lower()]
 
@@ -248,6 +256,7 @@ class CPU:
                 operands_values.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
                 start_point += immediate_length
 
+        # PROCESSING THE ACTUAL INSTRUCTION BELOW
         # If the opcode type is call, we can perform the needed actions without calling functions_dict
         if (res_type := self.instructions_dict[self.opcode.to01()][1]) == "call":
 
@@ -313,6 +322,14 @@ class CPU:
                 offset = twos_complement(int(operands_values[0].to01(), 2), num_len) * 2
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
                 self.registers["IP"]._state = bitarray(bin(ip_value + offset - 2)[2:].rjust(16, '0'))
+
+        # If the opcode specified pushes the value on the stack
+        elif res_type == "stackpush":
+            self.__push_stack(operands_values[0])
+
+        # If the opcode specified pops the value from the stack into the register
+        elif res_type == "stackpop":
+            result_destination._state = self.__pop_stack()
 
         # Else, we have to execute the needed computations for this function in the virtual ALU
         else:
@@ -389,23 +406,38 @@ class CPU:
                 register_code = self.instruction[start_point:start_point + 3].to01()
                 result_destination = int(self.register_codes[register_code]._state.to01(), 2)
 
-        # If the result is pushed onto the stack
-        elif res_type == "stackpush":
-            pass
-
         # If the result is popped from the stack
         elif res_type == "stackpop":
-            pass
+            register_code = self.instruction[start_point:start_point + 3].to01()
+            result_destination = self.register_codes[register_code]
 
         # If the result is the flag register affected (compare ops)
         elif res_type == "flags":
             result_destination = self.registers["FR"]
 
-        # If the result is outputted to a devide
+        # If the result is outputted to a device
         elif res_type == "out":
             pass
 
         return memory_write_access, result_destination
+
+    def __push_stack(self, value):
+        """
+        Pushes the value onto the memory stack, changing the position of the Stack Pointer register
+        :param value: bitarray(16) - a value to be pushed into memory
+        """
+        stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
+        self.memory.write(stack_pointer_value, value)
+        self.registers["SP"]._state = bitarray(bin(stack_pointer_value + 2)[2:].rjust(16, '0'))
+
+    def __pop_stack(self):
+        """
+        Pops the last value from the memory stack, changing the position of the Stack Pointer register
+        :return: bitarray - of size 16 representing the value of the register previously pushed onto the stack
+        """
+        stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
+        self.registers["SP"]._state = bitarray(bin(stack_pointer_value - 2)[2:].rjust(16, '0'))
+        return self.memory.read_data(stack_pointer_value-2, stack_pointer_value)
 
     # Below are the methods for curses-driven command-line interface
     def start_screen(self):

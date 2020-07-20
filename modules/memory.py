@@ -26,7 +26,7 @@ class Memory:
     def write(self, location, data):
         """
         Writes the data in bytes to the memory starting at location
-        :param location: start location, where data should be stored
+        :param location: start location (bytes), where data should be stored
         :param data: data for writing into the memory
         :return: NoneType
         """
@@ -36,9 +36,15 @@ class Memory:
         self.slots[location*8:location*8+len(data)] = data
 
     def read_data(self, start_location, end_location):
+        """
+        Reads the data from memory [start_location:end_location]
+        :param start_location: int - starting location in bytes
+        :param end_location: int - end location in bytes
+        """
         return self.slots[start_location*8:end_location*8]
 
     def __str__(self):
+        """ Returns a representation of its contents in bitarray"""
         return self.slots
 
 

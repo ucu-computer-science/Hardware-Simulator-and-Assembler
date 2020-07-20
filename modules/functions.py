@@ -444,7 +444,7 @@ def cmp(operands, flag_register):
 
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
-    if operands[1].to01()[0] == operands[2].to01()[0] != result[0]:
+    if operands[0].to01()[0] == operands[1].to01()[0] != result[0]:
         flag_register._state[14] = "1"  # Overflow flag
     if result == "0" * 16:
         flag_register._state[13] = "1"  # Zero flag
