@@ -312,7 +312,7 @@ class CPU:
             if operands_aliases[0] == "reg":
                 # If the destination is the register
                 register_code = self.instruction[start_point:start_point + 3].to01()
-                result_destination = [self.register_codes[register_code]]
+                result_destination = self.register_codes[register_code]
 
             elif operands_aliases[0] == "memreg":
                 # If the destination is memory
