@@ -115,16 +115,20 @@ def add(operands):
     reg2 = twos_complement(int(operands[3].to01(), 2), len(operands[3]))
     result = bin(twos_complement(reg1 + reg2, len(operands[1])))[2:]
 
+    result = result.rjust(16, "0")
+
+    # TODO: make sure that overflow flag works as it is supposed,
+    #  check meaning of the sign flag and how is it affected,
+    #  finish remaining functions
+
     if len(result) > 16:
-        operands[4]._state[12] = "1"  # Carry flag
+        operands[4][12] = "1"  # Carry flag
         result = result[-16:]
-    elif len(result) == 16:
-        operands[4]._state[14] = "1"  # Overflow flag
+    elif operands[2].to01()[0] == operands[2].to01()[0] != result[0]:
+        operands[4][14] = "1"  # Overflow flag
     elif result == "0":
         result = "0" * 16
-        operands[4]._state[13] = "1"  # Zero flag
-
-    result = result.rjust(16, "0")
+        operands[4][13] = "1"  # Zero flag
 
     operands[0]._state = bitarray(result)
 
