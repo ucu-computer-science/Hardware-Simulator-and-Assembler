@@ -14,13 +14,13 @@ class Memory:
     Serves as the container for the program code as well
     """
 
-    def __init__(self, memory_architecture):
+    def __init__(self, size):
         """
         Creates a new memory structure.
         :param memory_architecture: chosen program/data architecture.
         :return: NoneType
         """
-        self.memory_size = 1024*8
+        self.memory_size = size*8
         self.slots = bitarray("0"*self.memory_size)
 
     def write(self, location, data):

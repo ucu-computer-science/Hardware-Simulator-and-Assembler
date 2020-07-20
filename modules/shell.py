@@ -21,7 +21,7 @@ class Shell:
         self.start_point = start
         self.end_point = end
         self.io_type = io_type
-        self._state = bitarray("00100000"*20)
+        self._state = bitarray("0"*160)
 
     def in_shell(self):
         # TODO: implement input
@@ -38,8 +38,14 @@ class Shell:
 
     def __str__(self):
         """
-        Return string representation of the shell
+        Return string representation of the shell's contents
 
         :return: ascii-decoded slots of the shell
         """
-        return self._state.tobytes().decode("ascii")
+        data = self._state
+        # Clean the data so there would not be any null characters
+        for i in range(0, len(self._state), 8):
+            if data[i:i+8].to01() == "00000000":
+                data[i:i+8] = bitarray("00100000")
+
+        return data.tobytes().decode("ascii")

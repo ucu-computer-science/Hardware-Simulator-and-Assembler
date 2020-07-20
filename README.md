@@ -71,7 +71,7 @@ git clone https://github.com/dariaomelkina/poc_project
 # Assembler:
 python3 modules/assembler.py -f modules/program_examples/assembly_test.asm --isa RISC3
 # Simulator:
-python3 modules/simulator.py --file modules/program_examples/assembly_test4.bin --isa RISC3 --architecture Harvard --output mmio
+python3 modules/simulator.py --file modules/program_examples/assembly_test6.bin --isa RISC3 --architecture neumann --output special
 ```
 
 ---

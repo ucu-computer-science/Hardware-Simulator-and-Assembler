@@ -63,7 +63,7 @@ class Simulator:
         parser.add_argument("--isa",
                             help="specify the ISA architecture: RISC1 (Stack), RISC2 (Accumulator), RISC3 (Register), CISC (Register)")
         parser.add_argument("--architecture",
-                            help="specify the data/program architecture: von Neumann, Harvard, HarvardM")
+                            help="specify the data/program architecture: neumann, harvard, harvardm")
         parser.add_argument("--output", help="specify the type of I/O: mmio, special")
         parser.add_argument("--offset", help="provide the offset for the instructions in the memory")
 
@@ -72,7 +72,7 @@ class Simulator:
 
         # Lists of valid architecture types
         valid_isa = ['risc1', 'risc2', 'risc3', 'cisc']
-        valid_architectures = ['von neumann', 'harvard', 'harvardm']
+        valid_architectures = ['neumann', 'harvard', 'harvardm']
         valid_io = ['mmio', 'special']
 
         # If some of the arguments were not provided, raise an error
@@ -88,7 +88,7 @@ class Simulator:
         if not args.output or args.output.lower() not in valid_io:
             raise SimulatorError("Provide the type of Input/Output architecture for simulation")
 
-        CPU(args.isa, args.architecture, args.output, args.file)
+        CPU(args.isa.lower(), args.architecture.lower(), args.output.lower(), args.file)
 
 
 class CPU:
@@ -108,21 +108,37 @@ class CPU:
         :return: NoneType
         """
         self.isa = isa
-        self.ports_dictionary = {"1": Shell(io_arch.lower(), start=1004, end=1024)}
+        self.architecture = architecture
+        self.io_arch = io_arch
+
+        # Create devices for this CPU depending on the I/O architecture specified
+        if io_arch == "mmio":
+            shell = Shell(io_arch, start=1004, end=1024)
+        else:
+            shell = Shell(io_arch)
+        self.ports_dictionary = {"1": shell}
 
         # Opening the instruction set and choosing the one for our chosen ISA architecture
         with open(os.path.join("modules", "instructions.json"), "r") as file:
-            self.instructions_dict = json.load(file)[self.isa.lower()]
+            self.instructions_dict = json.load(file)[self.isa]
 
         # Determining the size of the instructions to read (size of the instruction, opcode size, instruction in bytes)
         instruction_sizes = {"risc1": (6, 6, 1), "risc2": (8, 8, 1), "risc3": (16, 6, 2), "cisc": (8, 8, 1)}
-        self.instruction_size = instruction_sizes[self.isa.lower()]
+        self.instruction_size = instruction_sizes[self.isa]
 
-        # Create the registers for the specified architecture
+        # Create the registers for the specified register architecture
         self.create_registers()
 
+        # Create data and program memory according to the specified architecture
+        if architecture in ["neumann", "harvardm"]:
+            memory = Memory(1024)
+            self.data_memory = memory
+            self.program_memory = memory
+        elif architecture == "harvard":
+            self.data_memory = Memory(512)
+            self.program_memory = Memory(512)
+
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
-        self.memory = Memory(architecture)
         self.registers["IP"]._state = bitarray(bin(twos_complement(128 + offset, 16))[2:].rjust(16, '0'))
         self.load_program(filename)
 
@@ -148,7 +164,7 @@ class CPU:
         :return: NoneType
         """
         with open(os.path.join("modules", "registers.json"), "r") as file:
-            registers_list = json.load(file)[self.isa.lower()]
+            registers_list = json.load(file)[self.isa]
 
         self.registers = dict()
         self.register_codes = dict()
@@ -167,7 +183,7 @@ class CPU:
 
         # Writing program instructions into to memory
         with open(filename, "r") as file:
-            self.memory.write(twos_complement(int(self.registers["IP"]._state.to01(), 2), 16),
+            self.program_memory.write(twos_complement(int(self.registers["IP"]._state.to01(), 2), 16),
                               bitarray(file.read().replace('\n', '')))
 
     def start_program(self):
@@ -186,6 +202,9 @@ class CPU:
             # Draw the updated screen
             self.draw_screen()
 
+            # Update the Memory-Mapped devices
+            self.__update_devices()
+
             # Move on to the next instruction if the 'n' key is pressed
             while key not in ('N', 'n'):
                 key = self.instruction_window.getkey()
@@ -203,12 +222,21 @@ class CPU:
         # Draw the updated screen
         self.draw_screen()
 
+    def __update_devices(self):
+        """
+        Updates the devices if they are Memory-Mapped
+        """
+        for port, device in self.ports_dictionary.items():
+            if device.io_type == "mmio":
+                data = self.data_memory.read_data(device.start_point, device.end_point)
+                device._state = data
+
     def __read_instruction(self):
         """
         Reads the instruction and the opcode in it
         """
         start_read_location = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
-        self.instruction = self.memory.read_data(start_read_location, start_read_location + self.instruction_size[2])
+        self.instruction = self.program_memory.read_data(start_read_location, start_read_location + self.instruction_size[2])
 
         # Read the opcode part of the instruction
         if self.read_state == "opcode":
@@ -249,7 +277,7 @@ class CPU:
             elif operand == "memreg":
                 register_code = self.instruction[start_point:start_point + 3].to01()
                 tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)
-                operands_values.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
+                operands_values.append(self.data_memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
@@ -345,7 +373,7 @@ class CPU:
 
             # Write the result of the operation into the memory
             if memory_write_access:
-                self.memory.write(result_destination, result_value)
+                self.data_memory.write(result_destination, result_value)
             # Write into the result destination
             else:
                 result_destination._state = bitarray(result_value)
@@ -360,15 +388,15 @@ class CPU:
         :return: start_point - int, representing the bit value in the instruction from which the opcodes begin
         """
         # Figure out the operands details for the RISC-Stack ISA
-        if self.isa.lower() == "risc1":
+        if self.isa == "risc1":
             pass
 
         # Figure out the operands details for the RISC-Accumulator ISA
-        if self.isa.lower() == "risc2":
+        if self.isa == "risc2":
             pass
 
         # Figure out the operands details for the RISC-Register ISA
-        if self.isa.lower() == "risc3":
+        if self.isa == "risc3":
 
             # Load the special case moves for RISC-Register architecture
             low_high_load_risc = ["mov_low", "mov_high"]
@@ -382,7 +410,7 @@ class CPU:
                 start_point = 6
 
         # Figure out the operands details for the CISC-Register ISA
-        if self.isa.lower() == "cisc":
+        if self.isa == "cisc":
             pass
 
         return start_point
@@ -423,9 +451,13 @@ class CPU:
 
         # If the result is outputted to a device, we should output to the specified port
         elif res_type == "out":
-            imm_len = int(operands_aliases[0][3:])
-            port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
-            result_destination = self.ports_dictionary[str(port_num)]
+
+            if self.io_arch == "mmio":
+                raise SimulatorError("This instruction does not exist in MMIO architecture")
+            else:
+                imm_len = int(operands_aliases[0][3:])
+                port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
+                result_destination = self.ports_dictionary[str(port_num)]
 
         return memory_write_access, result_destination
 
@@ -435,7 +467,7 @@ class CPU:
         :param value: bitarray(16) - a value to be pushed into memory
         """
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
-        self.memory.write(stack_pointer_value, value)
+        self.data_memory.write(stack_pointer_value, value)
         self.registers["SP"]._state = bitarray(bin(stack_pointer_value + 2)[2:].rjust(16, '0'))
 
     def __pop_stack(self):
@@ -445,7 +477,7 @@ class CPU:
         """
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
         self.registers["SP"]._state = bitarray(bin(stack_pointer_value - 2)[2:].rjust(16, '0'))
-        return self.memory.read_data(stack_pointer_value - 2, stack_pointer_value)
+        return self.data_memory.read_data(stack_pointer_value - 2, stack_pointer_value)
 
     # Below are the methods for curses-driven command-line interface
     def start_screen(self):
@@ -488,11 +520,21 @@ class CPU:
         # Create the sub-window for the actual registers representation
         self.register_box = self.register_window.subwin(6, 23, 3, 31)
 
-        # Create the box for the memory representation
-        self.memory_window = curses.newwin(19, 130, 10, 2)
-        self.memory_window.box()
-        # Create the window for the memory print
-        self.memory_box = self.memory_window.subwin(17, 128, 11, 3)
+        if self.architecture in ["neumann", "harvardm"]:
+            # Create the box for the memory representation
+            self.data_memory_window = curses.newwin(19, 130, 10, 2)
+            self.data_memory_window.box()
+            # Create the window for the memory print
+            self.data_memory_box = self.data_memory_window.subwin(17, 128, 11, 3)
+        else:
+            # Create the boxes for the data and program memory representation
+            self.data_memory_window = curses.newwin(19, 130, 10, 2)
+            self.program_memory_window = curses.newwin(19, 130, 30, 2)
+            self.data_memory_window.box()
+            self.program_memory_window.box()
+            # Create the windows for the data and program memory print
+            self.data_memory_box = self.data_memory_window.subwin(17, 128, 11, 3)
+            self.program_memory_box = self.program_memory_window.subwin(17, 128, 31, 3)
 
         # Create the box for the shell representation
         self.shell_window = curses.newwin(3, 23, 2, 60)
@@ -503,7 +545,7 @@ class CPU:
         self.std_screen.noutrefresh()
         self.instruction_window.noutrefresh()
         self.register_window.noutrefresh()
-        self.memory_window.noutrefresh()
+        self.data_memory_window.noutrefresh()
         self.shell_window.noutrefresh()
         curses.doupdate()
 
@@ -527,10 +569,16 @@ class CPU:
             self.register_box.addstr(f" {(items[i - 1][0] + ':').ljust(4, ' ')} {items[i - 1][1]}  "
                                      f"{(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}\n")
 
-        # Refresh the memory on screen
-        self.memory_box.clear()
-        for i in range(0, len(self.memory.slots), 8):
-            self.memory_box.addstr(ba2hex(self.memory.slots[i:i + 8]))
+        # Refresh the data memory on screen
+        self.data_memory_box.clear()
+        for i in range(0, len(self.data_memory.slots), 8):
+            self.data_memory_box.addstr(ba2hex(self.data_memory.slots[i:i + 8]))
+
+        # If the architecture has two separate memories, we update the program memory too
+        if self.architecture == "harvard":
+            self.program_memory_box.clear()
+            for i in range(0, len(self.program_memory.slots), 8):
+                self.program_memory_box.addstr(ba2hex(self.program_memory.slots[i:i + 8]))
 
         # Refresh the shell output
         self.shell_box.clear()
@@ -542,7 +590,7 @@ class CPU:
         self.std_screen.noutrefresh()
         self.instruction_box.noutrefresh()
         self.register_box.noutrefresh()
-        self.memory_box.noutrefresh()
+        self.data_memory_box.noutrefresh()
         self.shell_box.noutrefresh()
         curses.doupdate()
 
