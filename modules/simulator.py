@@ -170,7 +170,7 @@ class CPU:
 
         # Continue executing instructions until we reach
         # the end of the program (all-zeros byte)
-        while self.instruction != bitarray('0' * 16):
+        while self.instruction.to01() != ('0' * 16):
             key = ''
 
             # Draw the updated screen
@@ -219,7 +219,7 @@ class CPU:
         start_point = self.__determine_start_point()
 
         # Reading the list of operands encoded in the binary instruction
-        operands_aliases = self.instructions_dict[self.opcode.to01()][2]
+        operands_aliases = self.instructions_dict[self.opcode.to01()][-1]
 
         # Determine whether the memory is going to be affected as a
         # result of the operation and where to save it
@@ -238,26 +238,55 @@ class CPU:
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
                 register_code = self.instruction[start_point:start_point + 3].to01()
-                tmp_register = int(self.register_codes[register_code]._state.to01(), 2)
+                tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)
                 operands_values.append(self.memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
-            elif operand[:3] == "imm":
+            elif operand.startswith("imm"):
                 immediate_length = int(operand[3:])
                 operands_values.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
                 start_point += immediate_length
 
-        # Determine the needed function for this opcode and execute it, passing the flag register
-        function = functions_dictionary[self.instructions_dict[self.opcode.to01()][0]]
-        result_value = function(operands_values, flag_register=self.registers["FR"])
+        # If the opcode type is call, we can perform the needed actions without calling functions_dict
+        if (res_type := self.instructions_dict[self.opcode.to01()][1]) == "call":
 
-        # Write the result of the operation into the memory
-        if memory_write_access:
-            self.memory.write(result_destination, result_value)
-        # Write into the result destination
+            # Remember the next instruction after the one which called the 'call' function
+            next_instruction = int(self.registers["IP"]._state.to01(), 2)
+            self.registers["LR"]._state = bitarray(bin(twos_complement(next_instruction, 16))[2:].rjust(16, '0'))
+
+            # There is only one operand for a call function, and it determines the offset from the IP
+            operand = operands_aliases[0]
+            if operand.startswith("imm"):
+
+                # TODO: This implies that instructions take up 16 bits (2 bytes), which is rarely true
+                imm_len = int(operand[3:])
+                offset = twos_complement(int(operands_values[0].to01(), 2), imm_len) * 2
+                ip_value = int(self.registers["IP"]._state.to01(), 2)
+                self.registers["IP"]._state = bitarray(bin(ip_value + offset - 2)[2:].rjust(16, '0'))
+
+            # There is only one operand for a call function, and it determines an absolute address in the memory
+            elif operand == "reg":
+                self.registers["IP"]._state = operands_values[0]
+
+        # If the opcode type is return, we just move the instruction pointer back
+        elif res_type == "ret":
+
+            # TODO: Should we zero out the Link Register register after returning to it once?
+            self.registers["IP"]._state = self.registers["LR"]._state
+
+        # Else, we have to execute the needed computations for this function in the virtual ALU
         else:
-            result_destination._state = bitarray(result_value)
+            # Determine the needed function for this opcode and execute it, passing the flag register
+            function = functions_dictionary[self.instructions_dict[self.opcode.to01()][0]]
+            result_value = function(operands_values, flag_register=self.registers["FR"])
+
+            # Write the result of the operation into the memory
+            if memory_write_access:
+                self.memory.write(result_destination, result_value)
+            # Write into the result destination
+            else:
+                result_destination._state = bitarray(result_value)
 
     def __determine_start_point(self):
         """
@@ -304,6 +333,7 @@ class CPU:
         """
         # Set 'write' access to the memory to False by default
         memory_write_access = False
+        result_destination = None
 
         # Determining where to save the result of the operation depending on type of the operation specified
         # If the result is saved in the first operand
@@ -328,13 +358,9 @@ class CPU:
         elif res_type == "stackpop":
             pass
 
-        # If the result is a call to a point in the memory
-        elif res_type == "call":
-            pass
-
         # If the result is the flag register affected (compare ops)
         elif res_type == "flags":
-            pass
+            result_destination = self.registers["FR"]
 
         # If the result is a jump to a point in the memory
         elif res_type == "jmp":

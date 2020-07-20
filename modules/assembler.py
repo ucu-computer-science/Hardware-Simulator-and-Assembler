@@ -50,7 +50,7 @@ class Assembler:
         with open(os.path.join("modules", "instructions.json"), "r") as file:
             self.instructions = defaultdict(list)
             for opcode, details in json.load(file)[args.isa.lower()].items():
-                self.instructions[details[0]].append([opcode, details[1]])
+                self.instructions[details[0]].append([opcode, details[-1]])
 
         # Open the list of registers for this architecture and format it properly
         with open(os.path.join("modules", "registers.json"), "r") as file:
