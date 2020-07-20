@@ -21,7 +21,7 @@ class Shell:
         self.start_point = start
         self.end_point = end
         self.io_type = io_type
-        self._state = bitarray("0"*160)
+        self._state = bitarray("00100000"*20)
 
     def in_shell(self):
         # TODO: implement input
@@ -33,7 +33,7 @@ class Shell:
 
         :param value: value to be written
         """
-        self._state += value
+        self._state += value[-8:]
         self._state = self._state[-160:]
 
     def __str__(self):

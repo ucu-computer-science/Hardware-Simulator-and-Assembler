@@ -124,7 +124,7 @@ class Assembler:
 
                 # If all of the opcode options were wrong, raise the error
                 if not binary_line:
-                    raise AssemblerError("Provide valid operands for this instruction")
+                    raise AssemblerError(f"Provide valid operands for this instruction: {line}")
 
             binary_code += binary_line + "\n"
 

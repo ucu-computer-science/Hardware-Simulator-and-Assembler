@@ -108,7 +108,7 @@ class CPU:
         :return: NoneType
         """
         self.isa = isa
-        self.ports_dictionary = {"1": Shell(io_arch.lower())}
+        self.ports_dictionary = {"1": Shell(io_arch.lower(), start=1004, end=1024)}
 
         # Opening the instruction set and choosing the one for our chosen ISA architecture
         with open(os.path.join("modules", "instructions.json"), "r") as file:
@@ -333,6 +333,10 @@ class CPU:
         elif res_type == "stackpop":
             result_destination._state = self.__pop_stack()
 
+        # If the opcode specifies outputting to the device
+        elif res_type == "out":
+            result_destination.out_shell(operands_values[-1])
+
         # Else, we have to execute the needed computations for this function in the virtual ALU
         else:
             # Determine the needed function for this opcode and execute it, passing the flag register
@@ -419,9 +423,9 @@ class CPU:
 
         # If the result is outputted to a device, we should output to the specified port
         elif res_type == "out":
-            imm_len = int(operands_aliases[0][3:], 2)
+            imm_len = int(operands_aliases[0][3:])
             port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
-            result_destination = self.ports_dictionary[port_num]
+            result_destination = self.ports_dictionary[str(port_num)]
 
         return memory_write_access, result_destination
 
@@ -490,11 +494,17 @@ class CPU:
         # Create the window for the memory print
         self.memory_box = self.memory_window.subwin(17, 128, 11, 3)
 
+        # Create the box for the shell representation
+        self.shell_window = curses.newwin(3, 23, 2, 60)
+        self.shell_window.box()
+        self.shell_box = self.shell_window.subwin(1, 21, 3, 61)
+
         # Refresh all the internal datastructures bottom-up, update the screen
         self.std_screen.noutrefresh()
         self.instruction_window.noutrefresh()
         self.register_window.noutrefresh()
         self.memory_window.noutrefresh()
+        self.shell_window.noutrefresh()
         curses.doupdate()
 
     def draw_screen(self):
@@ -522,11 +532,18 @@ class CPU:
         for i in range(0, len(self.memory.slots), 8):
             self.memory_box.addstr(ba2hex(self.memory.slots[i:i + 8]))
 
+        # Refresh the shell output
+        self.shell_box.clear()
+        logger.info(self.ports_dictionary["1"]._state)
+        for port, device in self.ports_dictionary.items():
+            self.shell_box.addstr(str(device))
+
         # Refreshing the contents of screen elements and updating the whole screen
         self.std_screen.noutrefresh()
         self.instruction_box.noutrefresh()
         self.register_box.noutrefresh()
         self.memory_box.noutrefresh()
+        self.shell_box.noutrefresh()
         curses.doupdate()
 
     def close_screen(self):
