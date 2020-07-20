@@ -1,5 +1,5 @@
 {
-    "comments": "Each architecture contains a dict of instructions: name, encoding, and list of operands",
+    "comments": "Each architecture contains a dict of instructions: encoding, name, result destination and list of operands",
     "risc1": {},
     "risc2": {},
     "risc3": {
