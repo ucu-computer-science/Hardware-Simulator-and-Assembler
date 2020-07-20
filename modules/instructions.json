@@ -214,56 +214,56 @@
             "jmp",
             "jmp",
             [
-                "ipoff10"
+                "imm10"
             ]
         ],
         "011001": [
             "jmp",
             "jmp",
             [
-                "memreg"
+                "reg"
             ]
         ],
         "011010": [
             "je",
             "jmp",
             [
-                "ipoff10"
+                "imm10"
             ]
         ],
         "011011": [
             "jne",
             "jmp",
             [
-                "ipoff10"
+                "imm10"
             ]
         ],
         "011100": [
             "jg",
             "jmp",
             [
-                "ipoff10"
+                "imm10"
             ]
         ],
         "011101": [
             "jge",
             "jmp",
             [
-                "ipoff10"
+                "imm10"
             ]
         ],
         "011110": [
             "jl",
             "jmp",
             [
-                "ipoff10"
+                "imm10"
             ]
         ],
         "011111": [
             "jle",
             "jmp",
             [
-                "ipoff10"
+                "imm10"
             ]
         ],
         "100000": [

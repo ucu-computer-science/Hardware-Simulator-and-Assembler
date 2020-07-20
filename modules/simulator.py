@@ -275,6 +275,45 @@ class CPU:
             # TODO: Should we zero out the Link Register register after returning to it once?
             self.registers["IP"]._state = self.registers["LR"]._state
 
+        # If the opcode is of type jump, we look at the Flag Register and move Instruction Pointer if needed
+        elif res_type == "jmp":
+
+            # Set jump by default to False
+            should_jump = False
+            flag_reg = self.registers["FR"]._state
+            carry_flag, zero_flag, overflow_flag, sign_flag = flag_reg[-4:]
+
+            # Check the needed flags according to the jump condition specified
+            if (jmp_spec := self.instructions_dict[self.opcode.to01()][0]) == "jmp":
+                should_jump = True
+            elif jmp_spec == "je":
+                should_jump = zero_flag
+            elif jmp_spec == "jne":
+                should_jump = not zero_flag
+            elif jmp_spec == "jg":
+                should_jump = (sign_flag == overflow_flag) and not zero_flag
+            elif jmp_spec == "jge":
+                should_jump = (sign_flag == overflow_flag)
+            elif jmp_spec == "jl":
+                should_jump = (sign_flag != overflow_flag)
+            elif jmp_spec == "jle":
+                should_jump = (sign_flag == overflow_flag) or zero_flag
+
+            # If the jump condition was satisfied, jump to the value specified with the operand
+            if should_jump:
+
+                # If the offset was specified with the number, its length was specified as well
+                if operands_aliases[0].startswith("imm"):
+                    num_len = int(operands_aliases[0][3:])
+                else:
+                    # Else, just use the register length
+                    num_len = 16
+
+                # TODO: This implies that instructions take up 16 bits (2 bytes), which is rarely true
+                offset = twos_complement(int(operands_values[0].to01(), 2), num_len) * 2
+                ip_value = int(self.registers["IP"]._state.to01(), 2)
+                self.registers["IP"]._state = bitarray(bin(ip_value + offset - 2)[2:].rjust(16, '0'))
+
         # Else, we have to execute the needed computations for this function in the virtual ALU
         else:
             # Determine the needed function for this opcode and execute it, passing the flag register
@@ -361,10 +400,6 @@ class CPU:
         # If the result is the flag register affected (compare ops)
         elif res_type == "flags":
             result_destination = self.registers["FR"]
-
-        # If the result is a jump to a point in the memory
-        elif res_type == "jmp":
-            pass
 
         # If the result is outputted to a devide
         elif res_type == "out":
