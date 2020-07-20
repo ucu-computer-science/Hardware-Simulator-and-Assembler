@@ -415,9 +415,11 @@ class CPU:
         elif res_type == "flags":
             result_destination = self.registers["FR"]
 
-        # If the result is outputted to a device
+        # If the result is outputted to a device, we should output to the specified port
         elif res_type == "out":
-            pass
+            imm_len = int(operands_aliases[0][3:], 2)
+            port_num = int(self.instruction[start_point:start_point+imm_len].to01(), 2)
+            result_destination = self.ports_dictionary[port_num]
 
         return memory_write_access, result_destination
 
