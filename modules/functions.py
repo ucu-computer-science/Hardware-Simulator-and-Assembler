@@ -83,37 +83,6 @@ def mov(operands, flag_register):
     return bitarray(operands[1].to01())
 
 
-def push(operands, flag_register):
-    """
-    Pushes information from the register
-    into the memory stack
-
-    Zero operand is the value of that register
-
-    :param operands: list of operands (has only one value)
-    :param flag_register: Flag register
-    :return: value of the register
-    """
-    # TODO: return the correct value
-    #  How will register value be pushed onto the memory stack?
-    return bitarray(operands[0].to01())
-
-
-def pop(operands, flag_register):
-    """
-    Pops information from the top of the memory stack
-    and pushes it into the register
-
-    Zero operand is the value of that register
-
-    :param operands: list of operands (has only one value)
-    :return: ????
-    """
-    # TODO: return the correct value
-    #  How do I pop the value from the pop of the stack to return it, and to write it into the register?
-    return "?"
-
-
 def add(operands, flag_register):
     """
     Performs addition of two registers, saving the result in the third one
