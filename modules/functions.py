@@ -462,8 +462,7 @@ def twos_complement(val, bits):
 
 
 functions_dictionary = {"load": load_store, "mov_low": mov_low,
-                        "mov_high": mov_high, "mov": mov,
-                        "push": push, "pop": pop, "add": add,
+                        "mov_high": mov_high, "mov": mov, "add": add,
                         "sub": sub, "mul": mul, "div": div,
                         "and": bit_and, "or": bit_or,
                         "xor": bit_xor, "not": bit_not,
