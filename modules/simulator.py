@@ -16,6 +16,7 @@ from bitarray.util import ba2hex
 from modules.functions import functions_dictionary, twos_complement
 from modules.memory import Memory
 from modules.register import Register
+from modules.shell import Shell
 
 logging.basicConfig(filename="log.txt",
                     filemode='w',
@@ -107,6 +108,7 @@ class CPU:
         :return: NoneType
         """
         self.isa = isa
+        self.ports_dictionary = {"1": Shell(io_arch.lower())}
 
         # Opening the instruction set and choosing the one for our chosen ISA architecture
         with open(os.path.join("modules", "instructions.json"), "r") as file:
@@ -418,7 +420,7 @@ class CPU:
         # If the result is outputted to a device, we should output to the specified port
         elif res_type == "out":
             imm_len = int(operands_aliases[0][3:], 2)
-            port_num = int(self.instruction[start_point:start_point+imm_len].to01(), 2)
+            port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
             result_destination = self.ports_dictionary[port_num]
 
         return memory_write_access, result_destination
@@ -439,7 +441,7 @@ class CPU:
         """
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
         self.registers["SP"]._state = bitarray(bin(stack_pointer_value - 2)[2:].rjust(16, '0'))
-        return self.memory.read_data(stack_pointer_value-2, stack_pointer_value)
+        return self.memory.read_data(stack_pointer_value - 2, stack_pointer_value)
 
     # Below are the methods for curses-driven command-line interface
     def start_screen(self):
