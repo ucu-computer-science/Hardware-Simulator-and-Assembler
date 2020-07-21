@@ -7,7 +7,24 @@ from bitarray.util import ba2hex
 
 from modules.simulator import CPU
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+# COLOR PALETTE
+# TABLES
+table_main_color = '#2e003e'
+table_header_color = '#2e003e'
+table_main_font_color = '#e4dcf1'
+table_header_font_color = '#e4dcf1'
+# BUTTONS
+button_color = '#283655'
+button_font_color = '#f7f7f7'
+# OTHER
+background_color = 'black'
+# TRANSPARENT LAYOUT FOR FIGURES
+layout = go.Layout(
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)'
+)
+
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)']
 
 with open("modules/program_examples/assembly_test4.bin", "r") as file:
     data = file.read()
@@ -36,15 +53,27 @@ def make_memory_slots():
         memory_data.append(ba2hex(cpu.data_memory.slots[i:i + 32 * 8]))
 
     fig = go.Figure(
-        data=[go.Table(header=dict(values=["Addr       :  ", header_1]), cells=dict(values=[rows, memory_data]))])
+        data=[go.Table(columnorder=[1, 2],
+                       columnwidth=[80, 1000],
+                       header=dict(values=["Addr       :  ", header_1], line_color=table_header_color,
+                                   fill_color=table_header_color,
+                                   align=['left', 'center'],
+                                   font=dict(color=table_main_font_color, size=12), ),
+                       cells=dict(values=[rows, memory_data], line_color=table_main_color,
+                                  fill_color=table_main_color,
+                                  align=['left', 'center'],
+                                  font=dict(color=table_main_font_color, size=12), ))], layout=layout)
+    fig.update_layout(height=1000,)
     return fig
 
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div([
-    html.Button('Next', id='submit-val', n_clicks=0, style={'display': 'inline-block'}),
+    html.Button('Next', id='submit-val', n_clicks=0,
+                style={"color": button_font_color, "background-color": button_color}),
     html.Div(id='simulator')
-])
+], style={'backgroundColor': background_color, 'bottom': '0', 'right': '0', 'left': '0',
+          'top': '0'})
 
 
 @app.callback(Output('simulator', 'children'),
@@ -53,8 +82,8 @@ def update_tables(n_clicks):
     cpu.web_next_instruction()
     return html.Div([
         html.Div(dcc.Graph(figure=make_memory_slots(), config={
-        'displayModeBar': False})),
-    ])
+            'displayModeBar': False})),
+    ], style={'backgroundColor': background_color})
 
 
 server = app.server
@@ -64,4 +93,3 @@ dev_server = app.run_server
 if __name__ == '__main__':
     app.run_server(debug=True)
     # app.run_server(debug=True, processes=3, threaded=False)
-

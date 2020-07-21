@@ -401,6 +401,7 @@ class CPU:
 
         # Else, we have to execute the needed computations for this function in the virtual ALU
         else:
+            # TODO: check what goes on with a load function
             # Determine the needed function for this opcode and execute it, passing the flag register
             function = functions_dictionary[self.instructions_dict[self.opcode.to01()][0]]
             result_value = function(operands_values, flag_register=self.registers["FR"])
