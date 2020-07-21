@@ -1,7 +1,18 @@
 {
     "comments": "Each ISA architecture contains a list of registers for it, including: name, general_purpose bool, encoding",
-    "risc1": {},
-    "risc2": {},
+    "risc1": [
+        ["FR", 0, "000"],
+        ["SP", 0, "001"],
+        ["IP", 0, "010"],
+        ["TOS", 1, "011"]
+    ],
+    "risc2": [
+        ["FR", 0, "000"],
+        ["SP", 0, "001"],
+        ["IP", 0, "010"],
+        ["IR", 0, "011"],
+        ["ACC", 1, "100"]
+    ],
     "risc3": [
         ["SP", 0, "100"],
         ["IP", 0, "101"],

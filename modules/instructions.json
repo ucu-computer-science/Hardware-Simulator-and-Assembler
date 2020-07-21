@@ -1,192 +1,195 @@
 {
     "comments": "Each architecture contains a dict of instructions: encoding, name, result destination and list of operands",
+    "risc1_comments": "Stack architecture is probably going to have different type of instructions, an encoding as key, assembly name as the first value, a list for the simulator, a list of operands for the assembler",
     "risc1": {
         "000000": [
+            "end",
             "end"
         ],
         "000001": [
             "load",
-            "tos",
-            "memtos"
+            ["tos", "memtos"],
+            []
         ],
         "000010": [
             "load",
-            "tos",
-            "fr"
+            ["tos", "fr"],
+            ["fr"]
         ],
         "100000": [
             "load",
-            "tos",
-            "memimm"
+            ["tos", "memimm"],
+            ["imm"]
         ],
         "000100": [
             "store",
-            "memtos",
-            "tospop"
+            ["memtos", "tospop"],
+            []
         ],
         "100001": [
             "store",
-            "memtos",
-            "imm"
+            ["memtos", "imm"],
+            ["imm"]
         ],
         "000101": [
             "store",
-            "fr",
-            "tospop"
+            ["fr", "tospop"],
+            ["fr"]
         ],
         "000110": [
             "swap",
-            "tos",
-            "tos2pop"
+            ["tos", "tos2pop"],
+            []
         ],
         "000111": [
             "dup",
-            "tos",
-            "tos"
+            ["tos", "tos"],
+            []
         ],
         "001000": [
             "dup2",
-            "tos2",
-            "tos2"
+            ["tos2", "tos2"],
+            []
         ],
         "100010": [
             "mov",
-            "tos",
-            "imm"
+            ["tos", "imm"],
+            ["imm"]
         ],
         "001001": [
             "push",
-            "stackpush",
-            "tospop"
+            ["stackpush", "tospop"],
+            []
         ],
         "001010": [
             "pushf",
-            "stackpush",
-            "fr"
+            ["stackpush", "fr"],
+            []
         ],
         "001100": [
             "pop",
-            "tos",
-            "stackpop"
+            ["tos", "stackpop"],
+            []
         ],
         "001101": [
             "pop",
-            "fr",
-            "stackpop"
+            ["fr", "stackpop"],
+            []
         ],
         "001110": [
             "add",
-            "tos",
-            ["tospop","tospop"]
+            ["tos", "tospop", "tospop"],
+            []
         ],
         "001111": [
             "sub",
-            "tos",
-            ["tospop","tospop"]
+            ["tos", "tospop", "tospop"],
+            []
         ],
         "010000": [
             "mul",
-            "tos",
-            ["tospop","tospop"]
+            ["tos", "tospop", "tospop"],
+            []
         ],
         "010001": [
             "div",
-            "tos",
-            ["tospop","tospop"]
+            ["tos", "tospop", "tospop"],
+            []
         ],
         "010010": [
             "and",
-            "tos",
-            ["tospop","tospop"]
+            ["tos", "tospop", "tospop"],
+            []
         ],
         "010011": [
             "or",
-            "tos",
-            ["tospop","tospop"]
+            ["tos", "tospop", "tospop"],
+            []
         ],
         "010100": [
             "xor",
-            "tos",
-            ["tospop","tospop"]
+            ["tos", "tospop", "tospop"],
+            []
         ],
         "010101": [
             "not",
-            "tos",
-            ["tospop"]
+            ["tos", "tospop"],
+            []
         ],
         "100011": [
             "lsh",
-            "tos",
-            ["tospop","imm"]
+            ["tos", "tospop","imm"],
+            ["imm"]
         ],
         "100100": [
             "rsh",
-            "tos",
-            ["tospop","imm"]
+            ["tos", "tospop","imm"],
+            ["imm"]
         ],
         "100101": [
             "call",
-            "call",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "010110": [
-          "call",
-          "call",
-          "tos"
+            "call",
+            ["tos"],
+            []
         ],
         "010111": [
             "ret",
-            "ret"
+            ["ret"],
+            []
         ],
         "011000": [
             "cmpe",
-            "cmpe",
-            ["tospop", "tospop"]
+            ["tospop", "tospop"],
+            []
         ],
         "100110": [
             "cmpe",
-            "cmpe",
-            ["tospop", "imm"]
+            ["tospop", "imm"],
+            ["imm"]
         ],
         "011001": [
             "cmpb",
-            "cmpb",
-            ["tospop", "tospop"]
+            ["tospop", "tospop"],
+            []
         ],
         "100111": [
             "cmpb",
-            "cmpb",
-            ["tospop", "imm"]
+            ["tospop", "imm"],
+            ["imm"]
         ],
         "011010": [
             "test",
-            "test",
-            ["tospop", "tospop"]
+            ["tospop", "tospop"],
+            []
         ],
         "101000": [
             "test",
-            "test",
-            ["tospop", "imm"]
+            ["tospop", "imm"],
+            ["imm"]
         ],
         "101001": [
             "jmp",
-            "jmp",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "011011": [
             "jmp",
-            "jmp",
-            "tos"
+            ["tos"],
+            []
         ],
         "101010": [
             "in",
-            "tos",
-            "imm"
+            ["tos", "imm"],
+            ["imm"]
         ],
         "101011": [
             "out",
-            "out",
-            ["port", "tos"]
+            ["imm", "tos"],
+            ["imm"]
         ]
     },
     "risc2": {
