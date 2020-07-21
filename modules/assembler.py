@@ -93,6 +93,12 @@ class Assembler:
         Translates the assembly code into binary code
         :param text: str - assembly code
         """
+        # TODO: Possible consideration of assembly using regex pattern matching,
+        #  we are basically doing almost that already
+        #  This would eliminate the need to check the validity of the operands separately,
+        #  as they are going to be a part of the pattern. Can be precompiled and is super fast too
+        #  We basically won't need registers dict for decoding part of the assembly,
+        #  but still will need that for the actual translation and decoding processes
         binary_code = ""
 
         # Divide the program into lines
@@ -105,12 +111,12 @@ class Assembler:
 
             for ind, operand in enumerate(operands[:-1]):
                 if not operand.endswith(','):
-                    raise AssemblerError("Provide valid operands for this instruction (commas included)")
+                    raise AssemblerError(f"Provide valid operands for this instruction (commas included): {line}")
                 operands[ind] = operand[:-1]
 
             # Check if the instruction actually exists for this architecture
             if assembly_instruction not in self.instructions:
-                raise AssemblerError(f"Not valid opcode: {assembly_instruction}")
+                raise AssemblerError(f"Not valid assembly instruction: {assembly_instruction}")
 
             # Get the list of encodings for this assembly instruction
             instructions_info = self.instructions[assembly_instruction]
@@ -159,18 +165,40 @@ class Assembler:
             if self.__valid_type(operand, op_type:=types[index]):
 
                 # Encode the operand properly and add it to the line
-                if op_type == "reg":
+                if op_type == "reg" or op_type == "fr":
                     binary_line += self.register_names[operand[1:]]
                 elif op_type == "memreg":
                     binary_line += self.register_names[operand[2:-1]]
                 elif op_type.startswith("imm"):
+                    # Read the number from the assembly code
                     num = int(operand[1:])
-                    bit_len = int(op_type[3:])
 
+                    # RISC-Stack has to divide the number into two 6-bit bytes
+                    if self.isa == "risc1":
+                        bit_len = 12
+                        temp = self.__encode_number(num, bit_len, split=True)
+
+                    # RISC-Accumulator has to divide the number into two lines of 8 bits
+                    elif self.isa == "risc2":
+                        bit_len = 16
+                        temp = self.__encode_number(num, bit_len, split=True)
+
+                    # Immediate constant length is undefined for Risc-Register architecture,
+                    # and thus is set for every instruction
+                    elif self.isa == "risc3":
+                        bit_len = int(op_type[3:])
+                        temp = self.__encode_number(num, bit_len, split=False)
+
+                    # CISC stub
+                    else:
+                        bit_len = 8
+                        temp = ''
+
+                    # Check if the size of the number was valid
                     if not (-1*2**(bit_len-1) < num < 2**(bit_len-1)):
                         raise AssemblerError("Immediate constant provided too big")
 
-                    binary_line += bin(twos_complement(num, bit_len))[2:].rjust(int(op_type[3:]), '0')
+                    binary_line += temp
 
             else:
                 raise AssemblerError("Provide valid operands for this instruction")
@@ -186,14 +214,31 @@ class Assembler:
         if op_type == "reg":
             return assembly_op.startswith("%") and assembly_op[1:] in self.register_names
 
-        # If the operand is an immediate constant, it should start with a '$' sign and contain numbers only
-        elif op_type.startswith("imm"):
-            return assembly_op.startswith("$") and self.__is_number(assembly_op[1:])
-
         # If the operand is a memory location addressed by a register, it shoould look like [%reg]
         elif op_type == "memreg":
             return (assembly_op.startswith("[") and assembly_op.endswith("]")
                     and self.__valid_type(assembly_op[1:-1], "reg"))
+
+        # RISC-Stack and Accumulator specific operand
+        elif op_type == "fr":
+            return assembly_op.startswith("%") and assembly_op[1:] == "FR"
+
+        # If the operand is an immediate constant, it should start with a '$' sign and contain numbers only
+        elif op_type.startswith("imm"):
+        return assembly_op.startswith("$") and self.__is_number(assembly_op[1:])
+
+    @staticmethod
+    def __encode_number(number, length, split):
+        """
+        Encodes the number in the next two bytes of different sizes for RISC-Register and RISC-Stack architectures
+        :param number: int, the actual number to encode
+        :param length: int, the length of two bytes of encoding for the architecture
+        :return: str - two lines with encoded numbers of specified length
+        """
+        temp = bin(twos_complement(number, length))[2:].rjust(length, '0')
+        if split:
+            temp = temp[:length // 2] + "\n" + temp[length // 2:]
+        return temp
 
     @staticmethod
     def __is_number(n):
