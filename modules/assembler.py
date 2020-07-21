@@ -221,11 +221,11 @@ class Assembler:
 
         # RISC-Stack and Accumulator specific operand
         elif op_type == "fr":
-            return assembly_op.startswith("%") and assembly_op[1:] == "FR"
+            return self.isa in ["risc1", "risc2"] and assembly_op.startswith("%") and assembly_op[1:] == "FR"
 
         # If the operand is an immediate constant, it should start with a '$' sign and contain numbers only
         elif op_type.startswith("imm"):
-        return assembly_op.startswith("$") and self.__is_number(assembly_op[1:])
+            return assembly_op.startswith("$") and self.__is_number(assembly_op[1:])
 
     @staticmethod
     def __encode_number(number, length, split):
