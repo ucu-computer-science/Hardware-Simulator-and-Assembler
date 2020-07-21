@@ -146,7 +146,7 @@ def update_tables(n_clicks):
         html.Div(dcc.Graph(figure=make_registers_slots(), config={
             'displayModeBar': False}), style={'display': 'inline-block'}, ),
         html.Div(dcc.Graph(figure=make_output_slot(), config={
-            'displayModeBar': False}), style={'display': 'inline-block'},),
+            'displayModeBar': False}), style={'display': 'inline-block'}, ),
         html.Div(dcc.Graph(figure=make_memory_slots(), config={
             'displayModeBar': False})),
     ], style={'backgroundColor': background_color})
