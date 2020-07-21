@@ -9,15 +9,18 @@ from modules.simulator import CPU
 
 # COLOR PALETTE
 # TABLES
-table_main_color = '#2e003e'
-table_header_color = '#2e003e'
-table_main_font_color = '#e4dcf1'
-table_header_font_color = '#e4dcf1'
+table_main_color = '#414364'
+table_header_color = '#414364'
+table_main_font_color = '#93B6D5'
+table_header_font_color = '#93B6D5'
 # BUTTONS
-button_color = '#283655'
-button_font_color = '#f7f7f7'
+button_color = '#46547C'
+button_font_color = '#EAB646'
 # OTHER
-background_color = 'black'
+background_color = '#26273D'
+# TRANSPARENT LAYOUT FOR FIGURES
+
+
 # TRANSPARENT LAYOUT FOR FIGURES
 layout = go.Layout(
     paper_bgcolor='rgba(0,0,0,0)',
@@ -32,38 +35,59 @@ with open("modules/program_examples/assembly_test4.bin", "r") as file:
 cpu = CPU("risc3", "neumann", "special", data)
 
 
-# def press_button():
+def make_instruction_slot():
+    """
+    Return a table figure, with information from the instruction of the CPU.
+    """
+    pass
+
+
+def make_output_slot():
+    """
+    Return a table figure, with information from the instruction of the CPU.
+    """
+    pass
+
+
+def make_registers_slots():
+    """
+    Return a table figure, with information from registers of the CPU.
+    """
+    pass
 
 
 def make_memory_slots():
-    header_1 = []
+    """
+    Return a table figure, with information from the memory of the CPU.
+    """
+    headers = ["Addr       :  "]
     for i in range(0, 32, 4):
-        header_1.append(
-            " " + hex(i)[2:].rjust(2, "0") + " " + hex(i + 1)[2:].rjust(2, "0") + " " + hex(i + 2)[2:].rjust(2,
-                                                                                                             "0") + " " + hex(
-                i + 3)[2:].rjust(2, "0") + " |")
-    header_1 = "".join(header_1)
+        headers.append(hex(i)[2:].rjust(2, "0") + " " + hex(i + 1)[2:].rjust(2, "0") + " " + hex(i + 2)[2:].rjust(2,
+                                                                                                                  "0") + " " + hex(
+            i + 3)[2:].rjust(2, "0"))
 
     rows = []
     for i in range(0, 1024, 32):
         rows.append(hex(i)[2:].rjust(8, "0"))
 
-    memory_data = []
+    memory_data = [[], [], [], [], [], [], [], []]
     for i in range(0, len(cpu.data_memory.slots), 32 * 8):
-        memory_data.append(ba2hex(cpu.data_memory.slots[i:i + 32 * 8]))
+        string = ba2hex(cpu.data_memory.slots[i:i + 32 * 8])
+        for x in range(8):
+            memory_data[x].append(" ".join([string[8 * x:8 * x + 8][y:y + 2] for y in range(0, 8, 2)]))
 
+    rows = [rows] + memory_data
     fig = go.Figure(
-        data=[go.Table(columnorder=[1, 2],
-                       columnwidth=[80, 1000],
-                       header=dict(values=["Addr       :  ", header_1], line_color=table_header_color,
+        data=[go.Table(columnwidth=50,
+                       header=dict(values=headers, line_color=table_header_color,
                                    fill_color=table_header_color,
                                    align=['left', 'center'],
                                    font=dict(color=table_main_font_color, size=12), ),
-                       cells=dict(values=[rows, memory_data], line_color=table_main_color,
+                       cells=dict(values=rows, line_color=table_header_color,
                                   fill_color=table_main_color,
                                   align=['left', 'center'],
                                   font=dict(color=table_main_font_color, size=12), ))], layout=layout)
-    fig.update_layout(height=1000,)
+    fig.update_layout(height=850, )
     return fig
 
 
