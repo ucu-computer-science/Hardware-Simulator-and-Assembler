@@ -241,11 +241,12 @@ class CPU:
         """
         Executes the next instruction after button click on the webpage
         """
+        # Read first instruction of the program from the memory
+        self.__read_instruction()
+
         if self.instruction.to01() == ('0' * 16):
             return
 
-        # Read first instruction of the program from the memory
-        self.__read_instruction()
         # Execute the cycle
         self.__execute_cycle()
 
@@ -266,7 +267,8 @@ class CPU:
         Reads the instruction and the opcode in it
         """
         start_read_location = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
-        self.instruction = self.program_memory.read_data(start_read_location, start_read_location + self.instruction_size[2])
+        self.instruction = self.program_memory.read_data(start_read_location,
+                                                         start_read_location + self.instruction_size[2])
 
         # Read the opcode part of the instruction
         if self.read_state == "opcode":
@@ -308,7 +310,8 @@ class CPU:
             elif operand == "memreg":
                 register_code = self.instruction[start_point:start_point + 3].to01()
                 tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)
-                operands_values.append(self.data_memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
+                operands_values.append(
+                    self.data_memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
