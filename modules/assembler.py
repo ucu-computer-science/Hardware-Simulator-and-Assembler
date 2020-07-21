@@ -103,6 +103,7 @@ class Assembler:
 
         # Divide the program into lines
         for line in text.split("\n"):
+            self.line = line
 
             # Split instruction name and operands
             binary_line = ""
@@ -158,7 +159,7 @@ class Assembler:
         types = instruction_info[1]
 
         if len(operands) != len(types):
-            raise AssemblerError("Provide valid operands for this instruction")
+            raise AssemblerError(f"Provide valid operands for this instruction: {self.line}")
 
         # Check if the operand provided is of the type needed, if yes, encode and add it to the current line
         for index, operand in enumerate(operands):
@@ -201,7 +202,7 @@ class Assembler:
                     binary_line += temp
 
             else:
-                raise AssemblerError("Provide valid operands for this instruction")
+                raise AssemblerError(f"Provide valid operands for this instruction: {self.line}")
 
         return binary_line.ljust(self.instruction_size[0], '0')
 
@@ -219,10 +220,6 @@ class Assembler:
             return (assembly_op.startswith("[") and assembly_op.endswith("]")
                     and self.__valid_type(assembly_op[1:-1], "reg"))
 
-        # RISC-Stack and Accumulator specific operand
-        elif op_type == "fr":
-            return self.isa in ["risc1", "risc2"] and assembly_op.startswith("%") and assembly_op[1:] == "FR"
-
         # If the operand is an immediate constant, it should start with a '$' sign and contain numbers only
         elif op_type.startswith("imm"):
             return assembly_op.startswith("$") and self.__is_number(assembly_op[1:])
@@ -237,7 +234,7 @@ class Assembler:
         """
         temp = bin(twos_complement(number, length))[2:].rjust(length, '0')
         if split:
-            temp = temp[:length // 2] + "\n" + temp[length // 2:]
+            temp = "\n" + temp[:length // 2] + "\n" + temp[length // 2:]
         return temp
 
     @staticmethod
