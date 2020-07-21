@@ -12,20 +12,19 @@ from collections import defaultdict
 from modules.functions import twos_complement
 
 
-class Assembler:
+class AssemblerCLI:
     """
-    Assembler class. Takes a file and specified architecture type as
-    an input, and translates to binary code
+    Command-Line interface for the Assembler (as opposed to the general functionality class)
     """
-
     def __init__(self):
-        """ Initializes the assembler, outputs the binary code file"""
-
+        """
+        Checks the validity of the arguments and instantiates new Assembler class instance with them
+        """
         # Creating the command line parser and main arguments
         parser = argparse.ArgumentParser()
-        parser.add_argument("-f","--file", help="provide the assembly program filepath")
+        parser.add_argument("-f", "--file", help="provide the assembly program filepath")
         parser.add_argument("--isa", help="specify the ISA architecture: RISC1 (Stack), "
-                                 "RISC2 (Accumulator), RISC3 (Register), CISC (Register)")
+                                          "RISC2 (Accumulator), RISC3 (Register), CISC (Register)")
         parser.add_argument("-o", "--output", help="Specify the output file")
 
         # Parsing the command line arguments
@@ -44,24 +43,7 @@ class Assembler:
         with open(args.file, "r") as file:
             program_text = file.read()
 
-        # Open the list of instructions for this architecture and reformat it for our purposes
-        # DefaultDict allows to have several values for the same key all pushed into type specified - we use list
-        # This is useful since we might have the same assembly instruction encoded differently depending on the operands
-        with open(os.path.join("modules", "instructions.json"), "r") as file:
-            self.instructions = defaultdict(list)
-            for opcode, details in json.load(file)[args.isa.lower()].items():
-                self.instructions[details[0]].append([opcode, details[-1]])
-
-        # Open the list of registers for this architecture and format it properly
-        with open(os.path.join("modules", "registers.json"), "r") as file:
-            registers = json.load(file)[args.isa.lower()]
-            self.register_names = {register[0]: register[2] for register in registers}
-
-        # Determining the size of the instructions to read
-        instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
-        self.instruction_size = instruction_sizes[args.isa.lower()]
-
-        binary_code = self.translate(program_text)
+        binary_program = Assembler(args.isa.lower(), program_text).binary_code
 
         # If there was an output path provided, save the binary code there
         if args.output:
@@ -71,10 +53,40 @@ class Assembler:
         # same folder as the assembly program with a different file extension
         else:
             output_path = os.path.join(os.path.dirname(args.file),
-                                       os.path.splitext(os.path.basename(args.file))[0]+".bin")
+                                       os.path.splitext(os.path.basename(args.file))[0] + ".bin")
 
         with open(output_path, "w") as file:
-            file.write(binary_code)
+            file.write(binary_program)
+
+
+class Assembler:
+    """
+    Assembler class. Takes a file and specified architecture type as
+    an input, and translates to binary code
+    """
+
+    def __init__(self, isa, program_text):
+        """ Initializes the assembler, outputs the binary code file"""
+        self.isa = isa
+
+        # Open the list of instructions for this architecture and reformat it for our purposes
+        # DefaultDict allows to have several values for the same key all pushed into type specified - we use list
+        # This is useful since we might have the same assembly instruction encoded differently depending on the operands
+        with open(os.path.join("modules", "instructions.json"), "r") as file:
+            self.instructions = defaultdict(list)
+            for opcode, details in json.load(file)[isa].items():
+                self.instructions[details[0]].append([opcode, details[-1]])
+
+        # Open the list of registers for this architecture and format it properly
+        with open(os.path.join("modules", "registers.json"), "r") as file:
+            registers = json.load(file)[isa]
+            self.register_names = {register[0]: register[2] for register in registers}
+
+        # Determining the size of the instructions to read
+        instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
+        self.instruction_size = instruction_sizes[isa]
+
+        self.binary_code = self.translate(program_text)
 
     def translate(self, text):
         """
@@ -98,7 +110,7 @@ class Assembler:
 
             # Check if the instruction actually exists for this architecture
             if assembly_instruction not in self.instructions:
-                raise AssemblerError("Not valid opcode")
+                raise AssemblerError(f"Not valid opcode: {assembly_instruction}")
 
             # Get the list of encodings for this assembly instruction
             instructions_info = self.instructions[assembly_instruction]
@@ -202,4 +214,4 @@ class AssemblerError(Exception):
 
 
 if __name__ == '__main__':
-    assembler = Assembler()
+    assembler = AssemblerCLI()
