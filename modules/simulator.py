@@ -160,13 +160,13 @@ class CPU:
         self.read_state = "opcode"
         is_close_program = self.start_program()
 
-        key = ''
         # Closes the simulator and restores the console settings
-        while key not in ('Q', 'q') and not is_close_program:
-            key = self.instruction_window.getkey()
-
-        # Close the curses module screen if we are in its mode
         if self.curses_mode:
+            key = ''
+            while key not in ('Q', 'q') and not is_close_program:
+                key = self.instruction_window.getkey()
+
+            # Close the curses module screen if we are in its mode
             self.close_screen()
 
     def __create_registers(self):
