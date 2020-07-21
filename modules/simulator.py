@@ -151,17 +151,16 @@ class CPU:
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
         self.registers["IP"]._state = bitarray(bin(twos_complement(128 + offset, 16))[2:].rjust(16, '0'))
         self.__load_program(program_text)
+        self.read_state = "opcode"
 
         # Draw the main interface
         if self.curses_mode:
             self.start_screen()
 
-        # Starts the execution of the program code loaded
-        self.read_state = "opcode"
-        is_close_program = self.start_program()
+            # Starts the execution of the program code loaded
+            is_close_program = self.start_program()
 
-        # Closes the simulator and restores the console settings
-        if self.curses_mode:
+            # Closes the simulator and restores the console settings
             key = ''
             while key not in ('Q', 'q') and not is_close_program:
                 key = self.instruction_window.getkey()
@@ -237,6 +236,21 @@ class CPU:
         self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
 
         return is_close
+
+    def web_next_instruction(self):
+        """
+        Executes the next instruction after button click on the webpage
+        """
+        if self.instruction.to01() == ('0' * 16):
+            return
+
+        # Read first instruction of the program from the memory
+        self.__read_instruction()
+        # Execute the cycle
+        self.__execute_cycle()
+
+        # Update the Memory-Mapped devices
+        self.__update_devices()
 
     def __update_devices(self):
         """
