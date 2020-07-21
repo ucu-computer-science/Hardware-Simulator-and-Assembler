@@ -81,6 +81,12 @@ class Simulator:
         if not args.file:
             raise SimulatorError("Provide the program code binary file")
 
+        if not os.path.isfile(args.file):
+            raise SimulatorError("Provide a valid file path")
+
+        with open(args.file, "r") as file:
+            program_text = file.read()
+
         if not args.isa or args.isa.lower() not in valid_isa:
             raise SimulatorError("Provide the type of ISA for simulation.")
 
@@ -90,7 +96,7 @@ class Simulator:
         if not args.output or args.output.lower() not in valid_io:
             raise SimulatorError("Provide the type of Input/Output architecture for simulation")
 
-        CPU(args.isa.lower(), args.architecture.lower(), args.output.lower(), args.file)
+        CPU(args.isa.lower(), args.architecture.lower(), args.output.lower(), program_text, curses_mode=True)
 
 
 class CPU:
@@ -100,18 +106,20 @@ class CPU:
     Provides all arithmetics and memory manipulations
     """
 
-    def __init__(self, isa, architecture, io_arch, filename, offset=0):
+    def __init__(self, isa, architecture, io_arch, program_text, offset=0, curses_mode=False):
         """
         Creates a new CPU.
         :param isa: chosen ISA
         :param architecture: chosen Architecture type
         :param io_arch: chosen Input/Output type
+        :param program_text: str - text of the binary program file
         :param offset: location in the memory for the program code, as an offset from default
         :return: NoneType
         """
         self.isa = isa
         self.architecture = architecture
         self.io_arch = io_arch
+        self.curses_mode = curses_mode
 
         # Create devices for this CPU depending on the I/O architecture specified
         if io_arch == "mmio":
@@ -142,13 +150,13 @@ class CPU:
 
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
         self.registers["IP"]._state = bitarray(bin(twos_complement(128 + offset, 16))[2:].rjust(16, '0'))
-        self.__load_program(filename)
+        self.__load_program(program_text)
 
         # Draw the main interface
-        self.start_screen()
+        if self.curses_mode:
+            self.start_screen()
 
         # Starts the execution of the program code loaded
-        self.instruction = ''
         self.read_state = "opcode"
         is_close_program = self.start_program()
 
@@ -157,7 +165,9 @@ class CPU:
         while key not in ('Q', 'q') and not is_close_program:
             key = self.instruction_window.getkey()
 
-        self.close_screen()
+        # Close the curses module screen if we are in its mode
+        if self.curses_mode:
+            self.close_screen()
 
     def __create_registers(self):
         """
@@ -175,54 +185,58 @@ class CPU:
             self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
 
-    def __load_program(self, filename):
+    def __load_program(self, program_text):
         """
         Loads the program into memory at Instruction Pointer
-        :param filename: str - a path to the file of the binary program
+        :param program_text: str - text of the binary program file
         """
-        if not os.path.isfile(filename):
-            raise SimulatorError("Provide a valid file path")
-
         # Writing program instructions into to memory
-        with open(filename, "r") as file:
-            self.program_memory.write(twos_complement(int(self.registers["IP"]._state.to01(), 2), 16),
-                              bitarray(file.read().replace('\n', '')))
+        ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
+        self.program_memory.write(ip_value, bitarray(program_text.replace('\n', '')))
 
     def start_program(self):
         """
         Handles the execution of the actual program
         :return: NoneType
         """
-        # Read first instruction of the program from the memory
-        self.__read_instruction()
-
         # Continue executing instructions until we reach
         # the end of the program (all-zeros byte)
-        while self.instruction.to01() != ('0' * 16):
-            key = ''
+        while True:
 
-            # Draw the updated screen
-            self.draw_screen()
+            # Read first instruction of the program from the memory
+            self.__read_instruction()
 
             # Update the Memory-Mapped devices
             self.__update_devices()
 
-            # Move on to the next instruction if the 'n' key is pressed
-            while key not in ('N', 'n'):
-                key = self.instruction_window.getkey()
+            # Draw the updated screen
+            if self.curses_mode:
+                logger.info("Drawing the screen")
+                self.draw_screen()
 
-                # Finish the program if the 'q' key is pressed
-                if key in ('Q', 'q'):
-                    return True
+            if self.instruction.to01() == ('0' * 16):
+                return False
 
-            # Execute this instruction, and move on to the next one, reading it
-            self.execute()
-            ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + 2, 16)
-            self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
-            self.__read_instruction()
+            logger.info("Entering execute cycle")
+            is_close = self.__execute_cycle()
+            if is_close:
+                return True
 
-        # Draw the updated screen
-        self.draw_screen()
+    def __execute_cycle(self):
+        """
+        Execute the current instruction, and move on to the next one
+        """
+        is_close = False
+        # Waiting for the key or button to be pressed, depending on the mode
+        if self.curses_mode:
+            is_close = self.curses_next_instruction()
+
+        self.execute()
+        logger.info("Executing the instruction. To close: " + str(is_close))
+        ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + 2, 16)
+        self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
+
+        return is_close
 
     def __update_devices(self):
         """
@@ -485,6 +499,21 @@ class CPU:
     # Below are the methods for curses-driven command-line interface
     # TODO: Create a basic API of data we need to transmit for the web interface to work properly
     #  A somewhat later goal, sure, but still
+    def curses_next_instruction(self):
+        """
+        A temporary module that switches to the next instruction when curses mode is on
+        """
+        while True:
+            key = self.instruction_window.getkey()
+            # Move on to the next instruction if the 'n' key is pressed
+            if key in ('N', 'n'):
+                logger.info("N pressed")
+                return False
+            # Finish the program if the 'q' key is pressed
+            if key in ('Q', 'q'):
+                logger.info("Q pressed")
+                return True
+
     def start_screen(self):
         """
         Draws the screen elements the first time
@@ -587,7 +616,6 @@ class CPU:
 
         # Refresh the shell output
         self.shell_box.clear()
-        logger.info(self.ports_dictionary["1"]._state)
         for port, device in self.ports_dictionary.items():
             self.shell_box.addstr(str(device))
 
