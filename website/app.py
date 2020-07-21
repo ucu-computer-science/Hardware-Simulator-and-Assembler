@@ -29,7 +29,7 @@ layout = go.Layout(
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)']
 
-with open("modules/program_examples/assembly_test4.bin", "r") as file:
+with open("modules/program_examples/assembly_test6.bin", "r") as file:
     data = file.read()
 
 cpu = CPU("risc3", "neumann", "special", data)
@@ -39,21 +39,57 @@ def make_instruction_slot():
     """
     Return a table figure, with information from the instruction of the CPU.
     """
-    pass
+    fig = go.Figure(
+        data=[
+            go.Table(header=dict(values=[f"{cpu.instruction.to01()}\n"], line_color=table_header_color,
+                                 fill_color=table_header_color,
+                                 align=['left', 'center'],
+                                 font=dict(color=table_main_font_color, size=20), height=40), )], layout=layout)
+    fig.update_layout(height=200, margin=dict(b=10), width=380)
+
+    return fig
 
 
 def make_output_slot():
     """
     Return a table figure, with information from the instruction of the CPU.
     """
-    pass
+    shell_slots = []
+    for port, device in cpu.ports_dictionary.items():
+        shell_slots.append(str(device))
+    fig = go.Figure(
+        data=[
+            go.Table(header=dict(values=shell_slots, line_color=table_header_color,
+                                 fill_color=table_header_color,
+                                 align=['left', 'center'],
+                                 font=dict(color=table_main_font_color, size=20), height=40), )], layout=layout)
+    fig.update_layout(height=200, margin=dict(b=10), width=500)
+
+    return fig
 
 
 def make_registers_slots():
     """
     Return a table figure, with information from registers of the CPU.
     """
-    pass
+    items = [(value.name, value._state.tobytes().hex()) for key, value in cpu.registers.items()]
+    values = [[], []]
+    for i in range(1, len(items), 2):
+        values[0].append(f" {(items[i - 1][0] + ':').ljust(4, ' ')} {items[i - 1][1]}  ")
+        values[1].append(f"{(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}\n")
+
+    fig = go.Figure(
+        data=[
+            go.Table(cells=dict(values=values, line_color=table_header_color,
+                                fill_color=table_header_color,
+                                align=['left', 'center'],
+                                font=dict(color=table_main_font_color, size=15), height=25),
+                     )], layout=layout)
+    fig.update_layout(height=150, width=300, margin=dict(t=10, l=1, r=1, b=1))
+    fig.layout['template']['data']['table'][0]['header']['fill']['color'] = 'rgba(0,0,0,0)'
+    fig.layout['template']['data']['table'][0]['header']['line']['color'] = 'rgba(0,0,0,0)'
+
+    return fig
 
 
 def make_memory_slots():
@@ -87,7 +123,7 @@ def make_memory_slots():
                                   fill_color=table_main_color,
                                   align=['left', 'center'],
                                   font=dict(color=table_main_font_color, size=12), ))], layout=layout)
-    fig.update_layout(height=850, )
+    fig.update_layout(height=850, margin=dict(t=10, b=10))
     return fig
 
 
@@ -105,6 +141,12 @@ app.layout = html.Div([
 def update_tables(n_clicks):
     cpu.web_next_instruction()
     return html.Div([
+        html.Div(dcc.Graph(figure=make_instruction_slot(), config={
+            'displayModeBar': False}), style={'display': 'inline-block'}, ),
+        html.Div(dcc.Graph(figure=make_registers_slots(), config={
+            'displayModeBar': False}), style={'display': 'inline-block'}, ),
+        html.Div(dcc.Graph(figure=make_output_slot(), config={
+            'displayModeBar': False}), style={'display': 'inline-block'},),
         html.Div(dcc.Graph(figure=make_memory_slots(), config={
             'displayModeBar': False})),
     ], style={'backgroundColor': background_color})
