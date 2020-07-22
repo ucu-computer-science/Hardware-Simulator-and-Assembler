@@ -88,7 +88,7 @@ app.layout = html.Div([
 
     html.Div([html.Div(id='simulator'),
               html.Button('Execute next instruction', id='next-instruction', n_clicks=0,
-                          style={"color": button_font_color, "background-color": button_color, 'margin-left': 150,
+                          style={"color": button_font_color, "background-color": button_color, 'margin-left': 400,
                                  'margin-top': 10}), ],
              style={'height': '100px', 'margin-top': 0, 'margin-left': 390, 'display': 'block'})
 ])
@@ -147,6 +147,19 @@ def make_instruction_slot():
                                  font=dict(color=table_main_font_color, size=20), height=40), )], layout=layout)
     fig.update_layout(height=160, margin=dict(b=25, l=30, r=50), width=300,
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
+    fig.update_layout(
+        title={
+            'text': "NEXT INSTRUCTION",
+            'y': 0.52,
+            'x': 0.459,
+            'xanchor': 'center',
+            'yanchor': 'top'},
+        font=dict(
+            family="Roboto Mono, monospace",
+            size=13,
+            color=text_color,
+        )
+    )
 
     return fig
 
@@ -163,10 +176,24 @@ def make_output_slot():
         data=[
             go.Table(header=dict(values=shell_slots, line_color=table_header_color,
                                  fill_color=table_header_color,
-                                 align=['left', 'center'], height=40), )], layout=layout)
-    fig.update_layout(height=160, margin=dict(b=25, r=0, l=150), width=430,
+                                 align=['left', 'center'], height=40, font=dict(color=table_main_font_color, size=20)),
+                     )], layout=layout)
+    fig.update_layout(height=160, margin=dict(b=25, r=0, l=50), width=330,
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
 
+    fig.update_layout(
+        title={
+            'text': "OUTPUT DEVICE",
+            'y': 0.52,
+            'x': 0.57,
+            'xanchor': 'center',
+            'yanchor': 'top'},
+        font=dict(
+            family="Roboto Mono, monospace",
+            size=13,
+            color=text_color,
+        )
+    )
     return fig
 
 
@@ -187,10 +214,24 @@ def make_registers_slots():
                                 align=['left', 'center'],
                                 font=dict(color=table_main_font_color, size=15), height=25),
                      )], layout=layout)
-    fig.update_layout(height=150, width=300, margin=dict(t=10, l=0, r=1, b=1),
+    fig.update_layout(height=150, width=400, margin=dict(t=10, l=55, r=46, b=1),
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
     fig.layout['template']['data']['table'][0]['header']['fill']['color'] = 'rgba(0,0,0,0)'
     fig.layout['template']['data']['table'][0]['header']['line']['color'] = 'rgba(0,0,0,0)'
+
+    fig.update_layout(
+        title={
+            'text': "REGISTERS",
+            'y': 0.99,
+            'x': 0.489,
+            'xanchor': 'center',
+            'yanchor': 'top'},
+        font=dict(
+            family="Roboto Mono, monospace",
+            size=13,
+            color=text_color,
+        )
+    )
 
     return fig
 
@@ -225,10 +266,25 @@ def make_memory_slots():
                                   fill_color=table_main_color,
                                   align=['left', 'center'],
                                   font=dict(color=table_main_font_color, size=12), ))], layout=layout)
-    fig.update_layout(width=1032, height=400, margin=dict(t=10, b=10, r=0, l=30),
+    fig.update_layout(width=1032, height=450, margin=dict(t=24, b=10, r=0, l=30),
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20),
                       )
     fig.layout.update(dragmode=False)
+
+    fig.update_layout(
+        title={
+            'text': "MEMORY STACK",
+            'y': 1,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'},
+        font=dict(
+            family="Roboto Mono, monospace",
+            size=13,
+            color=text_color,
+        )
+    )
+
     return fig
 
 
@@ -238,8 +294,9 @@ dev_server = app.run_server
 
 # run the program
 # TODO: make table undraggable (maybe switch to dash table)
-# TODO: Add error field
+# TODO: Add error field (maybe in binary textarea)
+# TODO: Add I/O choice, neumann and harvard
 
 if __name__ == '__main__':
-    app.run_server(debug=True, threaded=True)
+    app.run_server(debug=False, threaded=True)
     # app.run_server(debug=True, processes=3, threaded=False)
