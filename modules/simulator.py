@@ -183,7 +183,8 @@ class CPU:
         for register in registers_list:
             temp = Register(register[0], general_purpose=(register[1] == 1))
             if register[0] == "TOS":
-                temp._state = bitarray(bin(2048)[2:].rjust(16, '0'))
+                self.tos_start = 512
+                temp._state = bitarray(bin(self.tos_start)[2:].rjust(16, '0'))
             self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
 
@@ -206,7 +207,7 @@ class CPU:
             is_close = self.curses_next_instruction()
 
         self.execute()
-        logger.info("Executing the instruction. To close: " + str(is_close))
+        # logger.info("Executing the instruction. To close: " + str(is_close))
         ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + self.instruction_size[0], 16)
         self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
 
@@ -217,7 +218,7 @@ class CPU:
         Executes the next instruction after button click on the webpage
         """
         # If the instruction is 'end' - an empty string, terminate the execution
-        if isinstance(self.instruction, bitarray) and self.instruction.to01() == ('0' * 16):
+        if isinstance(self.instruction, bitarray) and self.instruction.to01() == ('0' * self.instruction_size[0]):
             return
 
         if self.first_instruction:
@@ -263,7 +264,7 @@ class CPU:
         if self.read_state == "constant":
             self.long_immediate = self.program_memory.read_data(start_read_location + self.instruction_size[0],
                                                                 start_read_location + self.instruction_size[0]*3)
-            ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + (self.instruction_size[0]*3), 16)
+            ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + (self.instruction_size[0]*2), 16)
             self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
             self.read_state = "opcode"
 
@@ -324,7 +325,7 @@ class CPU:
                 operands_values.append(self.__pop_tos(second=True))
 
             elif operand == "memtos":
-                tos_value = int(self.__pop_tos().to01(), 2)
+                tos_value = int(self.__pop_tos(pop=True).to01(), 2)
                 operands_values.append(self.data_memory.read_data(tos_value, tos_value+16))
 
             elif operand == "memimm":
@@ -345,7 +346,10 @@ class CPU:
 
             # Remember the next instruction after the one which called the 'call' function
             next_instruction = int(self.registers["IP"]._state.to01(), 2)
-            self.registers["LR"]._state = bitarray(bin(next_instruction)[2:].rjust(16, '0'))
+            if self.isa == "risc3":
+                self.registers["LR"]._state = bitarray(bin(next_instruction)[2:].rjust(16, '0'))
+            else:
+                self.__push_stack(bitarray(bin(next_instruction)[2:].rjust(16, '0')))
 
             # There is only one operand for a call function, and it determines the offset from the IP
             operand = operands_aliases[0]
@@ -356,7 +360,7 @@ class CPU:
                     imm_len = int(operand[3:])
                     immediate_constant = twos_complement(int(operands_values[0].to01(), 2), imm_len)
                 else:
-                    immediate_constant = int(self.long_immediate, 2)
+                    immediate_constant = int(self.long_immediate.to01(), 2)
 
                 instr_size = self.instruction_size[0]
                 offset = (immediate_constant * instr_size) - instr_size
@@ -371,7 +375,9 @@ class CPU:
         elif res_type == "ret":
 
             # TODO: Should we zero out the Link Register register after returning to it once?
-            if self.isa in ["risc3", "cisc"]:
+            # In RISC-Register architecture we save the caller address in the Link Register,
+            # otherwise we just push it on the stack
+            if self.isa == "risc3":
                 self.registers["IP"]._state = self.registers["LR"]._state
             else:
                 self.registers["IP"]._state = self.__pop_stack()
@@ -422,8 +428,14 @@ class CPU:
             self.__push_stack(operands_values[0])
 
         # If the opcode specified pops the value from the stack into the register
-        elif res_type == "stackpop":
-            result_destination._state = self.__pop_stack()
+        elif res_type in ["stackpop", "stackpopf"]:
+            popped_val = self.__pop_stack()
+            if memory_write_access:
+                self.data_memory.write(result_destination, popped_val)
+                if tos_push:
+                    self.registers["TOS"]._state = bitarray(bin(result_destination + 16)[2:].rjust(16, '0'))
+            else:
+                result_destination._state = popped_val
 
         # If the opcode specifies outputting to the device
         elif res_type == "out":
@@ -532,18 +544,20 @@ class CPU:
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
             elif res_type == "memtos":
                 memory_write_access = True
-                result_destination = int(self.registers["TOS"]._state.to01(), 2)
+                tos_val = int(self.registers["TOS"]._state.to01(), 2)
+                result_destination = int(self.data_memory.read_data(tos_val, tos_val + 16).to01(), 2)
             elif res_type == "fr":
                 result_destination = self.registers["FR"]
             elif res_type == "stackpop":
-                if self.instructions_dict[self.opcode.to01()][1] == "pop":
-                    memory_write_access, tos_push = True, True
-                    result_destination = int(self.registers["TOS"]._state.to01(), 2)
-                elif self.instructions_dict[self.opcode.to01()][1] == "popf":
-                    result_destination = self.registers["FR"]
+                memory_write_access, tos_push = True, True
+                result_destination = int(self.registers["TOS"]._state.to01(), 2)
+            elif res_type == "stackpopf":
+                result_destination = self.registers["FR"]
             elif res_type == "out":
                 result_destination = self.ports_dictionary[str(int(self.long_immediate, 2))]
 
+        logger.info(str(int(self.registers["TOS"]._state.to01(), 2)) + str(len(self.data_memory.slots)))
+        logger.info(str(memory_write_access) + str(result_destination) + str(tos_push))
         return memory_write_access, result_destination, tos_push
 
     def __push_stack(self, value):
@@ -571,7 +585,7 @@ class CPU:
         :param pop: bool - whether to move the stack behind the popped value
         """
         start_read = int(self.registers["TOS"]._state.to01(), 2)
-        if second and start_read > 2048:
+        if second and start_read > self.tos_start:
             start_read -= 16
         return_data = self.data_memory.read_data(start_read-16, start_read)
         if pop:
@@ -596,13 +610,13 @@ class CPU:
 
             # Draw the updated screen
             if self.curses_mode:
-                logger.info("Drawing the screen")
+                # logger.info("Drawing the screen")
                 self.draw_screen()
 
-            if self.instruction.to01() == ('0' * 16):
+            if self.instruction.to01() == ('0' * self.instruction_size[0]):
                 return False
 
-            logger.info("Entering execute cycle")
+            # logger.info("Entering execute cycle")
             is_close = self.__execute_cycle()
             if is_close:
                 return True
@@ -615,11 +629,11 @@ class CPU:
             key = self.instruction_window.getkey()
             # Move on to the next instruction if the 'n' key is pressed
             if key in ('N', 'n'):
-                logger.info("N pressed")
+                # logger.info("N pressed")
                 return False
             # Finish the program if the 'q' key is pressed
             if key in ('Q', 'q'):
-                logger.info("Q pressed")
+                # logger.info("Q pressed")
                 return True
 
     def start_screen(self):

@@ -103,7 +103,7 @@ def add(operands, flag_register):
         flag_register._state[12] = "1"  # Carry flag
         result = bin(twos_complement(reg1 + reg2, 18))[-16:]
     # Change flag and result accordingly to the result and operation
-    result = change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
 
@@ -115,7 +115,6 @@ def sub(operands, flag_register):
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)
     Second one is the value of the third register (second operand in the operation)
-    Third one is the value of Flag register
 
     :param operands: list of operands
     :param flag_register: Flag register
@@ -128,7 +127,7 @@ def sub(operands, flag_register):
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
         result = bin(twos_complement(reg1 - reg2, 18))[-16:]
-    result = change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
 
@@ -140,7 +139,6 @@ def mul(operands, flag_register):
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)
     Second one is the value of the third register (second operand in the operation)
-    Third one is the value of Flag register
 
     :param operands: list of operands
     :param flag_register: Flag register
@@ -153,7 +151,7 @@ def mul(operands, flag_register):
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
         result = bin(twos_complement(reg1 * reg2, 18))[-16:]
-    result = change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
 
@@ -165,7 +163,6 @@ def div(operands, flag_register):
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)
     Second one is the value of the third register (second operand in the operation)
-    Third one is the value of Flag register
 
     :param operands: list of operands
     :param flag_register: Flag register
@@ -178,7 +175,7 @@ def div(operands, flag_register):
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
         result = bin(twos_complement(reg1 // reg2, 18))[-16:]
-    result = change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
 
@@ -190,7 +187,6 @@ def bit_and(operands, flag_register):
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)
     Second one is the value of the third register (second operand in the operation)
-    Third one is the value of Flag register
 
     :param operands: list of operands
      :param flag_register: Flag register
@@ -200,7 +196,7 @@ def bit_and(operands, flag_register):
     result = bin(twos_complement(reg1 & reg2, len(operands[-2])))[2:].rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
-    result = change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
 
@@ -212,7 +208,6 @@ def bit_or(operands, flag_register):
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)
     Second one is the value of the third register (second operand in the operation)
-    Third one is the value of Flag register
 
     :param operands: list of operands
      :param flag_register: Flag register
@@ -222,7 +217,7 @@ def bit_or(operands, flag_register):
     result = bin(twos_complement(reg1 | reg2, len(operands[-2])))[2:].rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
-    result = change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
 
@@ -234,7 +229,6 @@ def bit_xor(operands, flag_register):
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)
     Second one is the value of the third register (second operand in the operation)
-    Third one is the value of Flag register
 
     :param operands: list of operands
     :param flag_register: Flag register
@@ -244,7 +238,7 @@ def bit_xor(operands, flag_register):
     result = bin(twos_complement(reg1 ^ reg2, len(operands[-2])))[2:].rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
-    result = change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
 
@@ -255,7 +249,6 @@ def bit_not(operands, flag_register):
 
     Zero operand the value of the first register
     First one is the value of the second register (main operand in the operation)
-    Second one is the value of Flag register
 
     :param operands: list of operands
     :param flag_register: Flag register
@@ -266,8 +259,8 @@ def bit_not(operands, flag_register):
     result.replace("0", "1")
     result.replace("2", "0")
 
-    flag_register._state = bitarray("0" * 16)
-    result = change_flag_result(flag_register, operands, result)
+    # flag_register._state = bitarray("0" * 16)
+    # change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
 
@@ -279,7 +272,6 @@ def lsh(operands, flag_register):
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)
     Second one is the value of the third register (second operand in the operation)
-    Third one is the value of Flag register
 
     :param operands: list of operands
     :param flag_register: Flag register
@@ -292,7 +284,7 @@ def lsh(operands, flag_register):
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
         result = bin(twos_complement(reg1 << reg2, 18))[-16:]
-    result = change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
 
@@ -304,7 +296,6 @@ def rsh(operands, flag_register):
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)
     Second one is the value of the third register (second operand in the operation)
-    Third one is the value of Flag register
 
     :param operands: list of operands
     :param flag_register: Flag register
@@ -317,7 +308,7 @@ def rsh(operands, flag_register):
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
         result = bin(twos_complement(reg1 >> reg2, 18))[-16:]
-    result = change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
 
@@ -434,11 +425,13 @@ def prepare_arguments(arg1, arg2):
     return twos_complement(int(arg1.to01(), 2), len(arg1)), twos_complement(int(arg2.to01(), 2), len(arg2))
 
 
-functions_dictionary = {"load": load_store, "loadf": load_store, "mov_low": mov_low,
-                        "mov_high": mov_high, "mov": mov, "add": add,
+functions_dictionary = {"load": load_store, "loadf": load_store,
+                        "swap": load_store, "dup": load_store, "dup2": load_store,
+                        "mov_low": mov_low, "mov_high": mov_high, "mov": mov, "add": add,
                         "sub": sub, "mul": mul, "div": div,
                         "and": bit_and, "or": bit_or,
                         "xor": bit_xor, "not": bit_not,
-                        "store": load_store, "cmp": cmp, "cmpe": cmpe, "cmpb": cmpb,
+                        "store": load_store, "storef": load_store,
+                        "cmp": cmp, "cmpe": cmpe, "cmpb": cmpb,
                         "lsh": lsh, "rsh": rsh, "test": test}
 

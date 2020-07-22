@@ -15,7 +15,6 @@ popf
 add
 sub
 mul
-div
 and
 or
 xor
