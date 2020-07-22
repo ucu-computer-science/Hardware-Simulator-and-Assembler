@@ -43,9 +43,10 @@ def make_instruction_slot():
         data=[
             go.Table(header=dict(values=[f"{cpu.instruction.to01()}\n"], line_color=table_header_color,
                                  fill_color=table_header_color,
-                                 align=['left', 'center'],
+                                 align=['center', 'center'],
                                  font=dict(color=table_main_font_color, size=20), height=40), )], layout=layout)
-    fig.update_layout(height=200, margin=dict(b=10), width=380)
+    fig.update_layout(height=160, margin=dict(b=25), width=380,
+                      font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
 
     return fig
 
@@ -57,13 +58,14 @@ def make_output_slot():
     shell_slots = []
     for port, device in cpu.ports_dictionary.items():
         shell_slots.append(str(device))
+    # print(shell_slots)
     fig = go.Figure(
         data=[
             go.Table(header=dict(values=shell_slots, line_color=table_header_color,
                                  fill_color=table_header_color,
-                                 align=['left', 'center'],
-                                 font=dict(color=table_main_font_color, size=20), height=40), )], layout=layout)
-    fig.update_layout(height=200, margin=dict(b=10), width=500)
+                                 align=['left', 'center'], height=40), )], layout=layout)
+    fig.update_layout(height=160, margin=dict(b=25), width=430,
+                      font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
 
     return fig
 
@@ -85,7 +87,8 @@ def make_registers_slots():
                                 align=['left', 'center'],
                                 font=dict(color=table_main_font_color, size=15), height=25),
                      )], layout=layout)
-    fig.update_layout(height=150, width=300, margin=dict(t=10, l=1, r=1, b=1))
+    fig.update_layout(height=150, width=300, margin=dict(t=10, l=1, r=1, b=1),
+                      font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
     fig.layout['template']['data']['table'][0]['header']['fill']['color'] = 'rgba(0,0,0,0)'
     fig.layout['template']['data']['table'][0]['header']['line']['color'] = 'rgba(0,0,0,0)'
 
@@ -96,11 +99,10 @@ def make_memory_slots():
     """
     Return a table figure, with information from the memory of the CPU.
     """
-    headers = ["Addr       :  "]
+    headers = ["Addr   :  "]
     for i in range(0, 32, 4):
-        headers.append(hex(i)[2:].rjust(2, "0") + " " + hex(i + 1)[2:].rjust(2, "0") + " " + hex(i + 2)[2:].rjust(2,
-                                                                                                                  "0") + " " + hex(
-            i + 3)[2:].rjust(2, "0"))
+        headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
+                       f"{hex(i + 2)[2:].rjust(2, '0')} {hex(i + 3)[2:].rjust(2, '0')}")
 
     rows = []
     for i in range(0, 1024, 32):
@@ -114,7 +116,7 @@ def make_memory_slots():
 
     rows = [rows] + memory_data
     fig = go.Figure(
-        data=[go.Table(columnwidth=50,
+        data=[go.Table(columnwidth=10,
                        header=dict(values=headers, line_color=table_header_color,
                                    fill_color=table_header_color,
                                    align=['left', 'center'],
@@ -123,7 +125,8 @@ def make_memory_slots():
                                   fill_color=table_main_color,
                                   align=['left', 'center'],
                                   font=dict(color=table_main_font_color, size=12), ))], layout=layout)
-    fig.update_layout(height=850, margin=dict(t=10, b=10))
+    fig.update_layout(width=1100, height=850, margin=dict(t=10, b=0),
+                      font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
     return fig
 
 
