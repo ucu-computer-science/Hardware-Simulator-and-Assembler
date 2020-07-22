@@ -182,6 +182,8 @@ class CPU:
 
         for register in registers_list:
             temp = Register(register[0], general_purpose=(register[1] == 1))
+            if register[0] == "TOS":
+                temp._state = bitarray(bin(2048)[2:].rjust(16, '0'))
             self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
 
@@ -214,6 +216,10 @@ class CPU:
         """
         Executes the next instruction after button click on the webpage
         """
+        # If the instruction is 'end' - an empty string, terminate the execution
+        if isinstance(self.instruction, bitarray) and self.instruction.to01() == ('0' * 16):
+            return
+
         if self.first_instruction:
             self.first_instruction = False
         else:
@@ -225,10 +231,6 @@ class CPU:
 
         # Read first instruction of the program from the memory
         self.__read_instruction()
-
-        # If the instruction is 'end' - an empty string, terminate the execution
-        if self.instruction.to01() == ('0' * 16):
-            return
 
     def __update_devices(self):
         """
@@ -250,10 +252,20 @@ class CPU:
         # Read the opcode part of the instruction
         if self.read_state == "opcode":
             self.opcode = self.instruction[0:self.instruction_size[1]]
-        elif self.read_state == "constant1":
-            pass
-        elif self.read_state == "constant2":
-            pass
+
+            # If the first bit of the encoded binary instruction indicates that the next two
+            # bytes are going to be an immediate constant, change the read_state
+            if self.isa in ["risc1", "risc2"] and self.opcode[0]:
+                self.read_state = "constant"
+
+        # If we are in the state of reading the two-byte encoded immediate constant,
+        # read it and add to the list of operands
+        if self.read_state == "constant":
+            self.long_immediate = self.program_memory.read_data(start_read_location + self.instruction_size[0],
+                                                                start_read_location + self.instruction_size[0]*3)
+            ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + (self.instruction_size[0]*3), 16)
+            self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
+            self.read_state = "opcode"
 
     def execute(self):
         """
@@ -267,11 +279,14 @@ class CPU:
         start_point = self.__determine_start_point()
 
         # Reading the list of operands encoded in the binary instruction
-        operands_aliases = self.instructions_dict[self.opcode.to01()][-1]
+        if self.isa in ["risc3", "cisc"]:
+            operands_aliases = self.instructions_dict[self.opcode.to01()][-1]
+        else:
+            operands_aliases = self.instructions_dict[self.opcode.to01()][1][1:]
 
         # Determine whether the memory is going to be affected as a
         # result of the operation and where to save it
-        memory_write_access, result_destination = self.__determine_result_dest(start_point, operands_aliases)
+        memory_write_access, result_destination, tos_push = self.__determine_result_dest(start_point, operands_aliases)
 
         # Add operands values to the list to provide to a function later
         operands_values = []
@@ -287,32 +302,64 @@ class CPU:
             elif operand == "memreg":
                 register_code = self.instruction[start_point:start_point + 3].to01()
                 tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)
-                operands_values.append(
-                    self.data_memory.read_data(tmp_register*8, (tmp_register + 2)*8))
+                operands_values.append(self.data_memory.read_data(tmp_register*8, (tmp_register + 2)*8))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand.startswith("imm"):
-                immediate_length = int(operand[3:])
-                operands_values.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
-                start_point += immediate_length
+                if self.isa in ["risc1", "risc2"]:
+                    operands_values.append(self.long_immediate)
+                else:
+                    immediate_length = int(operand[3:])
+                    operands_values.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
+                    start_point += immediate_length
+
+            elif operand == "tos":
+                operands_values.append(self.__pop_tos())
+
+            elif operand == "tospop":
+                operands_values.append(self.__pop_tos(pop=True))
+
+            elif operand == "tos2":
+                operands_values.append(self.__pop_tos(second=True))
+
+            elif operand == "memtos":
+                tos_value = int(self.__pop_tos().to01(), 2)
+                operands_values.append(self.data_memory.read_data(tos_value, tos_value+16))
+
+            elif operand == "memimm":
+                start_read = int(self.long_immediate.to01(), 2)
+                operands_values.append(self.data_memory.read_data(start_read, start_read+16))
+
+            elif operand == "fr":
+                operands_values.append(self.registers["FR"]._state)
 
         # PROCESSING THE ACTUAL INSTRUCTION BELOW
         # If the opcode type is call, we can perform the needed actions without calling functions_dict
-        if (res_type := self.instructions_dict[self.opcode.to01()][1]) == "call":
+        if self.isa in ["risc3", "cisc"]:
+            res_type = self.instructions_dict[self.opcode.to01()][1]
+        else:
+            res_type = self.instructions_dict[self.opcode.to01()][1][0]
+
+        if res_type == "call":
 
             # Remember the next instruction after the one which called the 'call' function
             next_instruction = int(self.registers["IP"]._state.to01(), 2)
-            self.registers["LR"]._state = bitarray(bin(twos_complement(next_instruction, 16))[2:].rjust(16, '0'))
+            self.registers["LR"]._state = bitarray(bin(next_instruction)[2:].rjust(16, '0'))
 
             # There is only one operand for a call function, and it determines the offset from the IP
             operand = operands_aliases[0]
             if operand.startswith("imm"):
 
-                # Calculate the new location of the instruction pointer, change it
-                imm_len = int(operand[3:])
+                if self.isa in ["risc3", "cisc"]:
+                    # Calculate the new location of the instruction pointer, change it
+                    imm_len = int(operand[3:])
+                    immediate_constant = twos_complement(int(operands_values[0].to01(), 2), imm_len)
+                else:
+                    immediate_constant = int(self.long_immediate, 2)
+
                 instr_size = self.instruction_size[0]
-                offset = (twos_complement(int(operands_values[0].to01(), 2), imm_len) * instr_size) - instr_size
+                offset = (immediate_constant * instr_size) - instr_size
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
                 self.registers["IP"]._state = bitarray(bin(ip_value + offset)[2:].rjust(16, '0'))
 
@@ -324,7 +371,10 @@ class CPU:
         elif res_type == "ret":
 
             # TODO: Should we zero out the Link Register register after returning to it once?
-            self.registers["IP"]._state = self.registers["LR"]._state
+            if self.isa in ["risc3", "cisc"]:
+                self.registers["IP"]._state = self.registers["LR"]._state
+            else:
+                self.registers["IP"]._state = self.__pop_stack()
 
         # If the opcode is of type jump, we look at the Flag Register and move Instruction Pointer if needed
         elif res_type == "jmp":
@@ -336,7 +386,8 @@ class CPU:
 
             # Check the needed flags according to the jump condition specified
             if (jmp_spec := self.instructions_dict[self.opcode.to01()][0]) == "jmp":
-                should_jump = True
+                if self.isa in ["risc3", "cisc"] or self.__pop_tos() == bitarray("1"*16):
+                    should_jump = True
             elif jmp_spec == "je":
                 should_jump = zero_flag
             elif jmp_spec == "jne":
@@ -387,6 +438,11 @@ class CPU:
             # Write the result of the operation into the memory
             if memory_write_access:
                 self.data_memory.write(result_destination, result_value)
+
+                # Move the TOS pointer if the instruction pushed into the register stack
+                if tos_push:
+                    self.registers["TOS"]._state = bitarray(bin(result_destination + 16)[2:].rjust(16, '0'))
+
             # Write into the result destination
             else:
                 result_destination._state = bitarray(result_value)
@@ -401,15 +457,11 @@ class CPU:
         :return: start_point - int, representing the bit value in the instruction from which the opcodes begin
         """
         # Figure out the operands details for the RISC-Stack ISA
-        if self.isa == "risc1":
-            pass
-
-        # Figure out the operands details for the RISC-Accumulator ISA
-        if self.isa == "risc2":
-            pass
+        if self.isa in ["risc1", "risc2"]:
+            start_point = None
 
         # Figure out the operands details for the RISC-Register ISA
-        if self.isa == "risc3":
+        elif self.isa == "risc3":
 
             # Load the special case moves for RISC-Register architecture
             low_high_load_risc = ["mov_low", "mov_high"]
@@ -423,8 +475,8 @@ class CPU:
                 start_point = 6
 
         # Figure out the operands details for the CISC-Register ISA
-        if self.isa == "cisc":
-            pass
+        else:
+            start_point = 8
 
         return start_point
 
@@ -437,42 +489,62 @@ class CPU:
         # Set 'write' access to the memory to False by default
         memory_write_access = False
         result_destination = None
+        tos_push = False
 
         # Determining where to save the result of the operation depending on type of the operation specified
         # If the result is saved in the first operand
-        if (res_type := self.instructions_dict[self.opcode.to01()][1]) == "firstop":
+        if self.isa in ["risc3", "cisc"]:
+            if (res_type := self.instructions_dict[self.opcode.to01()][1]) == "firstop":
 
-            if operands_aliases[0] == "reg":
-                # If the destination is the register
+                if operands_aliases[0] == "reg":
+                    # If the destination is the register
+                    register_code = self.instruction[start_point:start_point + 3].to01()
+                    result_destination = self.register_codes[register_code]
+
+                elif operands_aliases[0] == "memreg":
+                    # If the destination is memory
+                    memory_write_access = True
+                    register_code = self.instruction[start_point:start_point + 3].to01()
+                    result_destination = int(self.register_codes[register_code]._state.to01(), 2)
+
+            # If the result is popped from the stack
+            elif res_type == "stackpop":
                 register_code = self.instruction[start_point:start_point + 3].to01()
                 result_destination = self.register_codes[register_code]
 
-            elif operands_aliases[0] == "memreg":
-                # If the destination is memory
+            # If the result is the flag register affected (compare ops)
+            elif res_type == "flags":
+                result_destination = self.registers["FR"]
+
+            # If the result is outputted to a device, we should output to the specified port
+            elif res_type == "out":
+
+                if self.io_arch == "mmio":
+                    raise SimulatorError("This instruction does not exist in MMIO architecture")
+                else:
+                    imm_len = int(operands_aliases[0][3:])
+                    port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
+                    result_destination = self.ports_dictionary[str(port_num)]
+        else:
+            # Determining the result destination for RISC-Stack and Accumulator ISAs
+            if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) == "tos" or res_type == "in":
+                memory_write_access, tos_push = True, True
+                result_destination = int(self.registers["TOS"]._state.to01(), 2)
+            elif res_type == "memtos":
                 memory_write_access = True
-                register_code = self.instruction[start_point:start_point + 3].to01()
-                result_destination = int(self.register_codes[register_code]._state.to01(), 2)
+                result_destination = int(self.registers["TOS"]._state.to01(), 2)
+            elif res_type == "fr":
+                result_destination = self.registers["FR"]
+            elif res_type == "stackpop":
+                if self.instructions_dict[self.opcode.to01()][1] == "pop":
+                    memory_write_access, tos_push = True, True
+                    result_destination = int(self.registers["TOS"]._state.to01(), 2)
+                elif self.instructions_dict[self.opcode.to01()][1] == "popf":
+                    result_destination = self.registers["FR"]
+            elif res_type == "out":
+                result_destination = self.ports_dictionary[str(int(self.long_immediate, 2))]
 
-        # If the result is popped from the stack
-        elif res_type == "stackpop":
-            register_code = self.instruction[start_point:start_point + 3].to01()
-            result_destination = self.register_codes[register_code]
-
-        # If the result is the flag register affected (compare ops)
-        elif res_type == "flags":
-            result_destination = self.registers["FR"]
-
-        # If the result is outputted to a device, we should output to the specified port
-        elif res_type == "out":
-
-            if self.io_arch == "mmio":
-                raise SimulatorError("This instruction does not exist in MMIO architecture")
-            else:
-                imm_len = int(operands_aliases[0][3:])
-                port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
-                result_destination = self.ports_dictionary[str(port_num)]
-
-        return memory_write_access, result_destination
+        return memory_write_access, result_destination, tos_push
 
     def __push_stack(self, value):
         """
@@ -491,6 +563,20 @@ class CPU:
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
         self.registers["SP"]._state = bitarray(bin(stack_pointer_value - 2)[2:].rjust(16, '0'))
         return self.data_memory.read_data((stack_pointer_value - 2)*8, stack_pointer_value*8)
+
+    def __pop_tos(self, second=False, pop=False):
+        """
+        Gets the value of the 'tos', which lies in memory, and moves the register stack if needed
+        :param second: bool - whether to return the value of the second-to-top register
+        :param pop: bool - whether to move the stack behind the popped value
+        """
+        start_read = int(self.registers["TOS"]._state.to01(), 2)
+        if second and start_read > 2048:
+            start_read -= 16
+        return_data = self.data_memory.read_data(start_read-16, start_read)
+        if pop:
+            self.registers["TOS"]._state = bitarray(bin(start_read-16)[2:].rjust(16, '0'))
+        return return_data
 
     # Below are the methods for curses-driven command-line interface
     def start_program(self):

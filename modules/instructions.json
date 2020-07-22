@@ -38,7 +38,7 @@
         ],
         "000110": [
             "swap",
-            ["tos", "tos2pop"],
+            ["tos", "tos2"],
             []
         ],
         "000111": [
@@ -48,7 +48,7 @@
         ],
         "001000": [
             "dup2",
-            ["tos2", "tos2"],
+            ["tos", "tos2"],
             []
         ],
         "100010": [
@@ -68,12 +68,12 @@
         ],
         "001100": [
             "pop",
-            ["tos", "stackpop"],
+            ["stackpop", "tos"],
             []
         ],
         "001101": [
             "popf",
-            ["fr", "stackpop"],
+            ["stackpop", "fr"],
             []
         ],
         "001110": [
@@ -128,12 +128,12 @@
         ],
         "100101": [
             "call",
-            ["imm"],
+            ["call", "imm"],
             ["imm"]
         ],
         "010110": [
             "call",
-            ["tos"],
+            ["call", "tos"],
             []
         ],
         "010111": [
@@ -143,52 +143,52 @@
         ],
         "011000": [
             "cmpe",
-            ["tospop", "tospop"],
+            ["tos", "tospop", "tospop"],
             []
         ],
         "100110": [
             "cmpe",
-            ["tospop", "imm"],
+            ["tos", "tospop", "imm"],
             ["imm"]
         ],
         "011001": [
             "cmpb",
-            ["tospop", "tospop"],
+            ["tos", "tospop", "tospop"],
             []
         ],
         "100111": [
             "cmpb",
-            ["tospop", "imm"],
+            ["tos", "tospop", "imm"],
             ["imm"]
         ],
         "011010": [
             "test",
-            ["tospop", "tospop"],
+            ["tos", "tospop", "tospop"],
             []
         ],
         "101000": [
             "test",
-            ["tospop", "imm"],
+            ["tos", "tospop", "imm"],
             ["imm"]
         ],
         "101001": [
             "jmp",
-            ["imm"],
+            ["jmp", "imm"],
             ["imm"]
         ],
         "011011": [
             "jmp",
-            ["tos"],
+            ["jmp", "tos"],
             []
         ],
         "101010": [
             "in",
-            ["tos", "imm"],
+            ["in", "imm"],
             ["imm"]
         ],
         "101011": [
             "out",
-            ["imm", "tos"],
+            ["out", "imm", "tos"],
             ["imm"]
         ]
     },

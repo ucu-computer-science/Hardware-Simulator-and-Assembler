@@ -66,7 +66,10 @@ class Assembler:
     """
 
     def __init__(self, isa, program_text):
-        """ Initializes the assembler, outputs the binary code file"""
+        """
+        Initializes the assembler, outputs the binary code file
+        The actual encoded binary text is in self.binary_code
+        """
         self.isa = isa
 
         # Open the list of instructions for this architecture and reformat it for our purposes
@@ -197,7 +200,7 @@ class Assembler:
 
                     # Check if the size of the number was valid
                     if not (-1*2**(bit_len-1) < num < 2**(bit_len-1)):
-                        raise AssemblerError("Immediate constant provided too big")
+                        raise AssemblerError(f"Immediate constant provided too big: {self.line}")
 
                     binary_line += temp
 
