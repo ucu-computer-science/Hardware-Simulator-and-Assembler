@@ -1,3 +1,4 @@
+import time
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -143,6 +144,7 @@ app.layout = html.Div([
               [Input('submit-val', 'n_clicks')])
 def update_tables(n_clicks):
     cpu.web_next_instruction()
+    time.sleep(0.05)
     return html.Div([
         html.Div(dcc.Graph(figure=make_instruction_slot(), config={
             'displayModeBar': False}), style={'display': 'inline-block'}, ),
@@ -160,5 +162,5 @@ dev_server = app.run_server
 
 # run the program
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, threaded=True)
     # app.run_server(debug=True, processes=3, threaded=False)
