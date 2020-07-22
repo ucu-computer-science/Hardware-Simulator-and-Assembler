@@ -120,6 +120,7 @@ class CPU:
         self.architecture = architecture
         self.io_arch = io_arch
         self.curses_mode = curses_mode
+        self.first_instruction = True
 
         # Create devices for this CPU depending on the I/O architecture specified
         if io_arch == "mmio":
@@ -247,11 +248,14 @@ class CPU:
         if self.instruction.to01() == ('0' * 16):
             return
 
-        # Execute the cycle
-        self.__execute_cycle()
+        if self.first_instruction:
+            self.first_instruction = False
+        else:
+            # Execute the cycle
+            self.__execute_cycle()
 
-        # Update the Memory-Mapped devices
-        self.__update_devices()
+            # Update the Memory-Mapped devices
+            self.__update_devices()
 
     def __update_devices(self):
         """
