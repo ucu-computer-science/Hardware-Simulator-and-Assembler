@@ -341,7 +341,7 @@ def cmpe(operands, flag_register):
         "1"*16 if yes
     """
     reg1, reg2 = prepare_arguments(operands[0], operands[1])
-    return bitarray((reg1 == reg2)*16)
+    return bitarray((reg1 == reg2) * 16)
 
 
 def cmpb(operands, flag_register):
@@ -425,13 +425,16 @@ def prepare_arguments(arg1, arg2):
     return twos_complement(int(arg1.to01(), 2), len(arg1)), twos_complement(int(arg2.to01(), 2), len(arg2))
 
 
-functions_dictionary = {"load": load_store, "loadf": load_store,
+# TODO: Think of something for INC and DEC instructions, can't we just use add and 1?
+#  Possibly the problem is in the simulator module, not here, but anyway
+
+
+functions_dictionary = {"load": load_store, "loadf": load_store, "loadi": load_store,
                         "swap": load_store, "dup": load_store, "dup2": load_store,
                         "mov_low": mov_low, "mov_high": mov_high, "mov": mov, "add": add,
                         "sub": sub, "mul": mul, "div": div,
                         "and": bit_and, "or": bit_or,
                         "xor": bit_xor, "not": bit_not,
-                        "store": load_store, "storef": load_store,
+                        "store": load_store, "storef": load_store, "storei": load_store,
                         "cmp": cmp, "cmpe": cmpe, "cmpb": cmpb,
                         "lsh": lsh, "rsh": rsh, "test": test}
-

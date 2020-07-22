@@ -27,6 +27,9 @@ logging.basicConfig(filename="log.txt",
                     level=logging.DEBUG)
 
 logger = logging.getLogger('logger')
+# TODO: Add new logging statements
+#
+# TODO: Massively refactor and clean up this file, start with getting CPU into its own module
 
 
 class Simulator:
@@ -207,7 +210,6 @@ class CPU:
             is_close = self.curses_next_instruction()
 
         self.execute()
-        # logger.info("Executing the instruction. To close: " + str(is_close))
         ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + self.instruction_size[0], 16)
         self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
 
@@ -328,12 +330,16 @@ class CPU:
                 tos_value = int(self.__pop_tos(pop=True).to01(), 2)
                 operands_values.append(self.data_memory.read_data(tos_value, tos_value+16))
 
+            elif operand == "memir":
+                ir_value = int(self.registers["IR"]._state.to01(), 2)
+                operands_values.append(self.data_memory.read_data(ir_value, ir_value+16))
+
             elif operand == "memimm":
                 start_read = int(self.long_immediate.to01(), 2)
                 operands_values.append(self.data_memory.read_data(start_read, start_read+16))
 
-            elif operand == "fr":
-                operands_values.append(self.registers["FR"]._state)
+            elif operand in ["fr", "ir", "acc"]:
+                operands_values.append(self.registers[operand.upper()]._state)
 
         # PROCESSING THE ACTUAL INSTRUCTION BELOW
         # If the opcode type is call, we can perform the needed actions without calling functions_dict
@@ -504,8 +510,42 @@ class CPU:
         tos_push = False
 
         # Determining where to save the result of the operation depending on type of the operation specified
-        # If the result is saved in the first operand
-        if self.isa in ["risc3", "cisc"]:
+        #
+        # RISC-Stack iSA
+        if self.isa == "risc1":
+
+            # Determining the result destination for RISC-Stack iSA
+            if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["tos", "in"]:
+                memory_write_access, tos_push = True, True
+                result_destination = int(self.registers["TOS"]._state.to01(), 2)
+            elif res_type == "memtos":
+                memory_write_access = True
+                tos_val = int(self.registers["TOS"]._state.to01(), 2)
+                result_destination = int(self.data_memory.read_data(tos_val, tos_val + 16).to01(), 2)
+            elif res_type == "fr":
+                result_destination = self.registers["FR"]
+            elif res_type == "stackpop":
+                memory_write_access, tos_push = True, True
+                result_destination = int(self.registers["TOS"]._state.to01(), 2)
+            elif res_type == "stackpopf":
+                result_destination = self.registers["FR"]
+            elif res_type == "out":
+                result_destination = self.ports_dictionary[str(int(self.long_immediate, 2))]
+
+        # Accumulator-RISC
+        elif self.isa == "risc2":
+
+            # Determining the result destination for RISC-Accumulator ISA
+            if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["acc", "in", "stackpop"]:
+                result_destination = self.registers["ACC"]
+            elif res_type == "memir":
+                memory_write_access = True
+                result_destination = int(self.registers["IR"]._state.to01(), 2)
+
+        # Register-RISC and CISC architectures
+        elif self.isa in ["risc3", "cisc"]:
+
+            # If the result is to be saved into the first operand
             if (res_type := self.instructions_dict[self.opcode.to01()][1]) == "firstop":
 
                 if operands_aliases[0] == "reg":
@@ -537,27 +577,7 @@ class CPU:
                     imm_len = int(operands_aliases[0][3:])
                     port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
                     result_destination = self.ports_dictionary[str(port_num)]
-        else:
-            # Determining the result destination for RISC-Stack and Accumulator ISAs
-            if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) == "tos" or res_type == "in":
-                memory_write_access, tos_push = True, True
-                result_destination = int(self.registers["TOS"]._state.to01(), 2)
-            elif res_type == "memtos":
-                memory_write_access = True
-                tos_val = int(self.registers["TOS"]._state.to01(), 2)
-                result_destination = int(self.data_memory.read_data(tos_val, tos_val + 16).to01(), 2)
-            elif res_type == "fr":
-                result_destination = self.registers["FR"]
-            elif res_type == "stackpop":
-                memory_write_access, tos_push = True, True
-                result_destination = int(self.registers["TOS"]._state.to01(), 2)
-            elif res_type == "stackpopf":
-                result_destination = self.registers["FR"]
-            elif res_type == "out":
-                result_destination = self.ports_dictionary[str(int(self.long_immediate, 2))]
 
-        logger.info(str(int(self.registers["TOS"]._state.to01(), 2)) + str(len(self.data_memory.slots)))
-        logger.info(str(memory_write_access) + str(result_destination) + str(tos_push))
         return memory_write_access, result_destination, tos_push
 
     def __push_stack(self, value):
@@ -610,13 +630,11 @@ class CPU:
 
             # Draw the updated screen
             if self.curses_mode:
-                # logger.info("Drawing the screen")
                 self.draw_screen()
 
             if self.instruction.to01() == ('0' * self.instruction_size[0]):
                 return False
 
-            # logger.info("Entering execute cycle")
             is_close = self.__execute_cycle()
             if is_close:
                 return True
@@ -629,11 +647,9 @@ class CPU:
             key = self.instruction_window.getkey()
             # Move on to the next instruction if the 'n' key is pressed
             if key in ('N', 'n'):
-                # logger.info("N pressed")
                 return False
             # Finish the program if the 'q' key is pressed
             if key in ('Q', 'q'):
-                # logger.info("Q pressed")
                 return True
 
     def start_screen(self):
