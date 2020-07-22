@@ -2,6 +2,7 @@ mov_low %R00, $20
 mov_low %R01, $1
 mov_low %R02, $50
 store [%R01], %R00
+load %R02, [%R01]
 mov %R00, %R02
 mov_high %R02, $5
 push %R02

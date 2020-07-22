@@ -315,7 +315,7 @@ class CPU:
                 register_code = self.instruction[start_point:start_point + 3].to01()
                 tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)
                 operands_values.append(
-                    self.data_memory.read_data(tmp_register, tmp_register + self.instruction_size[0]))
+                    self.data_memory.read_data(tmp_register, tmp_register + 2))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
@@ -519,8 +519,6 @@ class CPU:
         return self.data_memory.read_data(stack_pointer_value - 2, stack_pointer_value)
 
     # Below are the methods for curses-driven command-line interface
-    # TODO: Create a basic API of data we need to transmit for the web interface to work properly
-    #  A somewhat later goal, sure, but still
     def curses_next_instruction(self):
         """
         A temporary module that switches to the next instruction when curses mode is on
