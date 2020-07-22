@@ -32,7 +32,7 @@ def load_store(operands, flag_register):
     :param flag_register: Flag register
     :return: value of the register/memory
     """
-    return operands[1]
+    return operands[-1]
 
 
 def mov_low(operands, flag_register):
@@ -80,7 +80,7 @@ def mov(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the register
     """
-    return bitarray(operands[1].to01())
+    return bitarray(operands[-1].to01())
 
 
 def add(operands, flag_register):
@@ -90,16 +90,14 @@ def add(operands, flag_register):
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)
     Second one is the value of the third register (second operand in the operation)
-    Third one is the value of Flag register
 
     :param operands: list of operands
     :param flag_register: Flag register
     :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[1], operands[2])
-    result = bin(twos_complement(reg1 + reg2, len(operands[1])))[2:]
+    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
+    result = bin(twos_complement(reg1 + reg2, len(operands[-2])))[2:].rjust(16, "0")
 
-    result = result.rjust(16, "0")
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
@@ -123,10 +121,9 @@ def sub(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[1], operands[2])
-    result = bin(twos_complement(reg1 - reg2, len(operands[1])))[2:]
+    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
+    result = bin(twos_complement(reg1 - reg2, len(operands[-2])))[2:].rjust(16, "0")
 
-    result = result.rjust(16, "0")
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
@@ -149,10 +146,9 @@ def mul(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[1], operands[2])
-    result = bin(twos_complement(reg1 * reg2, len(operands[1])))[2:]
+    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
+    result = bin(twos_complement(reg1 * reg2, len(operands[-2])))[2:].rjust(16, "0")
 
-    result = result.rjust(16, "0")
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
@@ -175,10 +171,9 @@ def div(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[1], operands[2])
-    result = bin(twos_complement(reg1 // reg2, len(operands[1])))[2:]
+    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
+    result = bin(twos_complement(reg1 // reg2, len(operands[-2])))[2:].rjust(16, "0")
 
-    result = result.rjust(16, "0")
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
@@ -201,10 +196,9 @@ def bit_and(operands, flag_register):
      :param flag_register: Flag register
    :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[1], operands[2])
-    result = bin(twos_complement(reg1 & reg2, len(operands[1])))[2:]
+    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
+    result = bin(twos_complement(reg1 & reg2, len(operands[-2])))[2:].rjust(16, "0")
 
-    result = result.rjust(16, "0")
     flag_register._state = bitarray("0" * 16)
     result = change_flag_result(flag_register, operands, result)
 
@@ -224,10 +218,9 @@ def bit_or(operands, flag_register):
      :param flag_register: Flag register
    :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[1], operands[2])
-    result = bin(twos_complement(reg1 | reg2, len(operands[1])))[2:]
+    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
+    result = bin(twos_complement(reg1 | reg2, len(operands[-2])))[2:].rjust(16, "0")
 
-    result = result.rjust(16, "0")
     flag_register._state = bitarray("0" * 16)
     result = change_flag_result(flag_register, operands, result)
 
@@ -247,10 +240,9 @@ def bit_xor(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[1], operands[2])
-    result = bin(twos_complement(reg1 ^ reg2, len(operands[1])))[2:]
+    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
+    result = bin(twos_complement(reg1 ^ reg2, len(operands[-2])))[2:].rjust(16, "0")
 
-    result = result.rjust(16, "0")
     flag_register._state = bitarray("0" * 16)
     result = change_flag_result(flag_register, operands, result)
 
@@ -269,7 +261,7 @@ def bit_not(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the first register
     """
-    result = operands[1].to01()
+    result = operands[-1].to01()
     result.replace("1", "2")
     result.replace("0", "1")
     result.replace("2", "0")
@@ -293,10 +285,9 @@ def lsh(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[1], operands[2])
-    result = bin(twos_complement(reg1 << reg2, len(operands[1])))[2:]
+    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
+    result = bin(twos_complement(reg1 << reg2, len(operands[-2])))[2:].rjust(16, "0")
 
-    result = result.rjust(16, "0")
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
@@ -319,10 +310,9 @@ def rsh(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[1], operands[2])
-    result = bin(twos_complement(reg1 >> reg2, len(operands[1])))[2:]
+    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
+    result = bin(twos_complement(reg1 >> reg2, len(operands[-2])))[2:].rjust(16, "0")
 
-    result = result.rjust(16, "0")
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
@@ -342,9 +332,7 @@ def cmp(operands, flag_register):
     :return: new value of the flag register
     """
     reg1, reg2 = prepare_arguments(operands[0], operands[1])
-    result = bin(twos_complement(reg1 - reg2, len(operands[1])))[2:]
-
-    result = result.rjust(16, "0")
+    result = bin(twos_complement(reg1 - reg2, len(operands[1])))[2:].rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
@@ -353,6 +341,26 @@ def cmp(operands, flag_register):
     change_flag_result(flag_register, operands, result)
 
     return flag_register._state
+
+
+def cmpe(operands, flag_register):
+    """
+    Compares whether two operands are equal and returns
+        "0"*16 if not
+        "1"*16 if yes
+    """
+    reg1, reg2 = prepare_arguments(operands[0], operands[1])
+    return bitarray((reg1 == reg2)*16)
+
+
+def cmpb(operands, flag_register):
+    """
+    Compares whether the first operand is bigger than the second and returns
+        "0"*16 if not
+        "1"*16 if yes
+    """
+    reg1, reg2 = prepare_arguments(operands[0], operands[1])
+    return bitarray((reg1 > reg2) * 16)
 
 
 def test(operands, flag_register):
@@ -426,11 +434,11 @@ def prepare_arguments(arg1, arg2):
     return twos_complement(int(arg1.to01(), 2), len(arg1)), twos_complement(int(arg2.to01(), 2), len(arg2))
 
 
-functions_dictionary = {"load": load_store, "mov_low": mov_low,
+functions_dictionary = {"load": load_store, "loadf": load_store, "mov_low": mov_low,
                         "mov_high": mov_high, "mov": mov, "add": add,
                         "sub": sub, "mul": mul, "div": div,
                         "and": bit_and, "or": bit_or,
                         "xor": bit_xor, "not": bit_not,
-                        "store": load_store, "cmp": cmp,
+                        "store": load_store, "cmp": cmp, "cmpe": cmpe, "cmpb": cmpb,
                         "lsh": lsh, "rsh": rsh, "test": test}
 
