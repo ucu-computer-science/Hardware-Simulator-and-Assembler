@@ -38,10 +38,10 @@ class Memory:
     def read_data(self, start_location, end_location):
         """
         Reads the data from memory [start_location:end_location]
-        :param start_location: int - starting location in bytes
-        :param end_location: int - end location in bytes
+        :param start_location: int - starting location in bits
+        :param end_location: int - end location in bits
         """
-        return self.slots[start_location*8:end_location*8]
+        return self.slots[start_location:end_location]
 
     def __str__(self):
         """ Returns a representation of its contents in bitarray"""

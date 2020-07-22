@@ -150,7 +150,7 @@ class CPU:
             self.program_memory = Memory(512)
 
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
-        self.registers["IP"]._state = bitarray(bin(twos_complement(128 + offset, 16))[2:].rjust(16, '0'))
+        self.registers["IP"]._state = bitarray(bin(twos_complement(1024 + offset, 16))[2:].rjust(16, '0'))
         self.__load_program(program_text)
         self.read_state = "opcode"
 
@@ -192,35 +192,7 @@ class CPU:
         """
         # Writing program instructions into to memory
         ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
-        self.program_memory.write(ip_value, bitarray(program_text.replace('\n', '')))
-
-    def start_program(self):
-        """
-        Handles the execution of the actual program
-        :return: NoneType
-        """
-        # Continue executing instructions until we reach
-        # the end of the program (all-zeros byte)
-        while True:
-
-            # Read first instruction of the program from the memory
-            self.__read_instruction()
-
-            # Update the Memory-Mapped devices
-            self.__update_devices()
-
-            # Draw the updated screen
-            if self.curses_mode:
-                logger.info("Drawing the screen")
-                self.draw_screen()
-
-            if self.instruction.to01() == ('0' * 16):
-                return False
-
-            logger.info("Entering execute cycle")
-            is_close = self.__execute_cycle()
-            if is_close:
-                return True
+        self.program_memory.write(ip_value//8, bitarray(program_text.replace('\n', '')))
 
     def __execute_cycle(self):
         """
@@ -233,7 +205,7 @@ class CPU:
 
         self.execute()
         logger.info("Executing the instruction. To close: " + str(is_close))
-        ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + 2, 16)
+        ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + self.instruction_size[0], 16)
         self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
 
         return is_close
@@ -242,12 +214,6 @@ class CPU:
         """
         Executes the next instruction after button click on the webpage
         """
-        # Read first instruction of the program from the memory
-        self.__read_instruction()
-
-        if self.instruction.to01() == ('0' * 16):
-            return
-
         if self.first_instruction:
             self.first_instruction = False
         else:
@@ -257,22 +223,29 @@ class CPU:
             # Update the Memory-Mapped devices
             self.__update_devices()
 
+        # Read first instruction of the program from the memory
+        self.__read_instruction()
+
+        # If the instruction is 'end' - an empty string, terminate the execution
+        if self.instruction.to01() == ('0' * 16):
+            return
+
     def __update_devices(self):
         """
         Updates the devices if they are Memory-Mapped
         """
         for port, device in self.ports_dictionary.items():
             if device.io_type == "mmio":
-                data = self.data_memory.read_data(device.start_point, device.end_point)
+                data = self.data_memory.read_data(device.start_point*8, device.end_point*8)
                 device._state = data
 
     def __read_instruction(self):
         """
-        Reads the instruction and the opcode in it
+        Reads the instruction and the opcode in it for a specified ISA
         """
         start_read_location = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
         self.instruction = self.program_memory.read_data(start_read_location,
-                                                         start_read_location + self.instruction_size[2])
+                                                         start_read_location + self.instruction_size[0])
 
         # Read the opcode part of the instruction
         if self.read_state == "opcode":
@@ -315,7 +288,7 @@ class CPU:
                 register_code = self.instruction[start_point:start_point + 3].to01()
                 tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)
                 operands_values.append(
-                    self.data_memory.read_data(tmp_register, tmp_register + 2))
+                    self.data_memory.read_data(tmp_register*8, (tmp_register + 2)*8))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
@@ -336,11 +309,12 @@ class CPU:
             operand = operands_aliases[0]
             if operand.startswith("imm"):
 
-                # TODO: This implies that instructions take up 16 bits (2 bytes), which is rarely true
+                # Calculate the new location of the instruction pointer, change it
                 imm_len = int(operand[3:])
-                offset = twos_complement(int(operands_values[0].to01(), 2), imm_len) * 2
+                instr_size = self.instruction_size[0]
+                offset = (twos_complement(int(operands_values[0].to01(), 2), imm_len) * instr_size) - instr_size
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
-                self.registers["IP"]._state = bitarray(bin(ip_value + offset - 2)[2:].rjust(16, '0'))
+                self.registers["IP"]._state = bitarray(bin(ip_value + offset)[2:].rjust(16, '0'))
 
             # There is only one operand for a call function, and it determines an absolute address in the memory
             elif operand == "reg":
@@ -386,10 +360,11 @@ class CPU:
                     # Else, just use the register length
                     num_len = 16
 
-                # TODO: This implies that instructions take up 16 bits (2 bytes), which is rarely true
-                offset = twos_complement(int(operands_values[0].to01(), 2), num_len) * 2
+                # Calculate the new location of the instruction pointer, change it
+                instr_size = self.instruction_size[0]
+                offset = (twos_complement(int(operands_values[0].to01(), 2), num_len) * instr_size) - instr_size
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
-                self.registers["IP"]._state = bitarray(bin(ip_value + offset - 2)[2:].rjust(16, '0'))
+                self.registers["IP"]._state = bitarray(bin(ip_value + offset)[2:].rjust(16, '0'))
 
         # If the opcode specified pushes the value on the stack
         elif res_type == "stackpush":
@@ -405,7 +380,6 @@ class CPU:
 
         # Else, we have to execute the needed computations for this function in the virtual ALU
         else:
-            # TODO: check what goes on with a load function
             # Determine the needed function for this opcode and execute it, passing the flag register
             function = functions_dictionary[self.instructions_dict[self.opcode.to01()][0]]
             result_value = function(operands_values, flag_register=self.registers["FR"])
@@ -419,7 +393,7 @@ class CPU:
 
     def __determine_start_point(self):
         """
-        Determines the start point of the operands in theinstruction and other details
+        Determines the start point of the operands in the instruction and other details
         depending on the ISA architecture
 
         The helper function for the 'execute' method
@@ -516,9 +490,37 @@ class CPU:
         """
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
         self.registers["SP"]._state = bitarray(bin(stack_pointer_value - 2)[2:].rjust(16, '0'))
-        return self.data_memory.read_data(stack_pointer_value - 2, stack_pointer_value)
+        return self.data_memory.read_data((stack_pointer_value - 2)*8, stack_pointer_value*8)
 
     # Below are the methods for curses-driven command-line interface
+    def start_program(self):
+        """
+        Handles the execution of the actual program for a curses-based application
+        :return: NoneType
+        """
+        # Continue executing instructions until we reach
+        # the end of the program (all-zeros byte)
+        while True:
+
+            # Read first instruction of the program from the memory
+            self.__read_instruction()
+
+            # Update the Memory-Mapped devices
+            self.__update_devices()
+
+            # Draw the updated screen
+            if self.curses_mode:
+                logger.info("Drawing the screen")
+                self.draw_screen()
+
+            if self.instruction.to01() == ('0' * 16):
+                return False
+
+            logger.info("Entering execute cycle")
+            is_close = self.__execute_cycle()
+            if is_close:
+                return True
+
     def curses_next_instruction(self):
         """
         A temporary module that switches to the next instruction when curses mode is on
