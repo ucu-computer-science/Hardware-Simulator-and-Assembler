@@ -195,252 +195,253 @@
     "risc2": {
         "00000001": [
             "load",
-            "acc",
-            "memir"
+            ["acc", "memir"],
+            []
         ],
         "00000010": [
-            "load",
-            "acc",
-            "fr"
+            "loadf",
+            ["acc", "fr"],
+            []
         ],
         "00000011": [
-            "load",
-            "acc",
-            "ir"
+            "loadi",
+            ["acc", "ir"],
+            []
         ],
         "10000000": [
             "load",
-            "acc",
-            "imm"
+            ["acc", "imm"],
+            ["imm"]
         ],
         "00000100": [
             "store",
-            "memir",
-            "acc"
+            ["memir", "acc"],
+            []
         ],
         "10000001": [
             "store",
-            "memir",
-            "imm"
+            ["memir", "imm"],
+            []
         ],
         "00000101": [
-            "store",
-            "memir",
-            "ir"
+            "storef",
+            ["memir", "fr"],
+            []
         ],
         "00000110": [
-            "store",
-            "memir",
-            "fr"
+            "storei",
+            ["memir", "ir"],
+            []
         ],
         "10000010": [
             "mov",
-            "acc",
-            "imm"
+            ["acc", "imm"],
+            ["imm"]
         ],
         "00000111": [
             "push",
-            "stackpush",
-            "acc"
+            ["stackpush", "acc"],
+            []
         ],
         "00001000": [
-            "push",
-            "stackpush",
-            "ir"
+            "pushf",
+            ["stackpush", "fr"],
+            []
         ],
         "00001001": [
-            "pushf",
-            "stackpush",
-            "fr"
+            "pushi",
+            ["stackpush", "ir"],
+            []
         ],
         "00001010": [
             "pop",
-            "stackpop",
-            "acc"
+            ["stackpop", "acc"],
+            []
         ],
         "00001011": [
-            "pop",
-            "stackpop",
-            "ir"
+            "popi",
+            ["stackpop", "ir"],
+            []
         ],
         "00001100": [
             "popf",
-            "stackpop",
-            "fr"
+            ["stackpop", "fr"],
+            []
         ],
         "00001101": [
             "add",
-            "acc",
-            ["acc", "memir"]
+            ["acc", "acc", "memir"],
+            []
         ],
         "00001110": [
             "sub",
-            "acc",
-            ["acc", "memir"]
+            ["acc", "acc", "memir"],
+            []
         ],
         "00001111": [
             "inc",
-            "acc",
-            ["acc", "memir"]
+            ["acc", "acc"],
+            []
         ],
         "00010000": [
             "dec",
-            "acc",
-            ["acc", "memir"]
+            ["acc", "acc"],
+            []
         ],
         "00010001": [
             "mul",
-            "acc",
-            ["acc", "memir"]
+            ["acc", "acc", "memir"],
+            []
         ],
         "00010010": [
             "div",
-            "acc",
-            ["acc", "memir"]
+            ["acc", "acc", "memir"],
+            []
         ],
         "00010011": [
             "and",
-            "acc",
-            ["acc", "memir"]
+            ["acc", "acc", "memir"],
+            []
         ],
         "00010100": [
             "or",
-            "acc",
-            ["acc", "memir"]
+            ["acc", "acc", "memir"],
+            []
         ],
         "00010101": [
             "xor",
-            "acc",
-            ["acc", "memir"]
+            ["acc", "acc", "memir"],
+            []
         ],
         "00010110": [
             "not",
-            "acc",
-            "acc"
+            ["acc", "acc"],
+            []
         ],
         "10000011": [
             "lsh",
-            "acc",
-            ["acc", "imm"]
+            ["acc", "acc", "imm"],
+            ["imm"]
         ],
         "10000100": [
             "rsh",
-            "acc",
-            ["acc", "imm"]
+            ["acc", "acc", "imm"],
+            ["imm"]
         ],
         "00010111": [
             "call",
-            "call",
-            "acc"
+            ["acc"],
+            []
         ],
         "10000101": [
             "call",
-            "call",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "00011000": [
             "ret",
-            "ret"
+            ["ret"],
+            []
         ],
         "00011001": [
             "cmp",
-            "cmp",
-            ["acc", "memir"]
+            ["acc", "memir"],
+            []
         ],
         "10000110": [
             "cmp",
-            "cmp",
-            ["acc", "imm"]
+            ["acc", "imm"],
+            ["imm"]
         ],
         "00011010": [
             "test",
-            "test",
-            ["acc", "memir"]
+            ["acc", "memir"],
+            []
         ],
         "10000111": [
             "test",
-            "test",
-            ["acc", "imm"]
+            ["acc", "imm"],
+            ["imm"]
         ],
         "10001000": [
             "jmp",
-            "jmp",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "00011011": [
             "jmp",
-            "jmp",
-            "acc"
+            ["acc"],
+            []
         ],
         "10001001": [
             "je",
-            "jmp",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "00011100": [
             "je",
-            "jmp",
-            "acc"
+            ["acc"],
+            []
         ],
         "10001010": [
             "jne",
-            "jmp",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "00011101": [
             "jne",
-            "jmp",
-            "acc"
+            ["acc"],
+            []
         ],
         "10001011": [
             "jg",
-            "jmp",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "00011110": [
             "jg",
-            "jmp",
-            "acc"
+            ["acc"],
+            []
         ],
         "10001100": [
             "jge",
-            "jmp",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "00011111": [
             "jge",
-            "jmp",
-            "acc"
+            ["acc"],
+            []
         ],
         "10001101": [
             "jl",
-            "jmp",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "00100000": [
             "jl",
-            "jmp",
-            "acc"
+            ["acc"],
+            []
         ],
         "10001111": [
             "jle",
-            "jmp",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "00100001": [
             "jle",
-            "jmp",
-            "acc"
+            ["acc"],
+            []
         ],
         "10010000": [
             "in",
-            "in",
-            "imm"
+            ["imm"],
+            ["imm"]
         ],
         "10010001": [
             "out",
-            "out",
-            ["imm", "acc"]
+            ["imm", "acc"],
+            ["imm"]
         ]
     },
     "risc3": {
