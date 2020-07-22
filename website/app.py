@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Assembly Simulator project 2020
+# GNU General Public License v3.0
+
 import time
 import dash
 import dash_core_components as dcc
@@ -18,8 +24,13 @@ table_header_font_color = '#93B6D5'
 # BUTTONS
 button_color = '#46547C'
 button_font_color = '#FCD848'
+# ASSEMBLY/BINARY
+assembly_bg_color = "#4E6585"
+assembly_font_color = "#B3CBE1"
 # OTHER
 background_color = '#26273D'
+title_color = '#C0C0DB'
+text_color = '#9090AC'
 # TRANSPARENT LAYOUT FOR FIGURES
 layout = go.Layout(
     paper_bgcolor='rgba(0,0,0,0)',
@@ -27,24 +38,63 @@ layout = go.Layout(
 )
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)']
 
+# LAYOUT
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-app.layout = html.Div([html.Div([
-    dcc.Textarea(id="input1", style={'display': 'inline-block'}, ),
-    html.Div(id='assembly', style={'display': 'inline-block'}, ),
-    html.Div(id='simulator', style={'display': 'inline-block'}, ),
-]),
+app.layout = html.Div([
+
     html.Div([html.Div([
-        html.Button('Assemble', id='assemble_input', n_clicks=0,
-                    style={"color": button_font_color, "background-color": button_color}),
-    ], style={'bottom': '0', 'right': '0', 'left': '0',
-              'top': '0', 'display': 'inline-block'}),
-        html.Button('Next', id='next-instruction', n_clicks=0,
-                    style={"color": button_font_color, "background-color": button_color}),
-    ], style={'bottom': '0', 'right': '0', 'left': '0',
-              'top': '0', 'display': 'inline-block'})
+        dcc.Markdown("ASSEMBLY SIMULATOR",
+                     style={'color': title_color, 'font-family': "Roboto Mono, monospace", 'font-size': '25px',
+                            'margin-left': 40, 'margin-top': 20, }),
+
+        html.Div([
+            dcc.Markdown("ASSEMBLY",
+                         style={'color': text_color, 'font-family': "Roboto Mono, monospace", 'font-size': '20px',
+                                'margin-left': 45, 'margin-top': 30, 'display': 'inline-block'}),
+            dcc.Markdown("BINARY",
+                         style={'color': text_color, 'font-family': "Roboto Mono, monospace", 'font-size': '20px',
+                                'margin-left': 85, 'margin-top': 10, 'display': 'inline-block'}),
+
+        ]),
+
+        dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
+                     style={'width': 170, 'height': 400, 'display': 'inline-block', 'margin-right': 7,
+                            'margin-left': 5, 'margin-top': 0,
+                            "color": assembly_font_color, 'font-size': '15px',
+                            "background-color": assembly_bg_color, 'font-family': "Roboto Mono, monospace"},
+                     autoFocus='true', ),
+        html.Div(id='assembly', style={'display': 'inline-block'}, )]),
+
+        dcc.Markdown("CHOOSE ISA AND ASSEMBLE THE CODE:",
+                     style={'color': text_color, 'font-family': "Roboto Mono, monospace", 'font-size': '14px',
+                            'margin-left': 29, 'margin-top': 10, 'display': 'inline-block'}),
+
+        html.Div([html.Button('Stack', id='assemble_risc1', n_clicks=0,
+                              style={'margin-left': 10, "color": button_font_color, "background-color": button_color,
+                                     'width': 160, 'display': 'inline-block'}),
+                  html.Button('Register RISC', id='assemble_risc3', n_clicks=0,
+                              style={'margin-left': 16, "color": button_font_color, "background-color": button_color,
+                                     'width': 160, 'display': 'inline-block'})], style={"margin-bottom": 10}),
+
+        html.Div([html.Button('Accumulator', id='assemble_risc2', n_clicks=0,
+                              style={'margin-left': 10, "color": button_font_color, "background-color": button_color,
+                                     'width': 160, 'display': 'inline-block'}),
+                  html.Button('Register CISC', id='assemble_cisc', n_clicks=0,
+                              style={'margin-left': 16, "color": button_font_color, "background-color": button_color,
+                                     'width': 160, 'display': 'inline-block'})]),
+
+    ],
+        style={'display': 'block', 'height': '100px', 'margin-left': 14}, ),
+
+    html.Div([html.Div(id='simulator'),
+              html.Button('Execute next instruction', id='next-instruction', n_clicks=0,
+                          style={"color": button_font_color, "background-color": button_color, 'margin-left': 150,
+                                 'margin-top': 10}), ],
+             style={'height': '100px', 'margin-top': 0, 'margin-left': 390, 'display': 'block'})
 ])
 
 
+# INPUT AND BUTTONS
 @app.callback(Output('simulator', 'children'),
               [Input('next-instruction', 'n_clicks')])
 def update_tables(n_clicks):
@@ -59,26 +109,32 @@ def update_tables(n_clicks):
             'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
         html.Div(dcc.Graph(figure=make_memory_slots(), config={
             'displayModeBar': False})),
-    ])
+    ], style={'margin-top': -100})
 
 
 @app.callback(Output('assembly', 'children'),
-              [Input('assemble_input', 'n_clicks')],
+              [Input('assemble_risc3', 'n_clicks')],
               [State('input1', 'value')])
 def make_assembly_input(n_clicks, value):
     global binary_program
     global cpu
-    if value:
+    if not value or value == "input assembly code here":
+        binary_program = ""
+    else:
         binary_program = Assembler("risc3", value).binary_code
         cpu = CPU("risc3", "neumann", "special", binary_program)
-    else:
-        binary_program = ""
-    return binary_program
+    return dcc.Textarea(value=binary_program,
+                        style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
+                               "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
+                        disabled=True)
 
+
+# CPU
 binary_program = ''
 cpu = CPU("risc3", "neumann", "special", binary_program)
 
 
+# GRAPHIC ELEMENTS
 def make_instruction_slot():
     """
     Return a table figure, with information from the instruction of the CPU.
@@ -89,7 +145,7 @@ def make_instruction_slot():
                                  fill_color=table_header_color,
                                  align=['center', 'center'],
                                  font=dict(color=table_main_font_color, size=20), height=40), )], layout=layout)
-    fig.update_layout(height=160, margin=dict(b=25), width=380,
+    fig.update_layout(height=160, margin=dict(b=25, l=30, r=50), width=300,
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
 
     return fig
@@ -108,7 +164,7 @@ def make_output_slot():
             go.Table(header=dict(values=shell_slots, line_color=table_header_color,
                                  fill_color=table_header_color,
                                  align=['left', 'center'], height=40), )], layout=layout)
-    fig.update_layout(height=160, margin=dict(b=25), width=430,
+    fig.update_layout(height=160, margin=dict(b=25, r=0, l=150), width=430,
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
 
     return fig
@@ -131,7 +187,7 @@ def make_registers_slots():
                                 align=['left', 'center'],
                                 font=dict(color=table_main_font_color, size=15), height=25),
                      )], layout=layout)
-    fig.update_layout(height=150, width=300, margin=dict(t=10, l=1, r=1, b=1),
+    fig.update_layout(height=150, width=300, margin=dict(t=10, l=0, r=1, b=1),
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
     fig.layout['template']['data']['table'][0]['header']['fill']['color'] = 'rgba(0,0,0,0)'
     fig.layout['template']['data']['table'][0]['header']['line']['color'] = 'rgba(0,0,0,0)'
@@ -160,7 +216,7 @@ def make_memory_slots():
 
     rows = [rows] + memory_data
     fig = go.Figure(
-        data=[go.Table(columnwidth=10,
+        data=[go.Table(columnwidth=7,
                        header=dict(values=headers, line_color=table_header_color,
                                    fill_color=table_header_color,
                                    align=['left', 'center'],
@@ -169,13 +225,14 @@ def make_memory_slots():
                                   fill_color=table_main_color,
                                   align=['left', 'center'],
                                   font=dict(color=table_main_font_color, size=12), ))], layout=layout)
-    fig.update_layout(width=1100, height=400, margin=dict(t=10, b=0),
+    fig.update_layout(width=1032, height=400, margin=dict(t=10, b=10, r=0, l=30),
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20),
                       )
     fig.layout.update(dragmode=False)
     return fig
 
 
+# SERVER LAUNCH
 server = app.server
 dev_server = app.run_server
 
