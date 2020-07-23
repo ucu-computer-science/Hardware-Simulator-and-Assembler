@@ -80,7 +80,7 @@ def mov(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the register
     """
-    return bitarray(operands[-1].to01())
+    return operands[-1]
 
 
 def add(operands, flag_register):

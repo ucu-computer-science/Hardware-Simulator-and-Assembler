@@ -1,4 +1,4 @@
-mov $5
-mov $6
+mov $33
+mov $32
 add
 out $1

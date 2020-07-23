@@ -4,6 +4,39 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
+# This is the main module of the Hardware Simulator that processes binary instructions
+
+# Basic workflow of the CPU is as follows:
+#   * Create the registers, memory according to the architectures specified
+#   * Load the program binary code into memory at starting position (IP)
+#   * Then, the CPU executes instructions one by one, whether by manual presses, or at certain time intervals,
+#         everything is controlled by web_next_instruction call, it skips to the next instructions, executing it,
+#         and updates everything attached to CPU (Should not be called immediately after the last call,
+#         processing might take some time)
+#   * Instruction execution involves several steps as well:
+#       * First, we decode the actual instruction part of it (opcode), determining which operands we are
+#           going to meet and other details on it
+#       * Second, we determine where to save the result (it might be a register, memory slot, or the result might
+#           not need to be saved at all, like in jump instructions)
+#       * Then, we encode or decode the operands, collecting their values
+#       * As a last step, we actually determine what is the computation that this instruction needs,
+#           and either call a function from functions_dict submodule, or process the stuff on our own
+
+# Conventions on anything pointing to the memory, including:
+#   * Instruction Pointer
+#   * Stack Pointer
+#   * TOS
+#   * Index register
+#     etc.
+# They should contain the number of BITS from 0 to 2**16-1
+# This allows to easily work with non-byte aligned architectures (Stack ISA)
+# This allows to point to up to 65536 bits, and this is 8KiB, which I think is more than enough.
+# This requires to call read_data from memory with existing values if needed, using BIT OFFSETS
+# This requires to call write_data from memory with values//8, if needed, using BYTE OFFSETS
+
+# TODO: There are probably still a couple of things not complying with the abovementioned conventions,
+#  the only way to find out is to check everything I guess
+
 # TODO: This module needs a lot of refactoring (after the available demo working properly), as
 #  it still has a lot of leftover curses functionality we are not going to need anymore,
 #  overall does not perform ideally, as it was made up on the go
@@ -15,6 +48,7 @@
 import os
 import json
 import curses
+import logging
 from bitarray import bitarray
 from bitarray.util import ba2hex
 
@@ -22,6 +56,16 @@ from modules.functions import functions_dictionary, twos_complement
 from modules.memory import Memory
 from modules.register import Register
 from modules.shell import Shell
+
+# Set up the logging module so it would save everything to a file
+# (we are unable to track prints in real-time due to curses)
+logging.basicConfig(filename="log.txt",
+                    filemode='w',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
+
+logger = logging.getLogger('logger')
 
 
 class CPU:
@@ -111,7 +155,7 @@ class CPU:
         for register in registers_list:
             temp = Register(register[0], general_purpose=(register[1] == 1))
             if register[0] == "TOS":
-                self.tos_start = 512
+                self.tos_start = 4096
                 temp._state = bitarray(bin(self.tos_start)[2:].rjust(16, '0'))
             self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
@@ -123,7 +167,7 @@ class CPU:
         """
         # Writing program instructions into to memory
         ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
-        self.program_memory.write(ip_value//8, bitarray(program_text.replace('\n', '')))
+        self.program_memory.write_data(ip_value // 8, bitarray(program_text.replace('\n', '')))
 
     def web_next_instruction(self):
         """
@@ -170,6 +214,7 @@ class CPU:
         if self.read_state == "constant":
             self.long_immediate = self.program_memory.read_data(start_read_location + self.instruction_size[0],
                                                                 start_read_location + self.instruction_size[0]*3)
+            self.long_immediate = bitarray(self.long_immediate.to01().rjust(16, '0'))
             ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + (self.instruction_size[0]*2), 16)
             self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
             self.read_state = "opcode"
@@ -316,7 +361,7 @@ class CPU:
         elif res_type in ["stackpop", "stackpopf"]:
             popped_val = self.__pop_stack()
             if memory_write_access:
-                self.data_memory.write(result_destination, popped_val)
+                self.data_memory.write_data(result_destination//8, popped_val)
                 if tos_push:
                     self.registers["TOS"]._state = bitarray(bin(result_destination + 16)[2:].rjust(16, '0'))
             else:
@@ -334,7 +379,7 @@ class CPU:
 
             # Write the result of the operation into the memory
             if memory_write_access:
-                self.data_memory.write(result_destination, result_value)
+                self.data_memory.write_data(result_destination//8, result_value)
 
                 # Move the TOS pointer if the instruction pushed into the virtual register stack
                 if tos_push:
@@ -397,6 +442,7 @@ class CPU:
             if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["tos", "in"]:
                 memory_write_access, tos_push = True, True
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
+                logger.info(result_destination)
             elif res_type == "memtos":
                 memory_write_access = True
                 tos_val = int(self.registers["TOS"]._state.to01(), 2)
@@ -478,7 +524,7 @@ class CPU:
             elif operand == "memreg":
                 register_code = self.instruction[start_point:start_point + 3].to01()
                 tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)
-                operands_values.append(self.data_memory.read_data(tmp_register * 8, (tmp_register + 2) * 8))
+                operands_values.append(self.data_memory.read_data(tmp_register, tmp_register + 16))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
@@ -525,8 +571,8 @@ class CPU:
         :param value: bitarray(16) - a value to be pushed into memory
         """
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
-        self.data_memory.write(stack_pointer_value, value)
-        self.registers["SP"]._state = bitarray(bin(stack_pointer_value + 2)[2:].rjust(16, '0'))
+        self.data_memory.write_data(stack_pointer_value//8, value)
+        self.registers["SP"]._state = bitarray(bin(stack_pointer_value + 16)[2:].rjust(16, '0'))
 
     def __pop_stack(self):
         """
@@ -534,8 +580,8 @@ class CPU:
         :return: bitarray - of size 16 representing the value of the register previously pushed onto the stack
         """
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
-        self.registers["SP"]._state = bitarray(bin(stack_pointer_value - 2)[2:].rjust(16, '0'))
-        return self.data_memory.read_data((stack_pointer_value - 2)*8, stack_pointer_value*8)
+        self.registers["SP"]._state = bitarray(bin(stack_pointer_value - 16)[2:].rjust(16, '0'))
+        return self.data_memory.read_data(stack_pointer_value - 16, stack_pointer_value)
 
     def __pop_tos(self, second=False, pop=False):
         """
