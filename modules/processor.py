@@ -79,6 +79,8 @@ class CPU:
         self.read_state = "opcode"
         self.first_instruction = True
 
+        self.instruction = bitarray('')
+
         # Draw the main interface
         if self.curses_mode:
             self.start_screen()
