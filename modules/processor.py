@@ -45,6 +45,7 @@ class CPU:
         self.architecture = architecture
         self.io_arch = io_arch
         self.curses_mode = curses_mode
+        self.instruction = bitarray('')
 
         # Create data and program memory according to the specified architecture
         if architecture in ["neumann", "harvardm"]:
