@@ -69,6 +69,12 @@ app.layout = html.Div([
                      style={'color': text_color, 'font-family': "Roboto Mono, monospace", 'font-size': '14px',
                             'margin-left': 29, 'margin-top': 10, 'display': 'inline-block'}),
 
+
+        html.Button('LOAD CODE', id='load_assembly', n_clicks=0,
+                              style={'margin-left': 10, "color": button_font_color, "background-color": button_color,
+                                     'width': 160, 'display': 'inline-block'}),
+
+
         html.Div([html.Button('Stack', id='assemble_risc1', n_clicks=0,
                               style={'margin-left': 10, "color": button_font_color, "background-color": button_color,
                                      'width': 160, 'display': 'inline-block'}),
@@ -90,52 +96,100 @@ app.layout = html.Div([
               html.Button('Execute next instruction', id='next-instruction', n_clicks=0,
                           style={"color": button_font_color, "background-color": button_color, 'margin-left': 400,
                                  'margin-top': 10}), ],
-             style={'height': '100px', 'margin-top': 0, 'margin-left': 390, 'display': 'block'})
+             style={'height': '100px', 'margin-top': 0, 'margin-left': 390, 'display': 'block'}),
+
+    # Hidden div for storing assembly code
+    html.Div(id='intermediate-value', style={'display': 'none'})
 ])
 
 
+
 # INPUT AND BUTTONS
+
+@app.callback(Output('intermediate-value', 'children'),
+              [Input('load_assembly', 'n_clicks')],
+              [State('input1', 'value')])
+def intermediate(n_clicks, value):
+    if not value or value == "input assembly code here":
+        binary_program = ''
+        intermediate.cpu = CPU("risc3", "neumann", "special", binary_program)
+        return binary_program
+    else:
+        try:
+            binary_program = Assembler("risc3", value).binary_code
+            intermediate.cpu = CPU("risc3", "neumann", "special", binary_program)
+            return binary_program
+        except AssemblerError as exception:
+            binary_program = "AssemblerError: {}".format(exception.args[0])
+            intermediate.cpu = CPU("risc3", "neumann", "special", "")
+            return binary_program
+
+
+
 @app.callback(Output('simulator', 'children'),
-              [Input('next-instruction', 'n_clicks')])
-def update_tables(n_clicks):
+              [Input('next-instruction', 'n_clicks'),
+               Input('intermediate-value', 'value')])
+# TODO: how do I input a cpu??? what the heck
+def update_tables(n_clicks, value):
+    intermediate()
+    cpu = intermediate.cpu
     cpu.web_next_instruction()
     time.sleep(0.05)
     return html.Div([
-        html.Div(dcc.Graph(figure=make_instruction_slot(), config={
+        html.Div(dcc.Graph(figure=make_instruction_slot(cpu), config={
             'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_registers_slots(), config={
+        html.Div(dcc.Graph(figure=make_registers_slots(cpu), config={
             'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_output_slot(), config={
+        html.Div(dcc.Graph(figure=make_output_slot(cpu), config={
             'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_memory_slots(), config={
+        html.Div(dcc.Graph(figure=make_memory_slots(cpu), config={
             'displayModeBar': False})),
     ], style={'margin-top': -100})
 
 
+
+
 @app.callback(Output('assembly', 'children'),
-              [Input('assemble_risc3', 'n_clicks')],
-              [State('input1', 'value')])
+              [Input('assemble_risc3', 'n_clicks'),
+               Input('intermediate-value', 'value')])
 def make_assembly_input(n_clicks, value):
-    global binary_program
-    global cpu
     if not value or value == "input assembly code here":
         binary_program = ""
     else:
-        binary_program = Assembler("risc3", value).binary_code
-        cpu = CPU("risc3", "neumann", "special", binary_program)
+        try:
+            binary_program = Assembler("risc3", value).binary_code
+        except AssemblerError as exception:
+            binary_program = "AssemblerError: {}".format(exception.args[0])
     return dcc.Textarea(value=binary_program,
                         style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
                                "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
                         disabled=True)
 
 
-# CPU
-binary_program = ''
-cpu = CPU("risc3", "neumann", "special", binary_program)
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # CPU
+# binary_program = ''
+# cpu = CPU("risc3", "neumann", "special", binary_program)
+
+
+
+
 
 
 # GRAPHIC ELEMENTS
-def make_instruction_slot():
+def make_instruction_slot(cpu):
     """
     Return a table figure, with information from the instruction of the CPU.
     """
@@ -164,7 +218,7 @@ def make_instruction_slot():
     return fig
 
 
-def make_output_slot():
+def make_output_slot(cpu):
     """
     Return a table figure, with information from the instruction of the CPU.
     """
@@ -197,7 +251,7 @@ def make_output_slot():
     return fig
 
 
-def make_registers_slots():
+def make_registers_slots(cpu):
     """
     Return a table figure, with information from registers of the CPU.
     """
@@ -236,7 +290,7 @@ def make_registers_slots():
     return fig
 
 
-def make_memory_slots():
+def make_memory_slots(cpu):
     """
     Return a table figure, with information from the memory of the CPU.
     """
@@ -288,15 +342,20 @@ def make_memory_slots():
     return fig
 
 
-# SERVER LAUNCH
-server = app.server
-dev_server = app.run_server
+
 
 # run the program
 # TODO: make table undraggable (maybe switch to dash table)
 # TODO: Add error field (maybe in binary textarea)
 # TODO: Add I/O choice, neumann and harvard
+# TODO: smaller memory, bigger assembler, change memory title
+# TODO: HEX-представлення команд на додачу до двійкового. Варіант -- як опцію BIN/HEX
+# TODO: access program examples and instructions
+# TODO: multi-user access
 
 if __name__ == '__main__':
-    app.run_server(debug=False, threaded=True)
+    # SERVER LAUNCH
+    server = app.server
+    dev_server = app.run_server
+    app.run_server(debug=True, threaded=True)
     # app.run_server(debug=True, processes=3, threaded=False)
