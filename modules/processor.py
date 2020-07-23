@@ -4,6 +4,14 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
+# TODO: This module needs a lot of refactoring (after the available demo working properly), as
+#  it still has a lot of leftover curses functionality we are not going to need anymore,
+#  overall does not perform ideally, as it was made up on the go
+
+# TODO: Additionally, we do not use the general-purposiveness info provided to us by register module,
+#  and the user is currently free to do whatever they want with any register, defying the purpose
+#  of the special registers (SP, IP, FR etc.). This is probably going to be done after a massive refactoring/remake
+
 import os
 import json
 import curses
@@ -37,7 +45,18 @@ class CPU:
         self.architecture = architecture
         self.io_arch = io_arch
         self.curses_mode = curses_mode
-        self.first_instruction = True
+
+        # Create data and program memory according to the specified architecture
+        if architecture in ["neumann", "harvardm"]:
+            memory = Memory(1024)
+            self.data_memory = memory
+            self.program_memory = memory
+        elif architecture == "harvard":
+            self.data_memory = Memory(512)
+            self.program_memory = Memory(512)
+
+        # Create the registers for the specified register architecture
+        self.__create_registers()
 
         # Create devices for this CPU depending on the I/O architecture specified
         if io_arch == "mmio":
@@ -50,26 +69,15 @@ class CPU:
         with open(os.path.join("modules", "instructions.json"), "r") as file:
             self.instructions_dict = json.load(file)[self.isa]
 
-        # Determining the size of the instructions to read (size of the instruction, opcode size, instruction in bytes)
-        instruction_sizes = {"risc1": (6, 6, 1), "risc2": (8, 8, 1), "risc3": (16, 6, 2), "cisc": (8, 8, 1)}
+        # Determining the size of the instructions to read (size of the instruction, opcode size)
+        instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
         self.instruction_size = instruction_sizes[self.isa]
-
-        # Create the registers for the specified register architecture
-        self.__create_registers()
-
-        # Create data and program memory according to the specified architecture
-        if architecture in ["neumann", "harvardm"]:
-            memory = Memory(1024)
-            self.data_memory = memory
-            self.program_memory = memory
-        elif architecture == "harvard":
-            self.data_memory = Memory(512)
-            self.program_memory = Memory(512)
 
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
         self.registers["IP"]._state = bitarray(bin(twos_complement(1024 + offset, 16))[2:].rjust(16, '0'))
         self.__load_program(program_text)
         self.read_state = "opcode"
+        self.first_instruction = True
 
         # Draw the main interface
         if self.curses_mode:
@@ -114,24 +122,10 @@ class CPU:
         ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
         self.program_memory.write(ip_value//8, bitarray(program_text.replace('\n', '')))
 
-    def __execute_cycle(self):
-        """
-        Execute the current instruction, and move on to the next one
-        """
-        is_close = False
-        # Waiting for the key or button to be pressed, depending on the mode
-        if self.curses_mode:
-            is_close = self.curses_next_instruction()
-
-        self.execute()
-        ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + self.instruction_size[0], 16)
-        self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
-
-        return is_close
-
     def web_next_instruction(self):
         """
         Executes the next instruction after button click on the webpage
+        Only starts executing AFTER the first call, only reads the instruction on the first time
         """
         # If the instruction is 'end' - an empty string, terminate the execution
         if isinstance(self.instruction, bitarray) and self.instruction.to01() == ('0' * self.instruction_size[0]):
@@ -149,18 +143,11 @@ class CPU:
         # Read first instruction of the program from the memory
         self.__read_instruction()
 
-    def __update_devices(self):
-        """
-        Updates the devices if they are Memory-Mapped
-        """
-        for port, device in self.ports_dictionary.items():
-            if device.io_type == "mmio":
-                data = self.data_memory.read_data(device.start_point*8, device.end_point*8)
-                device._state = data
-
     def __read_instruction(self):
         """
         Reads the instruction and the opcode in it for a specified ISA
+        Reads a long immediate encoded in the next byets if the ISA uses those
+        Does not actually move the instruction pointer to the next instruction
         """
         start_read_location = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
         self.instruction = self.program_memory.read_data(start_read_location,
@@ -184,14 +171,36 @@ class CPU:
             self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
             self.read_state = "opcode"
 
+    def __execute_cycle(self):
+        """
+        Execute the current instruction, and move on to the next one, moving the instruction pointer
+        """
+        is_close = False
+        # Waiting for the key or button to be pressed, depending on the mode
+        if self.curses_mode:
+            is_close = self.curses_next_instruction()
+
+        self.execute()
+        ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + self.instruction_size[0], 16)
+        self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
+
+        return is_close
+
+    def __update_devices(self):
+        """
+        Updates the devices if they are Memory-Mapped
+        """
+        for port, device in self.ports_dictionary.items():
+            if device.io_type == "mmio":
+                data = self.data_memory.read_data(device.start_point*8, device.end_point*8)
+                device._state = data
+
     def execute(self):
         """
         Executes an instruction, decoding its operands, computing the
         result and saving it in the proper place
         :return: NoneType
         """
-        # TODO: This method is still super huge, we are going to probably have to break it up
-
         # Determine the point in the binary instruction where operands start
         start_point = self.__determine_start_point()
 

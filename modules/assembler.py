@@ -4,6 +4,11 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
+# TODO: This assembler works pretty fine, but still there is label decoding left to be implemented
+
+# TODO: There is more though, instructions.json is pretty inconsistent between different
+#  architectures as it was all done on the go, and is under-documented
+
 import os
 import json
 import argparse
