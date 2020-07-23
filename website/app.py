@@ -12,6 +12,8 @@ import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 from bitarray.util import ba2hex
 import uuid
+from flask import Flask, render_template
+import json
 
 from modules.processor import CPU
 from modules.assembler import Assembler, AssemblerError
@@ -42,8 +44,9 @@ layout = go.Layout(
 )
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)']
 
+server = Flask(__name__)
 # LAYOUT
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, url_base_pathname='/', server=server)
 
 
 # Check user ip
@@ -331,9 +334,25 @@ def make_memory_slots(user_id):
 # TODO: access program examples and instructions
 # TODO: multi-user access
 
+
+@server.route('/')
+def main():
+    return app.index()
+
+
+@server.route('/help')
+def template_test():
+    with open("docs/help.json", "r") as file:
+        help_dict = json.load(file)
+    with open("modules/registers.json", "r") as file:
+        register_dict = json.load(file)["risc3"]
+
+    p_style = "color: #FFFFFF; padding-left: 12%; width: 75%"
+    return render_template('help.html', items=help_dict, p_style=p_style, reg_dict=register_dict)
+
+
 if __name__ == '__main__':
     # SERVER LAUNCH
-    server = app.server
     dev_server = app.run_server
-    app.run_server(debug=True, threaded=True)
+    server.run(debug=True, threaded=True)
     # app.run_server(debug=True, processes=3, threaded=False)
