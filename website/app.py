@@ -11,6 +11,7 @@ import dash_html_components as html
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 from bitarray.util import ba2hex
+import uuid
 
 from modules.simulator import CPU
 from modules.assembler import Assembler, AssemblerError
@@ -40,7 +41,18 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(asset
 
 # LAYOUT
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
+
+# Check user ip
+@app.callback(Output('target', 'children'), [Input('input', 'children')])
+def get_ip(value):
+    session_id = str(uuid.uuid4())
+    return session_id
+
+
 app.layout = html.Div([
+    html.Div(id='target', style={'display': 'none'}),
+    html.Div(id='input', style={'display': 'none'}),
 
     html.Div([html.Div([
         dcc.Markdown("ASSEMBLY SIMULATOR",
@@ -90,54 +102,61 @@ app.layout = html.Div([
               html.Button('Execute next instruction', id='next-instruction', n_clicks=0,
                           style={"color": button_font_color, "background-color": button_color, 'margin-left': 400,
                                  'margin-top': 10}), ],
-             style={'height': '100px', 'margin-top': 0, 'margin-left': 390, 'display': 'block'})
+             style={'height': '100px', 'margin-top': 0, 'margin-left': 390, 'display': 'block'}),
+
 ])
 
 
 # INPUT AND BUTTONS
 @app.callback(Output('simulator', 'children'),
-              [Input('next-instruction', 'n_clicks')])
-def update_tables(n_clicks):
-    cpu.web_next_instruction()
+              [Input('next-instruction', 'n_clicks'),
+               Input('target', 'children')])
+def update_tables(n_clicks, user_id):
+    if user_id in cpu_dict:
+        cpu_dict[user_id].web_next_instruction()
     time.sleep(0.05)
     return html.Div([
-        html.Div(dcc.Graph(figure=make_instruction_slot(), config={
+        html.Div(dcc.Graph(figure=make_instruction_slot(user_id), config={
             'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_registers_slots(), config={
+        html.Div(dcc.Graph(figure=make_registers_slots(user_id), config={
             'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_output_slot(), config={
+        html.Div(dcc.Graph(figure=make_output_slot(user_id), config={
             'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_memory_slots(), config={
+        html.Div(dcc.Graph(figure=make_memory_slots(user_id), config={
             'displayModeBar': False})),
     ], style={'margin-top': -100})
 
 
 @app.callback(Output('assembly', 'children'),
-              [Input('assemble_risc3', 'n_clicks')],
+              [Input('assemble_risc3', 'n_clicks'),
+               Input('target', 'children')],
               [State('input1', 'value')])
-def make_assembly_input(n_clicks, value):
-    global binary_program
-    global cpu
+def make_assembly_input(n_clicks, user_id, value):
+    global cpu_dict
     if not value or value == "input assembly code here":
         binary_program = ""
     else:
         binary_program = Assembler("risc3", value).binary_code
-        cpu = CPU("risc3", "neumann", "special", binary_program)
+        cpu_dict[user_id] = CPU("risc3", "neumann", "special", binary_program)
     return dcc.Textarea(value=binary_program,
                         style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
                                "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
                         disabled=True)
 
 
-
 # GRAPHIC ELEMENTS
-def make_instruction_slot():
+def make_instruction_slot(user_id):
     """
     Return a table figure, with information from the instruction of the CPU.
     """
+    if user_id not in cpu_dict:
+        cpu = CPU("risc3", "neumann", "special", "")
+    else:
+        cpu = cpu_dict[user_id]
     fig = go.Figure(
         data=[
-            go.Table(header=dict(values=[f"{cpu.instruction.to01()}\n"], line_color=table_header_color,
+            go.Table(header=dict(values=[f"{cpu.instruction.to01()}\n"],
+                                 line_color=table_header_color,
                                  fill_color=table_header_color,
                                  align=['center', 'center'],
                                  font=dict(color=table_main_font_color, size=20), height=40), )], layout=layout)
@@ -160,10 +179,14 @@ def make_instruction_slot():
     return fig
 
 
-def make_output_slot():
+def make_output_slot(user_id):
     """
     Return a table figure, with information from the instruction of the CPU.
     """
+    if user_id not in cpu_dict:
+        cpu = CPU("risc3", "neumann", "special", '')
+    else:
+        cpu = cpu_dict[user_id]
     shell_slots = []
     for port, device in cpu.ports_dictionary.items():
         shell_slots.append(str(device))
@@ -193,11 +216,16 @@ def make_output_slot():
     return fig
 
 
-def make_registers_slots():
+def make_registers_slots(user_id):
     """
     Return a table figure, with information from registers of the CPU.
     """
-    items = [(value.name, value._state.tobytes().hex()) for key, value in cpu.registers.items()]
+    if user_id not in cpu_dict:
+        cpu = CPU("risc3", "neumann", "special", '')
+    else:
+        cpu = cpu_dict[user_id]
+    items = [(value.name, value._state.tobytes().hex()) for key, value in
+             cpu.registers.items()]
     values = [[], []]
     for i in range(1, len(items), 2):
         values[0].append(f" {(items[i - 1][0] + ':').ljust(4, ' ')} {items[i - 1][1]}  ")
@@ -232,10 +260,14 @@ def make_registers_slots():
     return fig
 
 
-def make_memory_slots():
+def make_memory_slots(user_id):
     """
     Return a table figure, with information from the memory of the CPU.
     """
+    if user_id not in cpu_dict:
+        cpu = CPU("risc3", "neumann", "special", '')
+    else:
+        cpu = cpu_dict[user_id]
     headers = ["Addr   :  "]
     for i in range(0, 32, 4):
         headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
@@ -294,9 +326,8 @@ def make_memory_slots():
 # TODO: multi-user access
 
 if __name__ == '__main__':
-    # CPU
-    binary_program = ''
-    cpu = CPU("risc3", "neumann", "special", binary_program)
+    # CPU DICTIONARY (key=user.ip, value=cpu)
+    cpu_dict = dict()
     # SERVER LAUNCH
     server = app.server
     dev_server = app.run_server

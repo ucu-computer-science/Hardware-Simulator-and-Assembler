@@ -121,6 +121,7 @@ class CPU:
         self.io_arch = io_arch
         self.curses_mode = curses_mode
         self.first_instruction = True
+        self.instruction = bitarray('')
 
         # Create devices for this CPU depending on the I/O architecture specified
         if io_arch == "mmio":
