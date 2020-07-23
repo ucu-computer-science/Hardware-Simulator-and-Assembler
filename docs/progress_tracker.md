@@ -7,6 +7,7 @@
 1. ~~Temporary debug curses-interface~~
 1. ~~Basic working interactive web interface~~
 1. Web App deployment (**Demo Stage!!!!**)
+1. Updating the instructions sets and creating human-readable documentation
 1. ~~Stack ISA Assembler implementation~~
 1. Stack ISA Simulator implementation
 1. ~~Accumulator ISA Assembler implementation~~

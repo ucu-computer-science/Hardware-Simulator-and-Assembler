@@ -425,10 +425,6 @@ def prepare_arguments(arg1, arg2):
     return twos_complement(int(arg1.to01(), 2), len(arg1)), twos_complement(int(arg2.to01(), 2), len(arg2))
 
 
-# TODO: Think of something for INC and DEC instructions, can't we just use add and 1?
-#  Possibly the problem is in the simulator module, not here, but anyway
-
-
 functions_dictionary = {"load": load_store, "loadf": load_store, "loadi": load_store,
                         "swap": load_store, "dup": load_store, "dup2": load_store,
                         "mov_low": mov_low, "mov_high": mov_high, "mov": mov,

@@ -205,66 +205,16 @@ class CPU:
         # result of the operation and where to save it
         memory_write_access, result_destination, tos_push = self.__determine_result_dest(start_point, operands_aliases)
 
-        # Add operands values to the list to provide to a function later
-        operands_values = []
-        for operand in operands_aliases:
+        # Get the values of the operands for this function
+        operands_values = self.__add_operands(start_point, operands_aliases)
 
-            # If the operand is the register, add its value and go to the next operand
-            if operand == "reg":
-                register_code = self.instruction[start_point:start_point + 3].to01()
-                operands_values.append(self.register_codes[register_code]._state)
-                start_point += 3
-
-            # If the operand is the memory addressed by register, add its value and go to the next operand
-            elif operand == "memreg":
-                register_code = self.instruction[start_point:start_point + 3].to01()
-                tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)
-                operands_values.append(self.data_memory.read_data(tmp_register*8, (tmp_register + 2)*8))
-                start_point += 3
-
-            # If the operand is the immediate constant, add its value and go to the next operand
-            elif operand.startswith("imm"):
-                if self.isa in ["risc1", "risc2"]:
-                    operands_values.append(self.long_immediate)
-                else:
-                    immediate_length = int(operand[3:])
-                    operands_values.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
-                    start_point += immediate_length
-
-            elif operand == "tos":
-                operands_values.append(self.__pop_tos())
-
-            elif operand == "tospop":
-                operands_values.append(self.__pop_tos(pop=True))
-
-            elif operand == "tos2":
-                operands_values.append(self.__pop_tos(second=True))
-
-            elif operand == "memtos":
-                tos_value = int(self.__pop_tos(pop=True).to01(), 2)
-                operands_values.append(self.data_memory.read_data(tos_value, tos_value+16))
-
-            elif operand == "memir":
-                ir_value = int(self.registers["IR"]._state.to01(), 2)
-                operands_values.append(self.data_memory.read_data(ir_value, ir_value+16))
-
-            elif operand == "memimm":
-                start_read = int(self.long_immediate.to01(), 2)
-                operands_values.append(self.data_memory.read_data(start_read, start_read+16))
-
-            elif operand in ["fr", "ir", "acc"]:
-                operands_values.append(self.registers[operand.upper()]._state)
-
-            elif operand == "one":
-                operands_values.append(bitarray(bin(1)[2:].rjust(16, '0')))
-
-        # PROCESSING THE ACTUAL INSTRUCTION BELOW
-        # If the opcode type is call, we can perform the needed actions without calling functions_dict
+        # Different architectures have different kinds of instructions encodings
         if self.isa in ["risc3", "cisc"]:
             res_type = self.instructions_dict[self.opcode.to01()][1]
         else:
             res_type = self.instructions_dict[self.opcode.to01()][1][0]
 
+        # If the opcode type is call, we can perform the needed actions without calling functions_dict
         if res_type == "call":
 
             # Remember the next instruction after the one which called the 'call' function
@@ -374,7 +324,7 @@ class CPU:
             if memory_write_access:
                 self.data_memory.write(result_destination, result_value)
 
-                # Move the TOS pointer if the instruction pushed into the register stack
+                # Move the TOS pointer if the instruction pushed into the virtual register stack
                 if tos_push:
                     self.registers["TOS"]._state = bitarray(bin(result_destination + 16)[2:].rjust(16, '0'))
 
@@ -496,6 +446,66 @@ class CPU:
                     result_destination = self.ports_dictionary[str(port_num)]
 
         return memory_write_access, result_destination, tos_push
+
+    def __add_operands(self, start_point, operands_aliases):
+        """
+        Adds operands values to the list to provide to a chosen function later
+        :param operands_aliases: list of short instruction type strings
+        :return: operands_values - list of binary data for the functions to compute on
+        """
+        operands_values = []
+        for operand in operands_aliases:
+
+            # If the operand is the register, add its value and go to the next operand
+            if operand == "reg":
+                register_code = self.instruction[start_point:start_point + 3].to01()
+                operands_values.append(self.register_codes[register_code]._state)
+                start_point += 3
+
+            # If the operand is the memory addressed by register, add its value and go to the next operand
+            elif operand == "memreg":
+                register_code = self.instruction[start_point:start_point + 3].to01()
+                tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)
+                operands_values.append(self.data_memory.read_data(tmp_register * 8, (tmp_register + 2) * 8))
+                start_point += 3
+
+            # If the operand is the immediate constant, add its value and go to the next operand
+            elif operand.startswith("imm"):
+                if self.isa in ["risc1", "risc2"]:
+                    operands_values.append(self.long_immediate)
+                else:
+                    immediate_length = int(operand[3:])
+                    operands_values.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
+                    start_point += immediate_length
+
+            elif operand == "tos":
+                operands_values.append(self.__pop_tos())
+
+            elif operand == "tospop":
+                operands_values.append(self.__pop_tos(pop=True))
+
+            elif operand == "tos2":
+                operands_values.append(self.__pop_tos(second=True))
+
+            elif operand == "memtos":
+                tos_value = int(self.__pop_tos(pop=True).to01(), 2)
+                operands_values.append(self.data_memory.read_data(tos_value, tos_value + 16))
+
+            elif operand == "memir":
+                ir_value = int(self.registers["IR"]._state.to01(), 2)
+                operands_values.append(self.data_memory.read_data(ir_value, ir_value + 16))
+
+            elif operand == "memimm":
+                start_read = int(self.long_immediate.to01(), 2)
+                operands_values.append(self.data_memory.read_data(start_read, start_read + 16))
+
+            elif operand in ["fr", "ir", "acc"]:
+                operands_values.append(self.registers[operand.upper()]._state)
+
+            elif operand == "one":
+                operands_values.append(bitarray(bin(1)[2:].rjust(16, '0')))
+
+        return operands_values
 
     def __push_stack(self, value):
         """
