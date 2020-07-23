@@ -6,6 +6,27 @@
 
 # This is the main module of the Hardware Simulator that processes binary instructions
 
+#     Emulates the work of a real computer with:
+#         * 8kb memory
+#         * processor registers
+#
+#     Is supposed to handle a few ISA architectures:
+#         * Stack
+#         * Accumulator
+#         * RISC Register
+#         * CISC Register architectures
+#
+#     As well as having a switch between:
+#         * Memory-Mapped Input/Output
+#         * Separate space Input/Output (Special instructions really)
+#
+#     Has a switch as well to include SIMD instructions (only for CISC)
+#
+#     Supports a few computer architectures as well:
+#         * von Neumann
+#         * Harvard
+#         * Harvard modified
+
 # Basic workflow of the CPU is as follows:
 #   * Create the registers, memory according to the architectures specified
 #   * Load the program binary code into memory at starting position (IP)
@@ -33,6 +54,11 @@
 # This allows to point to up to 65536 bits, and this is 8KiB, which I think is more than enough.
 # This requires to call read_data from memory with existing values if needed, using BIT OFFSETS
 # This requires to call write_data from memory with values//8, if needed, using BYTE OFFSETS
+#
+# Current standard values of these pointers are:
+# self.ip_start - Instruction Pointer = 1024 (Start point for program loading, Grows incrementing, Shrinks decrementing)
+# self.tos_start - Top Of the Register Stack (TOS) = 4096  (Grows incrementing, Shrinks decrementing)
+# self.stack_start - Regular Stack = 0 (Grows incrementing, Shrinks decrementing)
 
 # TODO: There are probably still a couple of things not complying with the abovementioned conventions,
 #  the only way to find out is to check everything I guess
@@ -44,6 +70,9 @@
 # TODO: Additionally, we do not use the general-purposiveness info provided to us by register module,
 #  and the user is currently free to do whatever they want with any register, defying the purpose
 #  of the special registers (SP, IP, FR etc.). This is probably going to be done after a massive refactoring/remake
+
+# TODO: Plus, we probably do not need any distinction between registers and memory, as memory can be
+#  really just a huge general-purpose register, or the other way around, whatever
 
 import os
 import json
@@ -119,7 +148,8 @@ class CPU:
         self.instruction_size = instruction_sizes[self.isa]
 
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
-        self.registers["IP"]._state = bitarray(bin(twos_complement(1024 + offset, 16))[2:].rjust(16, '0'))
+        self.ip_start = 1024
+        self.registers["IP"]._state = bitarray(bin(twos_complement(self.ip_start + offset, 16))[2:].rjust(16, '0'))
         self.__load_program(program_text)
         self.read_state = "opcode"
         self.first_instruction = True
@@ -157,6 +187,9 @@ class CPU:
             if register[0] == "TOS":
                 self.tos_start = 4096
                 temp._state = bitarray(bin(self.tos_start)[2:].rjust(16, '0'))
+            elif register[0] == "SP":
+                self.stack_start = 0
+                temp._state = bitarray(bin(self.stack_start)[2:].rjust(16, '0'))
             self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
 
@@ -442,7 +475,6 @@ class CPU:
             if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["tos", "in"]:
                 memory_write_access, tos_push = True, True
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
-                logger.info(result_destination)
             elif res_type == "memtos":
                 memory_write_access = True
                 tos_val = int(self.registers["TOS"]._state.to01(), 2)

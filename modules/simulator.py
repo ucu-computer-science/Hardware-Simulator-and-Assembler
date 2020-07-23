@@ -27,27 +27,7 @@ logger = logging.getLogger('logger')
 
 class Simulator:
     """
-    Hardware Simulator class.
-    Emulates the work of a real computer with:
-        * 64kb memory
-        * processor registers
-
-    Is supposed to handle a few ISA architectures:
-        * Stack
-        * Accumulator
-        * RISC Register
-        * CISC Register architectures
-
-    As well as having a switch between:
-        * Memory-Mapped Input/Output
-        * Separate space Input/Output
-
-    Has a switch as well to include SIMD instructions (only for CISC)
-
-    Supports a few computer architectures as well:
-        * von Neumann
-        * Harvard
-        * Harvard modified
+    CLI Simulator Interface
     """
 
     def __init__(self):
