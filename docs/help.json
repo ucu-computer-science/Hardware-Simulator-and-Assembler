@@ -1,0 +1,152 @@
+[
+  {
+    "name": "load",
+    "examples": ["load %reg1, [%reg2]"],
+    "description": "Loads word from memory at location mem into register reg"
+  },
+  {
+    "name": "store",
+    "examples": ["store [%reg1], %reg2"],
+    "description": "Copies word from the register reg and stores it in memory at location mem"
+  },
+  {
+    "name": "mov_low",
+    "examples": ["mov_low %reg, $num"],
+    "description": "Copies the value of num into the lower (less significant) byte of reg"
+  },
+  {
+    "name": "mov_high",
+    "examples": ["mov_high %reg, $num"],
+    "description": "Copies the value of num into the higher (more significant) byte of reg"
+  },
+  {
+    "name": "mov",
+    "examples": ["mov %reg1, %reg2"],
+    "description": "Copies the value of reg2 into reg1"
+  },
+  {
+    "name": "push",
+    "examples": ["push %reg"],
+    "description": "Pushes the value of reg on the top of the memory stack"
+  },
+  {
+    "name": "pop",
+    "examples": ["pop %reg"],
+    "description": "Pops the value from the memory stack into reg"
+  },
+  {
+    "name": "add",
+    "examples": ["add %reg1, %reg2, %reg3"],
+    "description": "Adds the value of reg3 to the register reg2, saving the result in the register reg1"
+  },
+  {
+    "name": "sub",
+    "examples": ["sub %reg1, %reg2, %reg3"],
+    "description": "Subtracts the value of reg3 from the register reg2, saving the result in the register reg1"
+  },
+  {
+    "name": "mul",
+    "examples": ["mul %reg1, %reg2, %reg3"],
+    "description": "Multiplies the value from reg2 times reg3, saving the result in the register reg1"
+  },
+  {
+    "name": "div",
+    "examples": ["div %reg1, %reg2, %reg3"],
+    "description": "Divides the value from reg2 by reg3, saving the result in the register reg1"
+  },
+  {
+    "name": "and",
+    "examples": ["and %reg1, %reg2, %reg3"],
+    "description": "Computes binary and between reg2 and reg3 and saves the result into reg1"
+  },
+  {
+    "name": "or",
+    "examples": ["or %reg1, %reg2, %reg3"],
+    "description": "Computes binary or between reg2 and reg3 and saves the result into reg1"
+  },
+  {
+    "name": "xor",
+    "examples": ["xor %reg1, %reg2, %reg3"],
+    "description": "Computes binary xor between reg2 and reg3 and saves the result into reg1"
+  },
+  {
+    "name": "not",
+    "examples": ["not %reg1, %reg2"],
+    "description": "Computes binary not between reg2 and saves the result into reg1"
+  },
+  {
+    "name": "lsh",
+    "examples": ["lsh %reg1, %reg2, %reg3"],
+    "description": "Shifts the value from register reg2 by reg3 to the left, saving the result in the register reg1"
+  },
+  {
+    "name": "rsh",
+    "examples": ["rsh %reg1, %reg2, %reg3"],
+    "description": "Shifts the value from register reg2 by reg3 to the right, saving the result in the register reg1"
+  },
+  {
+    "name": "call",
+    "examples": ["call $num", "call %reg"],
+    "description": "Pushes the next instruction's location on to the memory stack, transfers control to the location at num or reg"
+  },
+  {
+    "name": "ret",
+    "examples": ["ret"],
+    "description": "Transfers control to the next instruction after the caller"
+  },
+  {
+    "name": "cmp",
+    "examples": ["cmp %reg1, %reg2", "cmp %reg, $num"],
+    "description": "Subtracts the second value from the first one, changing the flags accordingly"
+  },
+  {
+    "name": "test",
+    "examples": ["test %reg1, %reg2"],
+    "description": "Performs bitwise and operation between the reg1 and reg2, changing the flags accordingly"
+  },
+  {
+    "name": "jmp",
+    "examples": ["jmp %reg", "jmp $num"],
+    "description": "Jumps to the location at reg (or num) unconditionally"
+  },
+  {
+    "name": "je",
+    "examples": ["je %reg", "je $num"],
+    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was equal to the second"
+  },
+  {
+    "name": "jne",
+    "examples": ["jne %reg", "jne $num"],
+    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was not equal to the second"
+  },
+  {
+    "name": "jg",
+    "examples": ["jg %reg", "jg $num"],
+    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was greater than the second"
+  },
+  {
+    "name": "jge",
+    "examples": ["jge %reg", "jge $num"],
+    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was greater or equal than the second"
+  },
+  {
+    "name": "jl",
+    "examples": ["jl %reg", "jl $num"],
+    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was less than the second"
+  },
+  {
+    "name": "jle",
+    "examples": ["jle %reg", "jle $num"],
+    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was less or equal than the second"
+  },
+  {
+    "name": "in",
+    "examples": ["in %reg, $port"],
+    "description": "Transfers data from device at port to the register reg"
+  },
+  {
+    "name": "out",
+    "examples": ["out $port, $num", "out $port, %reg"],
+    "description": "Transfers data from num (or reg) to the device at port"
+  }
+]
