@@ -255,6 +255,9 @@ class CPU:
             elif operand in ["fr", "ir", "acc"]:
                 operands_values.append(self.registers[operand.upper()]._state)
 
+            elif operand == "one":
+                operands_values.append(bitarray(bin(1)[2:].rjust(16, '0')))
+
         # PROCESSING THE ACTUAL INSTRUCTION BELOW
         # If the opcode type is call, we can perform the needed actions without calling functions_dict
         if self.isa in ["risc3", "cisc"]:

@@ -431,8 +431,9 @@ def prepare_arguments(arg1, arg2):
 
 functions_dictionary = {"load": load_store, "loadf": load_store, "loadi": load_store,
                         "swap": load_store, "dup": load_store, "dup2": load_store,
-                        "mov_low": mov_low, "mov_high": mov_high, "mov": mov, "add": add,
-                        "sub": sub, "mul": mul, "div": div,
+                        "mov_low": mov_low, "mov_high": mov_high, "mov": mov,
+                        "add": add, "sub": sub, "inc": add, "dec": sub,
+                        "mul": mul, "div": div,
                         "and": bit_and, "or": bit_or,
                         "xor": bit_xor, "not": bit_not,
                         "store": load_store, "storef": load_store, "storei": load_store,
