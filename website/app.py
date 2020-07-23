@@ -69,12 +69,6 @@ app.layout = html.Div([
                      style={'color': text_color, 'font-family': "Roboto Mono, monospace", 'font-size': '14px',
                             'margin-left': 29, 'margin-top': 10, 'display': 'inline-block'}),
 
-
-        html.Button('LOAD CODE', id='load_assembly', n_clicks=0,
-                              style={'margin-left': 10, "color": button_font_color, "background-color": button_color,
-                                     'width': 160, 'display': 'inline-block'}),
-
-
         html.Div([html.Button('Stack', id='assemble_risc1', n_clicks=0,
                               style={'margin-left': 10, "color": button_font_color, "background-color": button_color,
                                      'width': 160, 'display': 'inline-block'}),
@@ -96,70 +90,39 @@ app.layout = html.Div([
               html.Button('Execute next instruction', id='next-instruction', n_clicks=0,
                           style={"color": button_font_color, "background-color": button_color, 'margin-left': 400,
                                  'margin-top': 10}), ],
-             style={'height': '100px', 'margin-top': 0, 'margin-left': 390, 'display': 'block'}),
-
-    # Hidden div for storing assembly code
-    html.Div(id='intermediate-value', style={'display': 'none'})
+             style={'height': '100px', 'margin-top': 0, 'margin-left': 390, 'display': 'block'})
 ])
 
 
-
 # INPUT AND BUTTONS
-
-@app.callback(Output('intermediate-value', 'children'),
-              [Input('load_assembly', 'n_clicks')],
-              [State('input1', 'value')])
-def intermediate(n_clicks, value):
-    if not value or value == "input assembly code here":
-        binary_program = ''
-        intermediate.cpu = CPU("risc3", "neumann", "special", binary_program)
-        return binary_program
-    else:
-        try:
-            binary_program = Assembler("risc3", value).binary_code
-            intermediate.cpu = CPU("risc3", "neumann", "special", binary_program)
-            return binary_program
-        except AssemblerError as exception:
-            binary_program = "AssemblerError: {}".format(exception.args[0])
-            intermediate.cpu = CPU("risc3", "neumann", "special", "")
-            return binary_program
-
-
-
 @app.callback(Output('simulator', 'children'),
-              [Input('next-instruction', 'n_clicks'),
-               Input('intermediate-value', 'value')])
-# TODO: how do I input a cpu??? what the heck
-def update_tables(n_clicks, value):
-    intermediate()
-    cpu = intermediate.cpu
+              [Input('next-instruction', 'n_clicks')])
+def update_tables(n_clicks):
     cpu.web_next_instruction()
     time.sleep(0.05)
     return html.Div([
-        html.Div(dcc.Graph(figure=make_instruction_slot(cpu), config={
+        html.Div(dcc.Graph(figure=make_instruction_slot(), config={
             'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_registers_slots(cpu), config={
+        html.Div(dcc.Graph(figure=make_registers_slots(), config={
             'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_output_slot(cpu), config={
+        html.Div(dcc.Graph(figure=make_output_slot(), config={
             'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_memory_slots(cpu), config={
+        html.Div(dcc.Graph(figure=make_memory_slots(), config={
             'displayModeBar': False})),
     ], style={'margin-top': -100})
 
 
-
-
 @app.callback(Output('assembly', 'children'),
-              [Input('assemble_risc3', 'n_clicks'),
-               Input('intermediate-value', 'value')])
+              [Input('assemble_risc3', 'n_clicks')],
+              [State('input1', 'value')])
 def make_assembly_input(n_clicks, value):
+    global binary_program
+    global cpu
     if not value or value == "input assembly code here":
         binary_program = ""
     else:
-        try:
-            binary_program = Assembler("risc3", value).binary_code
-        except AssemblerError as exception:
-            binary_program = "AssemblerError: {}".format(exception.args[0])
+        binary_program = Assembler("risc3", value).binary_code
+        cpu = CPU("risc3", "neumann", "special", binary_program)
     return dcc.Textarea(value=binary_program,
                         style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
                                "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
@@ -167,29 +130,8 @@ def make_assembly_input(n_clicks, value):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-# # CPU
-# binary_program = ''
-# cpu = CPU("risc3", "neumann", "special", binary_program)
-
-
-
-
-
-
 # GRAPHIC ELEMENTS
-def make_instruction_slot(cpu):
+def make_instruction_slot():
     """
     Return a table figure, with information from the instruction of the CPU.
     """
@@ -218,7 +160,7 @@ def make_instruction_slot(cpu):
     return fig
 
 
-def make_output_slot(cpu):
+def make_output_slot():
     """
     Return a table figure, with information from the instruction of the CPU.
     """
@@ -251,7 +193,7 @@ def make_output_slot(cpu):
     return fig
 
 
-def make_registers_slots(cpu):
+def make_registers_slots():
     """
     Return a table figure, with information from registers of the CPU.
     """
@@ -290,7 +232,7 @@ def make_registers_slots(cpu):
     return fig
 
 
-def make_memory_slots(cpu):
+def make_memory_slots():
     """
     Return a table figure, with information from the memory of the CPU.
     """
@@ -342,8 +284,6 @@ def make_memory_slots(cpu):
     return fig
 
 
-
-
 # run the program
 # TODO: make table undraggable (maybe switch to dash table)
 # TODO: Add error field (maybe in binary textarea)
@@ -354,6 +294,9 @@ def make_memory_slots(cpu):
 # TODO: multi-user access
 
 if __name__ == '__main__':
+    # CPU
+    binary_program = ''
+    cpu = CPU("risc3", "neumann", "special", binary_program)
     # SERVER LAUNCH
     server = app.server
     dev_server = app.run_server
