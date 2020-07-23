@@ -409,7 +409,7 @@ class CPU:
             elif res_type == "stackpopf":
                 result_destination = self.registers["FR"]
             elif res_type == "out":
-                result_destination = self.ports_dictionary[str(int(self.long_immediate, 2))]
+                result_destination = self.ports_dictionary[str(int(self.long_immediate.to01(), 2))]
 
         # Accumulator-RISC
         elif self.isa == "risc2":
