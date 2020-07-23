@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Help page</title>
+    <link rel="stylesheet" type="text/css" href="https://codepen.io/geoffyuen/pen/FCBEg.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='microcontroller.png') }}">
+</head>
+<body style="background-color: #29233d; font-size: 11.5pt">
+<br>
+<h1 style="color: #dd5; text-align: center">Instruction Set for RISC-Register ISA</h1>
+<br>
+<h2 style="color: #cccc16; text-align: center">Notes</h2>
+<p style="{{ p_style }}">Every assembly instruction looks like this:
+    <code>operation operand1, operand2, operand2</code></p>
+<br>
+<p style="{{ p_style }}">Operands are of a few types:</p>
+    <ul style="padding-left: 14%; text-align: left">
+        <li><p style="color: #FFFFFF;">Constant numbers (have to start with $)</p></li>
+        <li><p style="color: #FFFFFF;">Register identifiers (have to start with %)</p></li>
+        <li><p style="color: #FFFFFF;">Memory addresses (have to be embedded within [ ])</p></li>
+    </ul>
+<br>
+<p style="{{ p_style }}">Assembly instructions are written in INTEL-style, with the result going from right to left.
+    Thus, in <code>add %reg1, %reg2, %reg3</code> instruction, the result goes into <code>reg1</code>, and
+    calculations are done between <code>reg2</code> and <code>reg3</code></p>
+<br>
+{% block content %}
+{% endblock %}

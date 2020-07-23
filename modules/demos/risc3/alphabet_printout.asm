@@ -1,3 +1,4 @@
+# Alphabet Printout | Register-RISC example Assembly program
 # Load the starting point of the loop (and an ASCII code) into the register R00
 mov_low %R00, $65
 # Load the number 1 into the register %R01 to use as an incrementer in the loop

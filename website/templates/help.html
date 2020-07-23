@@ -1,14 +1,15 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Help page</title>
-    <link rel="stylesheet" type="text/css" href="https://codepen.io/geoffyuen/pen/FCBEg.css">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='microcontroller.png') }}">
-" />
-</head>
-<body style="background-color: #29233d; font-size: 11.5pt">
+{% extends "base.html" %}
+{% block content %}
+<p style="{{ p_style }}">Registers for this architecture are:</p>
+<ul style="padding-left: 14%; text-align: left">
+    {% for item in reg_dict %}
+        <li><p style="color: #FFFFFF;">{{item.1}} - {{item.3}}</p></li>
+    {% endfor %}
+    </ul>
+<br>
+<br>
+<h2 style="color: #dd5; text-align: center">Instruction Set:</h2>
 <center>
-<h1 style="color: #dd5;">Instruction Set for RISC-Register ISA</h1>
 <table class="rwd-table" style="background-color: #453c64; width: 80%">
 <thead>
     <tr>
@@ -17,8 +18,8 @@
       <th style="text-align:left; vertical-align: text-top; width: 60%">Description</th>
     </tr>
 </thead>
-{% for item in items %}
 <tbody>
+{% for item in items %}
 <TR>
     <TD style="text-align:left; vertical-align: text-top"><code>{{item.name}}</code></TD>
    <TD style="text-align:left; vertical-align: text-top">
@@ -30,8 +31,8 @@
    </TD>
    <TD style="text-align:left; vertical-align: text-top">{{item.description}}</TD>
 </TR>
-</tbody>
 {% endfor %}
+</tbody>
 </table>
     <br>
     <h5 style="color: #dd5;">Assembly Simulator project 2020</h5>
@@ -39,3 +40,4 @@
 </center>
 </body>
 </html>
+{% endblock %}

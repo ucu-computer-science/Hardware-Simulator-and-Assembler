@@ -1,27 +1,27 @@
 {
     "comments": "Each ISA architecture contains a list of registers for it, including: name, general_purpose bool, encoding",
     "risc1": [
-        ["FR", 0, "000"],
-        ["SP", 0, "001"],
-        ["IP", 0, "010"],
-        ["TOS", 1, "011"]
+        ["FR", 0, "000", "Flag Register"],
+        ["SP", 0, "001", "Stack Pointer"],
+        ["IP", 0, "010", "Instruction Pointer"],
+        ["TOS", 1, "011", "Top Of the Stack pointer"]
     ],
     "risc2": [
-        ["FR", 0, "000"],
-        ["SP", 0, "001"],
-        ["IP", 0, "010"],
-        ["IR", 0, "011"],
-        ["ACC", 1, "100"]
+        ["FR", 0, "000", "Flag Register"],
+        ["SP", 0, "001", "Stack Pointer"],
+        ["IP", 0, "010", "Instruction Pointer"],
+        ["IR", 0, "011", "Index Register"],
+        ["ACC", 1, "100", "Accumulator Register"]
     ],
     "risc3": [
-        ["SP", 0, "100"],
-        ["IP", 0, "101"],
-        ["LR", 0, "110"],
-        ["FR", 0, "111"],
-        ["R00", 1, "000"],
-        ["R01", 1, "001"],
-        ["R02", 1, "010"],
-        ["R03", 1, "011"]
+        ["SP", 0, "100", "Stack Pointer"],
+        ["IP", 0, "101", "Instruction Pointer"],
+        ["LR", 0, "110", "Link Register"],
+        ["FR", 0, "111", "Flag Register"],
+        ["R00", 1, "000", "General-Purpose Register"],
+        ["R01", 1, "001", "General-Purpose Register"],
+        ["R02", 1, "010", "General-Purpose Register"],
+        ["R03", 1, "011", "General-Purpose Register"]
     ],
     "cisc": {}
 }
