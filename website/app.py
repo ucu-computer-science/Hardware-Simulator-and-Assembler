@@ -16,6 +16,9 @@ import uuid
 from modules.simulator import CPU
 from modules.assembler import Assembler, AssemblerError
 
+# CPU DICTIONARY (key=user.id, value=cpu)
+cpu_dict = dict()
+
 # COLOR PALETTE
 # TABLES
 table_main_color = '#414364'
@@ -136,8 +139,11 @@ def make_assembly_input(n_clicks, user_id, value):
     if not value or value == "input assembly code here":
         binary_program = ""
     else:
-        binary_program = Assembler("risc3", value).binary_code
-        cpu_dict[user_id] = CPU("risc3", "neumann", "special", binary_program)
+        try:
+            binary_program = Assembler("risc3", value).binary_code
+            cpu_dict[user_id] = CPU("risc3", "neumann", "special", binary_program)
+        except AssemblerError as err:
+            binary_program = f'AssemblerError: {err.args[0]}'
     return dcc.Textarea(value=binary_program,
                         style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
                                "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
@@ -326,8 +332,6 @@ def make_memory_slots(user_id):
 # TODO: multi-user access
 
 if __name__ == '__main__':
-    # CPU DICTIONARY (key=user.ip, value=cpu)
-    cpu_dict = dict()
     # SERVER LAUNCH
     server = app.server
     dev_server = app.run_server
