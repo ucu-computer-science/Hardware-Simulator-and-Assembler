@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 from bitarray.util import ba2hex
 import uuid
-from flask import Flask, render_template
+from flask import Flask, render_template, url_for
 import json
 
 from modules.processor import CPU
@@ -37,6 +37,8 @@ assembly_font_color = "#B3CBE1"
 background_color = '#26273D'
 title_color = '#C0C0DB'
 text_color = '#9090AC'
+not_working_bg = '#5C5C5C'
+not_working_text = '#AFAFB2'
 # TRANSPARENT LAYOUT FOR FIGURES
 layout = go.Layout(
     paper_bgcolor='rgba(0,0,0,0)',
@@ -44,73 +46,91 @@ layout = go.Layout(
 )
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)']
 
-server = Flask(__name__)
 # LAYOUT
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets, url_base_pathname='/', server=server)
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, routes_pathname_prefix='/')
+app.title = "ASSEMBLY SIMULATOR"
 
 
-# Check user ip
+# Create user id
 @app.callback(Output('target', 'children'), [Input('input', 'children')])
 def get_ip(value):
     session_id = str(uuid.uuid4())
     return session_id
 
 
-app.layout = html.Div([
-    html.Div(id='target', style={'display': 'none'}),
-    html.Div(id='input', style={'display': 'none'}),
+app.layout = html.Div([html.Div(id="hidden"),
+                       html.Div(id='target', style={'display': 'none'}),
+                       html.Div(id='input', style={'display': 'none'}),
 
-    html.Div([html.Div([
-        dcc.Markdown("ASSEMBLY SIMULATOR",
-                     style={'color': title_color, 'font-family': "Roboto Mono, monospace", 'font-size': '25px',
-                            'margin-left': 40, 'margin-top': 20, }),
+                       html.Div([html.Div([
+                           dcc.Markdown("ASSEMBLY SIMULATOR",
+                                        style={'color': title_color, 'font-family': "Roboto Mono, monospace",
+                                               'font-size': '25px',
+                                               'margin-left': 95, 'margin-top': 20, }),
 
-        html.Div([
-            dcc.Markdown("ASSEMBLY",
-                         style={'color': text_color, 'font-family': "Roboto Mono, monospace", 'font-size': '20px',
-                                'margin-left': 45, 'margin-top': 30, 'display': 'inline-block'}),
-            dcc.Markdown("BINARY",
-                         style={'color': text_color, 'font-family': "Roboto Mono, monospace", 'font-size': '20px',
-                                'margin-left': 85, 'margin-top': 10, 'display': 'inline-block'}),
+                           html.Div([
+                               dcc.Markdown("ASSEMBLY",
+                                            style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                                                   'font-size': '20px',
+                                                   'margin-left': 80, 'margin-top': 30, 'display': 'inline-block'}),
+                               dcc.Markdown("BINARY",
+                                            style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                                                   'font-size': '20px',
+                                                   'margin-left': 130, 'margin-top': 10, 'display': 'inline-block'}),
 
-        ]),
+                           ]),
 
-        dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
-                     style={'width': 170, 'height': 400, 'display': 'inline-block', 'margin-right': 7,
-                            'margin-left': 5, 'margin-top': 0,
-                            "color": assembly_font_color, 'font-size': '15px',
-                            "background-color": assembly_bg_color, 'font-family': "Roboto Mono, monospace"},
-                     autoFocus='true', ),
-        html.Div(id='assembly', style={'display': 'inline-block'}, )]),
+                           dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
+                                        style={'width': 250, 'height': 400, 'display': 'inline-block',
+                                               'margin-right': 7,
+                                               'margin-left': 5, 'margin-top': 0,
+                                               "color": assembly_font_color, 'font-size': '15px',
+                                               "background-color": assembly_bg_color,
+                                               'font-family': "Roboto Mono, monospace"},
+                                        autoFocus='true', ),
+                           html.Div(id='assembly', style={'display': 'inline-block'}, )]),
 
-        dcc.Markdown("CHOOSE ISA AND ASSEMBLE THE CODE:",
-                     style={'color': text_color, 'font-family': "Roboto Mono, monospace", 'font-size': '14px',
-                            'margin-left': 29, 'margin-top': 10, 'display': 'inline-block'}),
+                           dcc.Markdown("CHOOSE ISA AND ASSEMBLE THE CODE:",
+                                        style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                                               'font-size': '14px',
+                                               'margin-left': 80, 'margin-top': 10, 'display': 'inline-block'}),
 
-        html.Div([html.Button('Stack', id='assemble_risc1', n_clicks=0,
-                              style={'margin-left': 10, "color": button_font_color, "background-color": button_color,
-                                     'width': 160, 'display': 'inline-block'}),
-                  html.Button('Register RISC', id='assemble_risc3', n_clicks=0,
-                              style={'margin-left': 16, "color": button_font_color, "background-color": button_color,
-                                     'width': 160, 'display': 'inline-block'})], style={"margin-bottom": 10}),
+                           html.Div([html.Button('Stack', id='assemble_risc1', n_clicks=0,
+                                                 style={'margin-left': 50, "color": not_working_text,
+                                                        "background-color": not_working_bg,
+                                                        'width': 160, 'display': 'inline-block'}),
+                                     html.Button('Register RISC', id='assemble_risc3', n_clicks=0,
+                                                 style={'margin-left': 16, "color": button_font_color,
+                                                        "background-color": button_color,
+                                                        'width': 160, 'display': 'inline-block'})],
+                                    style={"margin-bottom": 10}),
 
-        html.Div([html.Button('Accumulator', id='assemble_risc2', n_clicks=0,
-                              style={'margin-left': 10, "color": button_font_color, "background-color": button_color,
-                                     'width': 160, 'display': 'inline-block'}),
-                  html.Button('Register CISC', id='assemble_cisc', n_clicks=0,
-                              style={'margin-left': 16, "color": button_font_color, "background-color": button_color,
-                                     'width': 160, 'display': 'inline-block'})]),
+                           html.Div([html.Button('Accumulator', id='assemble_risc2', n_clicks=0,
+                                                 style={'margin-left': 50, "color": not_working_text,
+                                                        "background-color": not_working_bg,
+                                                        'width': 160, 'display': 'inline-block'}),
+                                     html.Button('Register CISC', id='assemble_cisc', n_clicks=0,
+                                                 style={'margin-left': 16, "color": not_working_text,
+                                                        "background-color": not_working_bg,
+                                                        'width': 160, 'display': 'inline-block'})]),
 
-    ],
-        style={'display': 'block', 'height': '100px', 'margin-left': 14}, ),
+                       ],
+                           style={'display': 'block', 'height': '100px', 'margin-left': 14}, ),
 
-    html.Div([html.Div(id='simulator'),
-              html.Button('Execute next instruction', id='next-instruction', n_clicks=0,
-                          style={"color": button_font_color, "background-color": button_color, 'margin-left': 400,
-                                 'margin-top': 10}), ],
-             style={'height': '100px', 'margin-top': 0, 'margin-left': 390, 'display': 'block'}),
+                       html.Div([html.Div(id='simulator'),
+                                 html.Button('Execute next instruction', id='next-instruction', n_clicks=0,
+                                             style={"color": button_font_color, "background-color": button_color,
+                                                    'margin-left': 400,
+                                                    'margin-top': 10, 'display': 'inline-block'}),
+                                 # dcc.Link('HELP', href='/help', id='help',
+                                 #          style={"color": button_font_color,
+                                 #                 'margin-left': 100,
+                                 #                 'margin-top': 10, 'display': 'inline-block'
+                                 #                 })
+                                 ],
+                                style={'height': '100px', 'margin-top': 0, 'margin-left': 450, 'display': 'block'}),
 
-])
+                       ])
 
 
 # INPUT AND BUTTONS
@@ -122,12 +142,47 @@ def update_tables(n_clicks, user_id):
         cpu_dict[user_id].web_next_instruction()
     time.sleep(0.05)
     return html.Div([
-        html.Div(dcc.Graph(figure=make_instruction_slot(user_id), config={
-            'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_registers_slots(user_id), config={
-            'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
-        html.Div(dcc.Graph(figure=make_output_slot(user_id), config={
-            'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ),
+        html.Div([html.Div([html.Div([html.Div(dcc.Graph(figure=make_instruction_slot(user_id), config={
+            'displayModeBar': False, 'staticPlot': True})),
+                                      html.Div(dcc.Graph(figure=make_output_slot(user_id), config={
+                                          'displayModeBar': False, 'staticPlot': True}))],
+                                     style={'display': 'inline-block'}, ),
+                            html.Div(dcc.Graph(figure=make_registers_slots(user_id), config={
+                                'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ), ],
+                           style={'display': 'block', 'margin-bottom': -167}, ),
+
+                  html.Div([dcc.Markdown("SWITCH ARCHITECTURES:",
+                                         style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                                                'font-size': '14px',
+                                                'margin-left': 80, 'margin-top': 0}),
+                            html.Div([html.Button('Von Neumann', id='no', n_clicks=0,
+                                                  style={'margin-left': 10, "color": button_font_color,
+                                                         "background-color": button_color,
+                                                         'width': 150, 'display': 'inline-block'}),
+                                      html.Button('Harvard', id='no', n_clicks=0,
+                                                  style={'margin-left': 10, 'margin-bottom': 0,
+                                                         "color": not_working_text,
+                                                         "background-color": not_working_bg,
+                                                         'width': 150, 'display': 'inline-block'})],
+                                     style={"margin-bottom": 10}),
+
+                            dcc.Markdown("SWITCH I/O MODES:",
+                                         style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                                                'font-size': '14px',
+                                                'margin-left': 80, 'margin-top': 10}),
+
+                            html.Div([html.Button('Memory-Mapped', id='no', n_clicks=0,
+                                                  style={'margin-bottom': 10, 'margin-left': 10,
+                                                         "color": not_working_text,
+                                                         "background-color": not_working_bg,
+                                                         'width': 150, 'display': 'inline-block'}),
+                                      html.Button('Special com-s', id='no', n_clicks=0,
+                                                  style={'margin-left': 10, "color": button_font_color,
+                                                         "background-color": button_color,
+                                                         'width': 150, 'display': 'inline-block'})],
+                                     style={'display': 'inline-block'}, ), ],
+                           style={'display': 'block', 'margin-left': 645}), ], style={'margin-top': 20}),
+
         html.Div(dcc.Graph(figure=make_memory_slots(user_id), config={
             'displayModeBar': False})),
     ], style={'margin-top': -100})
@@ -153,6 +208,13 @@ def make_assembly_input(n_clicks, user_id, value):
                         disabled=True)
 
 
+#
+# @app.callback(Output('hidden', 'children'),
+#               [Input('help', 'href')])
+# def help_page(href):
+#     return dcc.Location(pathname=href, id="help_page")
+
+
 # GRAPHIC ELEMENTS
 def make_instruction_slot(user_id):
     """
@@ -169,13 +231,13 @@ def make_instruction_slot(user_id):
                                  fill_color=table_header_color,
                                  align=['center', 'center'],
                                  font=dict(color=table_main_font_color, size=20), height=40), )], layout=layout)
-    fig.update_layout(height=160, margin=dict(b=25, l=30, r=50), width=300,
+    fig.update_layout(height=60, margin=dict(b=0, l=65, r=0, t=20), width=285,
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
     fig.update_layout(
         title={
             'text': "NEXT INSTRUCTION",
-            'y': 0.52,
-            'x': 0.459,
+            'y': 0.99,
+            'x': 0.60,
             'xanchor': 'center',
             'yanchor': 'top'},
         font=dict(
@@ -206,14 +268,14 @@ def make_output_slot(user_id):
                                  fill_color=table_header_color,
                                  align=['left', 'center'], height=40, font=dict(color=table_main_font_color, size=20)),
                      )], layout=layout)
-    fig.update_layout(height=160, margin=dict(b=25, r=0, l=50), width=330,
+    fig.update_layout(height=75, margin=dict(b=0, r=0, l=35, t=25), width=315,
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
 
     fig.update_layout(
         title={
             'text': "OUTPUT DEVICE",
-            'y': 0.52,
-            'x': 0.57,
+            'y': 0.92,
+            'x': 0.54,
             'xanchor': 'center',
             'yanchor': 'top'},
         font=dict(
@@ -247,7 +309,7 @@ def make_registers_slots(user_id):
                                 align=['left', 'center'],
                                 font=dict(color=table_main_font_color, size=15), height=25),
                      )], layout=layout)
-    fig.update_layout(height=150, width=400, margin=dict(t=10, l=55, r=46, b=1),
+    fig.update_layout(height=140, width=329, margin=dict(t=10, l=15, r=15, b=0),
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20))
     fig.layout['template']['data']['table'][0]['header']['fill']['color'] = 'rgba(0,0,0,0)'
     fig.layout['template']['data']['table'][0]['header']['line']['color'] = 'rgba(0,0,0,0)'
@@ -303,14 +365,14 @@ def make_memory_slots(user_id):
                                   fill_color=table_main_color,
                                   align=['left', 'center'],
                                   font=dict(color=table_main_font_color, size=12), ))], layout=layout)
-    fig.update_layout(width=1032, height=450, margin=dict(t=24, b=10, r=0, l=30),
+    fig.update_layout(width=980, height=450, margin=dict(t=24, b=10, r=0, l=30),
                       font=dict(family="Roboto Mono, monospace", color=table_main_font_color, size=20),
                       )
     fig.layout.update(dragmode=False)
 
     fig.update_layout(
         title={
-            'text': "MEMORY STACK",
+            'text': "MEMORY",
             'y': 1,
             'x': 0.5,
             'xanchor': 'center',
@@ -327,32 +389,12 @@ def make_memory_slots(user_id):
 
 # run the program
 # TODO: make table undraggable (maybe switch to dash table)
-# TODO: Add error field (maybe in binary textarea)
 # TODO: Add I/O choice, neumann and harvard
 # TODO: smaller memory, bigger assembler, change memory title
 # TODO: HEX-представлення команд на додачу до двійкового. Варіант -- як опцію BIN/HEX
 # TODO: access program examples and instructions
-# TODO: multi-user access
-
-
-@server.route('/')
-def main():
-    return app.index()
-
-
-@server.route('/help')
-def template_test():
-    with open("docs/help.json", "r") as file:
-        help_dict = json.load(file)
-    with open("modules/registers.json", "r") as file:
-        register_dict = json.load(file)["risc3"]
-
-    p_style = "color: #FFFFFF; padding-left: 12%; width: 75%"
-    return render_template('help.html', items=help_dict, p_style=p_style, reg_dict=register_dict)
-
-
 if __name__ == '__main__':
     # SERVER LAUNCH
     dev_server = app.run_server
-    server.run(debug=True, threaded=True)
+    app.run_server(debug=True, threaded=True)
     # app.run_server(debug=True, processes=3, threaded=False)
