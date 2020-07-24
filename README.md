@@ -1,17 +1,13 @@
-# POC Project: Instruction sets simulation and assembly
-
+# POC Project: Hardware simulator and assembler
+[Website](http://assemblysimulator.pythonanywhere.com)
 ---
 
 ## Description:
 
-### Project goals: :cherry_blossom:
+A Hardware Simulator and an Assembler, with several 
+Instruction Set, Memory, I/O Architectures supported.
 
-* Create simple instruction sets, which will belong to different architectures
-(which are listed below)
-
-* Create a simulator (to see differences in these architectures)
-
-* Create a (simple) assembly language for others to use
+![](images/demoscreeen.png)
 
 ## Architectures:
 
@@ -29,7 +25,7 @@
   
   2. Complex Instruction Set Computer (CISC)
 
-* General Architecture
+* General Memory Architecture
 
   1. Von Neumann (Princeton) architecture
 
@@ -47,36 +43,25 @@
 
 + SIMD
 
-
-### What we will (possibly) use: :maple_leaf:
-
-* Python
-
-* [Dominate](https://github.com/Knio/dominate) for generating HTML pages
-
-### Examples and resources: :fallen_leaf:
-
-* Guidelines from [nand2tetris](http://f.javier.io/rep/books/The%20Elements%20of%20Computing%20Systems.pdf)
-
-* https://schweigi.github.io/assembler-simulator/
-
-* https://parraman.github.io/asm-simulator/
-
 ---
 
-## Usage
+## Usage for Contributing
 
 ```bash
+# Testing
 git clone https://github.com/dariaomelkina/poc_project
 # Assembler:
 python3 modules/assembler.py -f modules/program_examples/assembly_test.asm --isa RISC3
 # Simulator:
 python3 modules/simulator.py --file modules/program_examples/assembly_test6.bin --isa RISC3 --architecture neumann --output special
+# Fork, Edit and open Pull Requests or Issues
 ```
 
 ---
 
 ## Prerequisites:
+
+Admittedly, there are a lot of those, but we plan to rewrite the front-end without using Dash.
 
 ```bash
 pip install -r requirements.txt
@@ -84,6 +69,11 @@ pip install -r requirements.txt
 ---
 
 ## Testing:
+
+```bash
+# modules/program_examples contains a lot of example programs for different architectures
+python3 modules/simulator.py --file modules/program_examples/assembly_test1.bin --isa RISC3 --architecture neumann --output special
+```
 
 ---
 
@@ -93,4 +83,4 @@ pip install -r requirements.txt
 
 ## License:
 
-GNU General Public License v3.0
+[GNU General Public License v3.0](LICENSE)
