@@ -245,6 +245,13 @@ class CPU:
         # If we are in the state of reading the two-byte encoded immediate constant,
         # read it and add to the list of operands
         if self.read_state == "constant":
+            # TODO: Redo long immediate reads, we don't have to jump to next instructions
+            #  This involves also redoing jumps and relying on those stupid newlines, counting bits
+            #  from the original file probably. i have no idea. It's currently supposed to work with
+            #  RISC3, but RISC1 and RISC2 are broken asf. I've changed the assembler so it would encode long immediate
+            #  constants on the same line, but this makes them look just like RISC3/CISC, can probably delete
+            #  a lot of the unique stuff created earlier
+
             self.long_immediate = self.program_memory.read_data(start_read_location + self.instruction_size[0],
                                                                 start_read_location + self.instruction_size[0] * 3)
 

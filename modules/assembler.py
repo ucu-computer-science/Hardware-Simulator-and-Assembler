@@ -187,18 +187,18 @@ class Assembler:
                     # RISC-Stack has to divide the number into two 6-bit bytes
                     if self.isa == "risc1":
                         bit_len = 12
-                        temp = self.__encode_number(num, bit_len, split=True)
+                        temp = self.__encode_number(num, bit_len)
 
                     # RISC-Accumulator has to divide the number into two lines of 8 bits
                     elif self.isa == "risc2":
                         bit_len = 16
-                        temp = self.__encode_number(num, bit_len, split=True)
+                        temp = self.__encode_number(num, bit_len)
 
                     # Immediate constant length is undefined for Risc-Register architecture,
                     # and thus is set for every instruction
                     elif self.isa == "risc3":
                         bit_len = int(op_type[3:])
-                        temp = self.__encode_number(num, bit_len, split=False)
+                        temp = self.__encode_number(num, bit_len)
 
                     # CISC stub
                     else:
@@ -235,17 +235,14 @@ class Assembler:
             return assembly_op.startswith("$") and self.__is_number(assembly_op[1:])
 
     @staticmethod
-    def __encode_number(number, length, split):
+    def __encode_number(number, length):
         """
         Encodes the number in the next two bytes of different sizes for RISC-Register and RISC-Stack architectures
         :param number: int, the actual number to encode
         :param length: int, the length of two bytes of encoding for the architecture
         :return: str - two lines with encoded numbers of specified length
         """
-        temp = bin(twos_complement(number, length))[2:].rjust(length, '0')
-        if split:
-            temp = "\n" + temp[:length // 2] + "\n" + temp[length // 2:]
-        return temp
+        return bin(twos_complement(number, length))[2:].rjust(length, '0')
 
     @staticmethod
     def __is_number(n):
