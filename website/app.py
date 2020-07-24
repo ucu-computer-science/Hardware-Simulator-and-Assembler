@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 from bitarray.util import ba2hex
 import uuid
+# Might need them for help page and etc
 from flask import Flask, render_template, url_for
 import json
 
@@ -46,7 +47,7 @@ layout = go.Layout(
 )
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)']
 
-# LAYOUT
+# Create app
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, routes_pathname_prefix='/')
 app.title = "ASSEMBLY SIMULATOR"
 
@@ -54,94 +55,120 @@ app.title = "ASSEMBLY SIMULATOR"
 # Create user id
 @app.callback(Output('target', 'children'), [Input('input', 'children')])
 def get_ip(value):
+    """
+    Return randomly generated id each time new session starts
+    :param value: is not used (is here by default)
+    :return: random id
+    """
     session_id = str(uuid.uuid4())
     return session_id
 
 
-app.layout = html.Div([html.Div(id="hidden"),
-                       html.Div(id='target', style={'display': 'none'}),
-                       html.Div(id='input', style={'display': 'none'}),
+# MAIN LAYOUT
+app.layout = html.Div([
+    # Hidden div for a help page
+    html.Div(id="hidden"),
+    # Div for an id
+    html.Div(id='target', style={'display': 'none'}),
+    html.Div(id='input', style={'display': 'none'}),
 
-                       html.Div([html.Div([
-                           dcc.Markdown("ASSEMBLY SIMULATOR",
-                                        style={'color': title_color, 'font-family': "Roboto Mono, monospace",
-                                               'font-size': '25px',
-                                               'margin-left': 95, 'margin-top': 20, }),
+    html.Div([html.Div([
+        dcc.Markdown("ASSEMBLY SIMULATOR",
+                     style={'color': title_color, 'font-family': "Roboto Mono, monospace",
+                            'font-size': '25px',
+                            'margin-left': 95, 'margin-top': 20, }),
 
-                           html.Div([
-                               dcc.Markdown("ASSEMBLY",
-                                            style={'color': text_color, 'font-family': "Roboto Mono, monospace",
-                                                   'font-size': '20px',
-                                                   'margin-left': 80, 'margin-top': 30, 'display': 'inline-block'}),
-                               dcc.Markdown("BINARY",
-                                            style={'color': text_color, 'font-family': "Roboto Mono, monospace",
-                                                   'font-size': '20px',
-                                                   'margin-left': 130, 'margin-top': 10, 'display': 'inline-block'}),
+        html.Div([
+            dcc.Markdown("ASSEMBLY",
+                         style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                                'font-size': '20px',
+                                'margin-left': 80, 'margin-top': 30, 'display': 'inline-block'}),
+            dcc.Markdown("BINARY",
+                         style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                                'font-size': '20px',
+                                'margin-left': 130, 'margin-top': 10, 'display': 'inline-block'}),
 
-                           ]),
+        ]),
 
-                           dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
-                                        style={'width': 250, 'height': 400, 'display': 'inline-block',
-                                               'margin-right': 7,
-                                               'margin-left': 5, 'margin-top': 0,
-                                               "color": assembly_font_color, 'font-size': '15px',
-                                               "background-color": assembly_bg_color,
-                                               'font-family': "Roboto Mono, monospace"},
-                                        autoFocus='true', ),
-                           html.Div(id='assembly', style={'display': 'inline-block'}, )]),
+        # Textarea for input of assembly code
+        dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
+                     style={'width': 250, 'height': 400, 'display': 'inline-block',
+                            'margin-right': 7,
+                            'margin-left': 5, 'margin-top': 0,
+                            "color": assembly_font_color, 'font-size': '15px',
+                            "background-color": assembly_bg_color,
+                            'font-family': "Roboto Mono, monospace"},
+                     autoFocus='true', ),
+        # Textarea for output of binary code
+        html.Div(id='assembly', style={'display': 'inline-block'}, )]),
 
-                           dcc.Markdown("CHOOSE ISA AND ASSEMBLE THE CODE:",
-                                        style={'color': text_color, 'font-family': "Roboto Mono, monospace",
-                                               'font-size': '14px',
-                                               'margin-left': 80, 'margin-top': 10, 'display': 'inline-block'}),
+        dcc.Markdown("CHOOSE ISA AND ASSEMBLE THE CODE:",
+                     style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                            'font-size': '14px',
+                            'margin-left': 80, 'margin-top': 10, 'display': 'inline-block'}),
 
-                           html.Div([html.Button('Stack', id='assemble_risc1', n_clicks=0,
-                                                 style={'margin-left': 50, "color": not_working_text,
-                                                        "background-color": not_working_bg,
-                                                        'width': 160, 'display': 'inline-block'}),
-                                     html.Button('Register RISC', id='assemble_risc3', n_clicks=0,
-                                                 style={'margin-left': 16, "color": button_font_color,
-                                                        "background-color": button_color,
-                                                        'width': 160, 'display': 'inline-block'})],
-                                    style={"margin-bottom": 10}),
+        # Buttons with ISA variants
+        html.Div([html.Button('Stack', id='assemble_risc1', n_clicks=0,
+                              style={'margin-left': 50, "color": not_working_text,
+                                     "background-color": not_working_bg,
+                                     'width': 160, 'display': 'inline-block'}),
+                  html.Button('Register RISC', id='assemble_risc3', n_clicks=0,
+                              style={'margin-left': 16, "color": button_font_color,
+                                     "background-color": button_color,
+                                     'width': 160, 'display': 'inline-block'})],
+                 style={"margin-bottom": 10}),
 
-                           html.Div([html.Button('Accumulator', id='assemble_risc2', n_clicks=0,
-                                                 style={'margin-left': 50, "color": not_working_text,
-                                                        "background-color": not_working_bg,
-                                                        'width': 160, 'display': 'inline-block'}),
-                                     html.Button('Register CISC', id='assemble_cisc', n_clicks=0,
-                                                 style={'margin-left': 16, "color": not_working_text,
-                                                        "background-color": not_working_bg,
-                                                        'width': 160, 'display': 'inline-block'})]),
+        html.Div([html.Button('Accumulator', id='assemble_risc2', n_clicks=0,
+                              style={'margin-left': 50, "color": not_working_text,
+                                     "background-color": not_working_bg,
+                                     'width': 160, 'display': 'inline-block'}),
+                  html.Button('Register CISC', id='assemble_cisc', n_clicks=0,
+                              style={'margin-left': 16, "color": not_working_text,
+                                     "background-color": not_working_bg,
+                                     'width': 160, 'display': 'inline-block'})]),
 
-                       ],
-                           style={'display': 'block', 'height': '100px', 'margin-left': 14}, ),
+    ],
+        style={'display': 'block', 'height': '100px', 'margin-left': 14}, ),
 
-                       html.Div([html.Div(id='simulator'),
-                                 html.Button('Execute next instruction', id='next-instruction', n_clicks=0,
-                                             style={"color": button_font_color, "background-color": button_color,
-                                                    'margin-left': 400,
-                                                    'margin-top': 10, 'display': 'inline-block'}),
-                                 # dcc.Link('HELP', href='/help', id='help',
-                                 #          style={"color": button_font_color,
-                                 #                 'margin-left': 100,
-                                 #                 'margin-top': 10, 'display': 'inline-block'
-                                 #                 })
-                                 ],
-                                style={'height': '100px', 'margin-top': 0, 'margin-left': 450, 'display': 'block'}),
+    # Simulator of the processor and additional switch buttons
+    html.Div([html.Div(id='simulator'),
+              html.Button('Execute next instruction', id='next-instruction', n_clicks=0,
+                          style={"color": button_font_color, "background-color": button_color,
+                                 'margin-left': 400,
+                                 'margin-top': 10, 'display': 'inline-block'}),
 
-                       ])
+              # TODO: link to a help page
+              # dcc.Link('HELP', href='/help', id='help',
+              #          style={"color": button_font_color,
+              #                 'margin-left': 100,
+              #                 'margin-top': 10, 'display': 'inline-block'
+              #                 })
+              ],
+             style={'height': '100px', 'margin-top': 0, 'margin-left': 450, 'display': 'block'}),
+
+])
 
 
-# INPUT AND BUTTONS
+# INPUT-OUTPUT ELEMENTS AND BUTTONS
 @app.callback(Output('simulator', 'children'),
               [Input('next-instruction', 'n_clicks'),
                Input('target', 'children')])
 def update_tables(n_clicks, user_id):
+    """
+    If there is a CPU attached to a session,
+    activates next instruction in it and
+    returns changed tables and slots.
+    :param n_clicks: is not used (is here by default)
+    :param user_id: id of the session/user, by which CPU can be accessed
+    :return: html div with visualised processor and some buttons
+    """
     if user_id in cpu_dict:
         cpu_dict[user_id].web_next_instruction()
+    # Without a small break tables produces some glitches from time to time
     time.sleep(0.05)
     return html.Div([
+
+        # Next instruction and current output slots
         html.Div([html.Div([html.Div([html.Div(dcc.Graph(figure=make_instruction_slot(user_id), config={
             'displayModeBar': False, 'staticPlot': True})),
                                       html.Div(dcc.Graph(figure=make_output_slot(user_id), config={
@@ -151,6 +178,7 @@ def update_tables(n_clicks, user_id):
                                 'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ), ],
                            style={'display': 'block', 'margin-bottom': -167}, ),
 
+                  # Additional buttons for switching I/O modes and architectures
                   html.Div([dcc.Markdown("SWITCH ARCHITECTURES:",
                                          style={'color': text_color, 'font-family': "Roboto Mono, monospace",
                                                 'font-size': '14px',
@@ -183,6 +211,7 @@ def update_tables(n_clicks, user_id):
                                      style={'display': 'inline-block'}, ), ],
                            style={'display': 'block', 'margin-left': 645}), ], style={'margin-top': 20}),
 
+        # Memory representation
         html.Div(dcc.Graph(figure=make_memory_slots(user_id), config={
             'displayModeBar': False})),
     ], style={'margin-top': -100})
@@ -192,7 +221,17 @@ def update_tables(n_clicks, user_id):
               [Input('assemble_risc3', 'n_clicks'),
                Input('target', 'children')],
               [State('input1', 'value')])
-def make_assembly_input(n_clicks, user_id, value):
+def make_assembly_input_risk3(n_clicks, user_id, value):
+    """
+    (For register RISC architecture)
+    If there is an assembly code written in the textarea,
+    writes it into the cpu, attached to session/user id.
+    Returns a text area with a corresponding binary code.
+    :param n_clicks: is not used (is here by default)
+    :param user_id: id of the session/user, by which CPU can be accessed
+    :param value: assembly code
+    :return: text area with a binary code/assembler error
+    """
     global cpu_dict
     if not value or value == "input assembly code here":
         binary_program = ""
@@ -201,24 +240,116 @@ def make_assembly_input(n_clicks, user_id, value):
             binary_program = Assembler("risc3", value).binary_code
             cpu_dict[user_id] = CPU("risc3", "neumann", "special", binary_program)
         except AssemblerError as err:
-            binary_program = f'AssemblerError: {err.args[0]}'
+            binary_program = f'{err.args[0]}'
     return dcc.Textarea(value=binary_program,
                         style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
                                "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
                         disabled=True)
 
 
-#
+@app.callback(Output('assembly', 'children'),
+              [Input('assemble_risc2', 'n_clicks'),
+               Input('target', 'children')],
+              [State('input1', 'value')])
+def make_assembly_input_risk3(n_clicks, user_id, value):
+    """
+    (For Accumulator architecture)
+    If there is an assembly code written in the textarea,
+    writes it into the cpu, attached to session/user id.
+    Returns a text area with a corresponding binary code.
+    :param n_clicks: is not used (is here by default)
+    :param user_id: id of the session/user, by which CPU can be accessed
+    :param value: assembly code
+    :return: text area with a binary code/assembler error
+    """
+    global cpu_dict
+    if not value or value == "input assembly code here":
+        binary_program = ""
+    else:
+        try:
+            binary_program = Assembler("risc2", value).binary_code
+            cpu_dict[user_id] = CPU("risc2", "neumann", "special", binary_program)
+        except AssemblerError as err:
+            binary_program = f'{err.args[0]}'
+    return dcc.Textarea(value=binary_program,
+                        style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
+                               "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
+                        disabled=True)
+
+
+@app.callback(Output('assembly', 'children'),
+              [Input('assemble_risc1', 'n_clicks'),
+               Input('target', 'children')],
+              [State('input1', 'value')])
+def make_assembly_input_risk3(n_clicks, user_id, value):
+    """
+    (For Stack architecture)
+    If there is an assembly code written in the textarea,
+    writes it into the cpu, attached to session/user id.
+    Returns a text area with a corresponding binary code.
+    :param n_clicks: is not used (is here by default)
+    :param user_id: id of the session/user, by which CPU can be accessed
+    :param value: assembly code
+    :return: text area with a binary code/assembler error
+    """
+    global cpu_dict
+    if not value or value == "input assembly code here":
+        binary_program = ""
+    else:
+        try:
+            binary_program = Assembler("risc1", value).binary_code
+            cpu_dict[user_id] = CPU("risc1", "neumann", "special", binary_program)
+        except AssemblerError as err:
+            binary_program = f'{err.args[0]}'
+    return dcc.Textarea(value=binary_program,
+                        style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
+                               "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
+                        disabled=True)
+
+
+@app.callback(Output('assembly', 'children'),
+              [Input('assemble_cisc', 'n_clicks'),
+               Input('target', 'children')],
+              [State('input1', 'value')])
+def make_assembly_input_risk3(n_clicks, user_id, value):
+    """
+    (For register CISC architecture)
+    If there is an assembly code written in the textarea,
+    writes it into the cpu, attached to session/user id.
+    Returns a text area with a corresponding binary code.
+    :param n_clicks: is not used (is here by default)
+    :param user_id: id of the session/user, by which CPU can be accessed
+    :param value: assembly code
+    :return: text area with a binary code/assembler error
+    """
+    global cpu_dict
+    if not value or value == "input assembly code here":
+        binary_program = ""
+    else:
+        try:
+            binary_program = Assembler("cisc", value).binary_code
+            cpu_dict[user_id] = CPU("cisc", "neumann", "special", binary_program)
+        except AssemblerError as err:
+            binary_program = f'{err.args[0]}'
+    return dcc.Textarea(value=binary_program,
+                        style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
+                               "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
+                        disabled=True)
+
+
+# TODO: a help page callback
 # @app.callback(Output('hidden', 'children'),
 #               [Input('help', 'href')])
 # def help_page(href):
 #     return dcc.Location(pathname=href, id="help_page")
 
 
-# GRAPHIC ELEMENTS
+# CREATE GRAPHIC ELEMENTS
 def make_instruction_slot(user_id):
     """
-    Return a table figure, with information from the instruction of the CPU.
+    Return a table figure, with information from the instruction of the CPU,
+    which belongs to that exact user and session.
+    :return: plotly table
     """
     if user_id not in cpu_dict:
         cpu = CPU("risc3", "neumann", "special", "")
@@ -252,7 +383,9 @@ def make_instruction_slot(user_id):
 
 def make_output_slot(user_id):
     """
-    Return a table figure, with information from the instruction of the CPU.
+    Return a table figure, with information from the output device of the CPU,
+    which belongs to that exact user and session.
+    :return: plotly table
     """
     if user_id not in cpu_dict:
         cpu = CPU("risc3", "neumann", "special", '')
@@ -289,7 +422,9 @@ def make_output_slot(user_id):
 
 def make_registers_slots(user_id):
     """
-    Return a table figure, with information from registers of the CPU.
+    Return a table figure, with information from registers of the CPU,
+    which belongs to that exact user and session.
+    :return: plotly table
     """
     if user_id not in cpu_dict:
         cpu = CPU("risc3", "neumann", "special", '')
@@ -333,7 +468,9 @@ def make_registers_slots(user_id):
 
 def make_memory_slots(user_id):
     """
-    Return a table figure, with information from the memory of the CPU.
+    Return a table figure, with information from the memory of the CPU,
+    which belongs to that exact user and session.
+    :return: plotly table
     """
     if user_id not in cpu_dict:
         cpu = CPU("risc3", "neumann", "special", '')
@@ -348,6 +485,7 @@ def make_memory_slots(user_id):
     for i in range(0, 1024, 32):
         rows.append(hex(i)[2:].rjust(8, "0"))
 
+    # Read cpu data
     memory_data = [[], [], [], [], [], [], [], []]
     for i in range(0, len(cpu.data_memory.slots), 32 * 8):
         string = ba2hex(cpu.data_memory.slots[i:i + 32 * 8])
@@ -387,14 +525,13 @@ def make_memory_slots(user_id):
     return fig
 
 
-# run the program
 # TODO: make table undraggable (maybe switch to dash table)
-# TODO: Add I/O choice, neumann and harvard
-# TODO: smaller memory, bigger assembler, change memory title
 # TODO: HEX-представлення команд на додачу до двійкового. Варіант -- як опцію BIN/HEX
 # TODO: access program examples and instructions
+# TODO: a hidden div for storing information about architecture (like "(neumann, special) (it will be by default),
+#  (harvard, mmio)"), so I can read from it before creating cpu in the first place
+# Run the program
 if __name__ == '__main__':
     # SERVER LAUNCH
     dev_server = app.run_server
     app.run_server(debug=True, threaded=True)
-    # app.run_server(debug=True, processes=3, threaded=False)
