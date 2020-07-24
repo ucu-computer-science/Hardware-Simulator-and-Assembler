@@ -246,9 +246,12 @@ class CPU:
         # read it and add to the list of operands
         if self.read_state == "constant":
             self.long_immediate = self.program_memory.read_data(start_read_location + self.instruction_size[0],
-                                                                start_read_location + self.instruction_size[0]*3)
-            self.long_immediate = bitarray(self.long_immediate.to01().rjust(16, '0'))
-            ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + (self.instruction_size[0]*2), 16)
+                                                                start_read_location + self.instruction_size[0] * 3)
+
+            # In order to turn 12-bit signed number into 16-bit signed number, we copy the sign bit into all high bits
+            self.long_immediate = bitarray(self.long_immediate.to01().rjust(16, self.long_immediate.to01()[0]))
+            logger.info(twos_complement(int(self.long_immediate.to01(), 2), 16))
+            ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + (self.instruction_size[0] * 2), 16)
             self.registers["IP"].write_data(bin(ip_value)[2:])
             self.read_state = "opcode"
 
@@ -273,7 +276,7 @@ class CPU:
         """
         for port, device in self.ports_dictionary.items():
             if device.io_type == "mmio":
-                data = self.data_memory.read_data(device.start_point*8, device.end_point*8)
+                data = self.data_memory.read_data(device.start_point * 8, device.end_point * 8)
                 device._state = data
 
     def execute(self):
@@ -355,7 +358,9 @@ class CPU:
 
             # Check the needed flags according to the jump condition specified
             if (jmp_spec := self.instructions_dict[self.opcode.to01()][0]) == "jmp":
-                if self.isa in ["risc3", "cisc"] or self.__pop_tos() == bitarray("1"*16):
+                should_jump = True
+            elif jmp_spec == "jc":
+                if self.__pop_tos(pop=True) == bitarray("1" * 16):
                     should_jump = True
             elif jmp_spec == "je":
                 should_jump = zero_flag
@@ -374,15 +379,20 @@ class CPU:
             if should_jump:
 
                 # If the offset was specified with the number, its length was specified as well
-                if operands_aliases[0].startswith("imm"):
+                if operands_aliases[0].startswith("imm") and self.isa in ["risc3", "cisc"]:
                     num_len = int(operands_aliases[0][3:])
                 else:
-                    # Else, just use the register length
+                    # Else, just use the register length or long immediate length
                     num_len = 16
 
                 # Calculate the new location of the instruction pointer, change it
                 instr_size = self.instruction_size[0]
-                offset = (twos_complement(int(operands_values[0].to01(), 2), num_len) * instr_size) - instr_size
+                if self.isa in ["risc3", "cisc"]:
+                    num_val = operands_values[0].to01()
+                else:
+                    num_val = self.long_immediate.to01()
+
+                offset = (twos_complement(int(num_val, 2), num_len) * instr_size) - instr_size
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
                 self.registers["IP"].write_data(bin(ip_value + offset)[2:])
 
@@ -394,7 +404,7 @@ class CPU:
         elif res_type in ["stackpop", "stackpopf"]:
             popped_val = self.__pop_stack()
             if memory_write_access:
-                self.data_memory.write_data(result_destination//8, popped_val)
+                self.data_memory.write_data(result_destination // 8, popped_val)
                 if tos_push:
                     self.registers["TOS"].write_data(bin(result_destination + 16)[2:])
             else:
@@ -412,7 +422,7 @@ class CPU:
 
             # Write the result of the operation into the memory
             if memory_write_access:
-                self.data_memory.write_data(result_destination//8, result_value)
+                self.data_memory.write_data(result_destination // 8, result_value)
 
                 # Move the TOS pointer if the instruction pushed into the virtual register stack
                 if tos_push:
@@ -603,7 +613,7 @@ class CPU:
         :param value: bitarray(16) - a value to be pushed into memory
         """
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
-        self.data_memory.write_data(stack_pointer_value//8, value)
+        self.data_memory.write_data(stack_pointer_value // 8, value)
         self.registers["SP"]._state = bitarray(bin(stack_pointer_value + 16)[2:].rjust(16, '0'))
 
     def __pop_stack(self):
@@ -624,9 +634,9 @@ class CPU:
         start_read = int(self.registers["TOS"]._state.to01(), 2)
         if second and start_read > self.tos_start:
             start_read -= 16
-        return_data = self.data_memory.read_data(start_read-16, start_read)
+        return_data = self.data_memory.read_data(start_read - 16, start_read)
         if pop:
-            self.registers["TOS"].write_data(bin(start_read-16)[2:])
+            self.registers["TOS"].write_data(bin(start_read - 16)[2:])
         return return_data
 
     # Below are the methods for curses-driven command-line interface
