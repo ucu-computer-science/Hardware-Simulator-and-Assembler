@@ -80,7 +80,8 @@ def mov(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the register
     """
-    return operands[-1]
+    # This was done cuz we were worried we should not just copy (reference) bitarrays, so we copy its contents
+    return bitarray(operands[-1].to01().rjust(16, '0'))
 
 
 def add(operands, flag_register):

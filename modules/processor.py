@@ -149,7 +149,7 @@ class CPU:
 
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
         self.ip_start = 1024
-        self.registers["IP"]._state = bitarray(bin(twos_complement(self.ip_start + offset, 16))[2:].rjust(16, '0'))
+        self.registers["IP"].write_data(bin(twos_complement(self.ip_start + offset, 16))[2:])
         self.__load_program(program_text)
         self.read_state = "opcode"
         self.first_instruction = True
@@ -186,10 +186,10 @@ class CPU:
             temp = Register(register[0], general_purpose=(register[1] == 1))
             if register[0] == "TOS":
                 self.tos_start = 4096
-                temp._state = bitarray(bin(self.tos_start)[2:].rjust(16, '0'))
+                temp.write_data(bin(self.tos_start)[2:])
             elif register[0] == "SP":
                 self.stack_start = 0
-                temp._state = bitarray(bin(self.stack_start)[2:].rjust(16, '0'))
+                temp.write_data(bin(self.stack_start)[2:])
             self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
 
@@ -249,7 +249,7 @@ class CPU:
                                                                 start_read_location + self.instruction_size[0]*3)
             self.long_immediate = bitarray(self.long_immediate.to01().rjust(16, '0'))
             ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + (self.instruction_size[0]*2), 16)
-            self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
+            self.registers["IP"].write_data(bin(ip_value)[2:])
             self.read_state = "opcode"
 
     def __execute_cycle(self):
@@ -263,7 +263,7 @@ class CPU:
 
         self.execute()
         ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + self.instruction_size[0], 16)
-        self.registers["IP"]._state = bitarray(bin(ip_value)[2:].rjust(16, '0'))
+        self.registers["IP"].write_data(bin(ip_value)[2:])
 
         return is_close
 
@@ -310,7 +310,7 @@ class CPU:
             # Remember the next instruction after the one which called the 'call' function
             next_instruction = int(self.registers["IP"]._state.to01(), 2)
             if self.isa == "risc3":
-                self.registers["LR"]._state = bitarray(bin(next_instruction)[2:].rjust(16, '0'))
+                self.registers["LR"].write_data(bin(next_instruction)[2:])
             else:
                 self.__push_stack(bitarray(bin(next_instruction)[2:].rjust(16, '0')))
 
@@ -328,11 +328,11 @@ class CPU:
                 instr_size = self.instruction_size[0]
                 offset = (immediate_constant * instr_size) - instr_size
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
-                self.registers["IP"]._state = bitarray(bin(ip_value + offset)[2:].rjust(16, '0'))
+                self.registers["IP"].write_data(bin(ip_value + offset)[2:])
 
             # There is only one operand for a call function, and it determines an absolute address in the memory
             elif operand == "reg":
-                self.registers["IP"]._state = operands_values[0]
+                self.registers["IP"].write_data(operands_values[0])
 
         # If the opcode type is return, we just move the instruction pointer back
         elif res_type == "ret":
@@ -341,9 +341,9 @@ class CPU:
             # In RISC-Register architecture we save the caller address in the Link Register,
             # otherwise we just push it on the stack
             if self.isa == "risc3":
-                self.registers["IP"]._state = self.registers["LR"]._state
+                self.registers["IP"].write_data(self.registers["LR"]._state)
             else:
-                self.registers["IP"]._state = self.__pop_stack()
+                self.registers["IP"].write_data(self.__pop_stack())
 
         # If the opcode is of type jump, we look at the Flag Register and move Instruction Pointer if needed
         elif res_type == "jmp":
@@ -384,7 +384,7 @@ class CPU:
                 instr_size = self.instruction_size[0]
                 offset = (twos_complement(int(operands_values[0].to01(), 2), num_len) * instr_size) - instr_size
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
-                self.registers["IP"]._state = bitarray(bin(ip_value + offset)[2:].rjust(16, '0'))
+                self.registers["IP"].write_data(bin(ip_value + offset)[2:])
 
         # If the opcode specified pushes the value on the stack
         elif res_type == "stackpush":
@@ -396,9 +396,9 @@ class CPU:
             if memory_write_access:
                 self.data_memory.write_data(result_destination//8, popped_val)
                 if tos_push:
-                    self.registers["TOS"]._state = bitarray(bin(result_destination + 16)[2:].rjust(16, '0'))
+                    self.registers["TOS"].write_data(bin(result_destination + 16)[2:])
             else:
-                result_destination._state = popped_val
+                result_destination.write_data(popped_val)
 
         # If the opcode specifies outputting to the device
         elif res_type == "out":
@@ -416,11 +416,11 @@ class CPU:
 
                 # Move the TOS pointer if the instruction pushed into the virtual register stack
                 if tos_push:
-                    self.registers["TOS"]._state = bitarray(bin(result_destination + 16)[2:].rjust(16, '0'))
+                    self.registers["TOS"].write_data(bin(result_destination + 16)[2:])
 
             # Write into the result destination
             else:
-                result_destination._state = bitarray(result_value)
+                result_destination.write_data(result_value)
 
     def __determine_start_point(self):
         """
@@ -612,7 +612,7 @@ class CPU:
         :return: bitarray - of size 16 representing the value of the register previously pushed onto the stack
         """
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
-        self.registers["SP"]._state = bitarray(bin(stack_pointer_value - 16)[2:].rjust(16, '0'))
+        self.registers["SP"].write_data(bin(stack_pointer_value - 16)[2:])
         return self.data_memory.read_data(stack_pointer_value - 16, stack_pointer_value)
 
     def __pop_tos(self, second=False, pop=False):
@@ -626,7 +626,7 @@ class CPU:
             start_read -= 16
         return_data = self.data_memory.read_data(start_read-16, start_read)
         if pop:
-            self.registers["TOS"]._state = bitarray(bin(start_read-16)[2:].rjust(16, '0'))
+            self.registers["TOS"].write_data(bin(start_read-16)[2:])
         return return_data
 
     # Below are the methods for curses-driven command-line interface

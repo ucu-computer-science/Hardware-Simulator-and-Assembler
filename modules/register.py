@@ -24,6 +24,16 @@ class Register:
         self._state = bitarray('0'*16)
         self.accessibility = general_purpose
 
+    def write_data(self, value):
+        """
+        Writes the data provided into its state
+        :param value: str - binary string representing bits
+        """
+        if isinstance(value, str):
+            self._state = bitarray(value.rjust(16, '0'))
+        elif isinstance(value, bitarray):
+            self._state = bitarray(value.to01().rjust(16, '0'))
+
     def get_low(self):
         """
         Returns the low byte if the register is accessible
