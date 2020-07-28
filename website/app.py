@@ -31,43 +31,76 @@ app.title = "ASSEMBLY SIMULATOR"
 # MAIN LAYOUT
 app.layout = html.Div([
 
-    # Title
-    dcc.Markdown("ASSEMBLY SIMULATOR",
-                 style={'color': title_color, 'font-family': "Roboto Mono, monospace",
-                        'font-size': '25px'}),
+    # "MAIN MENU"
+    html.Div([
+        # Title
+        dcc.Markdown("ASSEMBLY SIMULATOR",
+                     style={'color': title_color, 'font-family': "Roboto Mono, monospace",
+                            'font-size': '25px', 'display': 'inline-block'}),
 
-    # Dropdowns for isa, architecture and i/o mode
+        # Dropdowns for isa, architecture and i/o mode
+        html.Div([
+
+            dcc.Dropdown(
+                id='isa-dropdown',
+                options=[
+                    {'label': 'REGISTER RISC', 'value': 'risc3'},
+                    {'label': 'REGISTER CISC', 'value': 'cisc'},
+                    {'label': 'STACK', 'value': 'risc1'},
+                    {'label': 'ACCUMULATOR', 'value': 'risc2'},
+                ],
+                value='risc3',
+                style={'display': 'inline-block', 'width': 180}
+            ),
+            dcc.Dropdown(
+                id='architecture-dropdown',
+                options=[
+                    {'label': 'VON NEUMANN', 'value': 'neumann'},
+                    {'label': 'HARVARD', 'value': 'harvard'},
+                ],
+                value='neumann',
+                style={'display': 'inline-block', 'width': 180}
+            ),
+            dcc.Dropdown(
+                id='io-dropdown',
+                options=[
+                    {'label': 'MEMORY-MAPPED', 'value': 'mmio'},
+                    {'label': 'SPECIAL COMMANDS', 'value': 'special'},
+                ],
+                value='special',
+                style={'display': 'inline-block', 'width': 180}
+            ),
+
+        ], style={'display': 'inline-block', 'margin-left': 600}),
+    ]),
+
+    # ASSEMBLER AND PROCESSOR
     html.Div([
 
-        dcc.Dropdown(
-            id='isa-dropdown',
-            options=[
-                {'label': 'REGISTER RISC', 'value': 'risc3'},
-                {'label': 'REGISTER CISC', 'value': 'cisc'},
-                {'label': 'STACK', 'value': 'risc1'},
-                {'label': 'ACCUMULATOR', 'value': 'risc2'},
-            ],
-            value='risc3',
-            style={'display': 'inline-block'}
-        ),
-        dcc.Dropdown(
-            id='architecture-dropdown',
-            options=[
-                {'label': 'VON NEUMANN', 'value': 'neumann'},
-                {'label': 'HARVARD', 'value': 'harvard'},
-            ],
-            value='neumann',
-            style={'display': 'inline-block'}
-        ),
-        dcc.Dropdown(
-            id='io-dropdown',
-            options=[
-                {'label': 'MEMORY-MAPPED', 'value': 'mmio'},
-                {'label': 'SPECIAL COMMANDS', 'value': 'special'},
-            ],
-            value='special',
-            style={'display': 'inline-block'}
-        ),
+        # Assembler
+        html.Div([
+
+            # Textarea for input of assembly code
+            dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
+                         style={'width': 235, 'height': 400, 'display': 'inline-block',
+                                "color": assembly['font'], 'font-size': '15px',
+                                "background-color": assembly['background'],
+                                'font-family': "Roboto Mono, monospace"},
+                         autoFocus='true'),
+
+            # Tabs with bin and hex code
+            html.Div([
+                dcc.Tabs(id='TABS', value='tabs', children=[
+                    dcc.Tab(label='BIN', value='binary'),
+                    dcc.Tab(label='HEX', value='hexadecimal'),
+                ], style={'width': 185, 'height':50}),
+                html.Div(id='tabs-content')
+            ], style={'display': 'inline-block'})
+
+        ]),
+
+        # Processor
+        html.Div([]),
 
     ]),
 
@@ -75,15 +108,27 @@ app.layout = html.Div([
     # Main info (has default settings)
     html.Div(id="info", children='risc3 neumann special', style={'display': 'none'}),
     # Id creation and storage
-    html.Div(id='target', style={'display': 'none'}),
-    html.Div(id='input', style={'display': 'none'}),
+    html.Div(id='id-storage', style={'display': 'none'}),
+    html.Div(id='id-creation', style={'display': 'none'}),
+    # Binary and hexadecimal code translations storage
+    html.Div(id='code', children=['', ''], style={'display': 'none'}),
 
 ])
 
 
 # APP CALLBACKS
+# Change main info
+@app.callback(
+    Output('info', 'children'),
+    [Input('isa-dropdown', 'value'),
+     Input('architecture-dropdown', 'value'),
+     Input('io-dropdown', 'value')])
+def update_output(isa, arch, io):
+    return ' '.join([isa, arch, io])
+
+
 # Create user id
-@app.callback(Output('target', 'children'), [Input('input', 'children')])
+@app.callback(Output('id-storage', 'children'), [Input('id-creation', 'children')])
 def get_ip(value):
     """
     Return randomly generated id each time new session starts
@@ -94,10 +139,42 @@ def get_ip(value):
     return session_id
 
 
-# CREATE GRAPHIC ELEMENTS
+# Save binary and hexadecimal code
+
+
+# Create tabs content (bin and hex)
+@app.callback(Output('tabs-content', 'children'),
+              [Input('TABS', 'value'),
+               Input('code', 'children')])
+def render_content_hex_bin(tab, code_lst):
+    if tab == 'binary':
+        return html.Div([
+            dcc.Textarea(value=code_lst[0],
+                         style={'width': 185, 'height': 400, "color": assembly['font'], 'font-size': '15px',
+                                "background-color": assembly['background'], 'font-family': "Roboto Mono, monospace"},
+                         disabled=True)
+        ])
+    elif tab == 'hexadecimal':
+        return html.Div([
+            dcc.Textarea(value=code_lst[1],
+                         style={'width': 185, 'height': 400, "color": assembly['font'], 'font-size': '15px',
+                                "background-color": assembly['background'], 'font-family': "Roboto Mono, monospace"},
+                         disabled=True)
+        ])
+    else:
+        return html.Div([
+            dcc.Textarea(value='',
+                         style={'width': 185, 'height': 400, "color": assembly['font'], 'font-size': '15px',
+                                "background-color": assembly['background'], 'font-family': "Roboto Mono, monospace"},
+                         disabled=True)
+        ])
+
+# CREATE GRAPHIC ELEMENTS OF THE PROCESSOR
 
 # Run the program
 if __name__ == '__main__':
     # SERVER LAUNCH
     dev_server = app.run_server
     app.run_server(debug=True, threaded=True)
+
+# TODO: help page
