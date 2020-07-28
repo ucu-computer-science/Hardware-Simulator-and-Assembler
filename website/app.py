@@ -19,8 +19,10 @@ import json
 from modules.processor import CPU
 from modules.assembler import Assembler, AssemblerError
 
-# CPU DICTIONARY (key=user.id, value=cpu)
-cpu_dict = dict()
+# CPU DICTIONARY ( key=user.id, value=[cpu, buttons list (number of clicks)] )
+user_dict = dict()
+# Numbers of buttons (used to change type of isa during cpu creation. are same for every session and user)
+buttons = {0: 'risc1', 1: 'risc2', 2: 'risc3', 3: 'cisc'}
 
 # COLOR PALETTE
 # TABLES
@@ -66,9 +68,12 @@ def get_ip(value):
 
 # MAIN LAYOUT
 app.layout = html.Div([
+    # Hidden with information about the processor (has default settings)
+    # TODO: somehow achieve changes in that div, maybe use that session dict once again
+    html.Div(id="info", children='neumann special', style={'display': 'none'}),
     # Hidden div for a help page
-    html.Div(id="hidden"),
-    # Div for an id
+    html.Div(id="help", style={'display': 'none'}, ),
+    # Hidden divs for an id creation and storage
     html.Div(id='target', style={'display': 'none'}),
     html.Div(id='input', style={'display': 'none'}),
 
@@ -82,17 +87,17 @@ app.layout = html.Div([
             dcc.Markdown("ASSEMBLY",
                          style={'color': text_color, 'font-family': "Roboto Mono, monospace",
                                 'font-size': '20px',
-                                'margin-left': 80, 'margin-top': 30, 'display': 'inline-block'}),
+                                'margin-left': 70, 'margin-top': 30, 'display': 'inline-block'}),
             dcc.Markdown("BINARY",
                          style={'color': text_color, 'font-family': "Roboto Mono, monospace",
                                 'font-size': '20px',
-                                'margin-left': 130, 'margin-top': 10, 'display': 'inline-block'}),
+                                'margin-left': 132, 'margin-top': 10, 'display': 'inline-block'}),
 
         ]),
 
         # Textarea for input of assembly code
         dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
-                     style={'width': 250, 'height': 400, 'display': 'inline-block',
+                     style={'width': 235, 'height': 400, 'display': 'inline-block',
                             'margin-right': 7,
                             'margin-left': 5, 'margin-top': 0,
                             "color": assembly_font_color, 'font-size': '15px',
@@ -109,8 +114,8 @@ app.layout = html.Div([
 
         # Buttons with ISA variants
         html.Div([html.Button('Stack', id='assemble_risc1', n_clicks=0,
-                              style={'margin-left': 50, "color": not_working_text,
-                                     "background-color": not_working_bg,
+                              style={'margin-left': 50, "color": button_font_color,
+                                     "background-color": button_color,
                                      'width': 160, 'display': 'inline-block'}),
                   html.Button('Register RISC', id='assemble_risc3', n_clicks=0,
                               style={'margin-left': 16, "color": button_font_color,
@@ -150,31 +155,105 @@ app.layout = html.Div([
 
 
 # INPUT-OUTPUT ELEMENTS AND BUTTONS
+
+# Assemble code and create a cpu object with it
+@app.callback(Output('assembly', 'children'),
+              [Input('assemble_risc1', 'n_clicks'),
+               Input('assemble_risc2', 'n_clicks'),
+               Input('assemble_risc3', 'n_clicks'),
+               Input('assemble_cisc', 'n_clicks'),
+               Input('target', 'children'),
+               Input('info', 'children'),
+
+               Input('neumann', 'n_clicks'),
+               Input('harvard', 'n_clicks'),
+               Input('mimo', 'n_clicks'),
+               Input('special', 'n_clicks')
+               ],
+              [State('input1', 'value')])
+def make_assembly_input(n_clicks1, n_clicks2, n_clicks3, n_clicks4, user_id, arch_io, n_clicks5, n_clicks6, n_clicks7,
+                        n_clicks8, value):
+    """
+    If there is an assembly code written in the textarea,
+    writes it into the cpu, attached to session/user id.
+    Returns a text area with a corresponding binary code.
+    Assembles code depending on which button out of four  was pressed.
+    :param n_clicks1: number of clicks on risc1 button
+    :param n_clicks2: number of clicks on risc2 button
+    :param n_clicks3: number of clicks on risc3 button
+    :param n_clicks4: number of clicks on cisc button
+    :param user_id: id of the session/user, by which CPU can be accessed
+    :param arch_io: information from hidden info div (architecture and i/o type)
+    :param n_clicks1: number of clicks on neumann button ()
+    :param n_clicks2: number of clicks on harvard button
+    :param n_clicks3: number of clicks on mimo button
+    :param n_clicks4: number of clicks on special button
+    :param value: assembly code
+    :return: text area with a binary code/assembler error
+    """
+    arch, io = arch_io.split()
+    global user_dict
+    if user_id not in user_dict:
+        user_dict[user_id] = [CPU("risc3", arch, io, ''), [0, 0, 0, 0], '']
+
+    current_buttons = [n_clicks1, n_clicks2, n_clicks3, n_clicks4]
+
+    if not value or value == "input assembly code here":
+        binary_program = ""
+        user_dict[user_id][0] = CPU('risc1', arch, io, '')
+    else:
+        # Determine which button has changed
+        for i in range(4):
+            if current_buttons[i] > user_dict[user_id][1][i]:
+                isa = buttons[i]
+        try:
+            binary_program = Assembler(isa, value).binary_code
+            user_dict[user_id][0] = CPU(isa, arch, io, binary_program)
+        except AssemblerError as err:
+            binary_program = f'{err.args[0]}'
+            user_dict[user_id][0] = CPU(isa, arch, io, '')
+    # Update buttons in the global dictionary
+    user_dict[user_id][1] = current_buttons
+    user_dict[user_id][2] = binary_program
+    return html.Div([
+        dcc.Tabs(id='tabs', value='tab-1', children=[
+            dcc.Tab(label='BINARY', value='binary'),
+            dcc.Tab(label='HEXADECIMAL', value='hexadecimal'),
+        ]),
+        html.Div(id='tabs-content')
+    ])
+
+
+# Update processor state
 @app.callback(Output('simulator', 'children'),
               [Input('next-instruction', 'n_clicks'),
-               Input('target', 'children')])
-def update_tables(n_clicks, user_id):
+               Input('target', 'children'),
+               Input('info', 'children')])
+def update_tables(n_clicks, user_id, arch_io):
     """
     If there is a CPU attached to a session,
     activates next instruction in it and
     returns changed tables and slots.
     :param n_clicks: is not used (is here by default)
     :param user_id: id of the session/user, by which CPU can be accessed
+    :param arch_io: information from hidden info div (architecture and i/o type)
     :return: html div with visualised processor and some buttons
     """
-    if user_id in cpu_dict:
-        cpu_dict[user_id].web_next_instruction()
+    arch, io = arch_io.split()
+
+    if user_id in user_dict:
+        user_dict[user_id][0].web_next_instruction()
     # Without a small break tables produces some glitches from time to time
     time.sleep(0.05)
     return html.Div([
 
         # Next instruction and current output slots
-        html.Div([html.Div([html.Div([html.Div(dcc.Graph(figure=make_instruction_slot(user_id), config={
+        html.Div([html.Div([html.Div([html.Div(dcc.Graph(figure=make_instruction_slot(user_id, arch, io), config={
             'displayModeBar': False, 'staticPlot': True})),
-                                      html.Div(dcc.Graph(figure=make_output_slot(user_id), config={
+                                      html.Div(dcc.Graph(figure=make_output_slot(user_id, arch, io), config={
                                           'displayModeBar': False, 'staticPlot': True}))],
                                      style={'display': 'inline-block'}, ),
-                            html.Div(dcc.Graph(figure=make_registers_slots(user_id), config={
+                            html.Div(dcc.Graph(figure=make_registers_slots(user_id, arch, io), config={
                                 'displayModeBar': False, 'staticPlot': True}), style={'display': 'inline-block'}, ), ],
                            style={'display': 'block', 'margin-bottom': -167}, ),
 
@@ -183,11 +262,11 @@ def update_tables(n_clicks, user_id):
                                          style={'color': text_color, 'font-family': "Roboto Mono, monospace",
                                                 'font-size': '14px',
                                                 'margin-left': 80, 'margin-top': 0}),
-                            html.Div([html.Button('Von Neumann', id='no', n_clicks=0,
+                            html.Div([html.Button('Von Neumann', id='neumann', n_clicks=0,
                                                   style={'margin-left': 10, "color": button_font_color,
                                                          "background-color": button_color,
                                                          'width': 150, 'display': 'inline-block'}),
-                                      html.Button('Harvard', id='no', n_clicks=0,
+                                      html.Button('Harvard', id='harvard', n_clicks=0,
                                                   style={'margin-left': 10, 'margin-bottom': 0,
                                                          "color": not_working_text,
                                                          "background-color": not_working_bg,
@@ -199,12 +278,12 @@ def update_tables(n_clicks, user_id):
                                                 'font-size': '14px',
                                                 'margin-left': 80, 'margin-top': 10}),
 
-                            html.Div([html.Button('Memory-Mapped', id='no', n_clicks=0,
+                            html.Div([html.Button('Memory-Mapped', id='mimo', n_clicks=0,
                                                   style={'margin-bottom': 10, 'margin-left': 10,
                                                          "color": not_working_text,
                                                          "background-color": not_working_bg,
                                                          'width': 150, 'display': 'inline-block'}),
-                                      html.Button('Special com-s', id='no', n_clicks=0,
+                                      html.Button('Special com-s', id='special', n_clicks=0,
                                                   style={'margin-left': 10, "color": button_font_color,
                                                          "background-color": button_color,
                                                          'width': 150, 'display': 'inline-block'})],
@@ -212,130 +291,24 @@ def update_tables(n_clicks, user_id):
                            style={'display': 'block', 'margin-left': 645}), ], style={'margin-top': 20}),
 
         # Memory representation
-        html.Div(dcc.Graph(figure=make_memory_slots(user_id), config={
+        html.Div(dcc.Graph(figure=make_memory_slots(user_id, arch, io), config={
             'displayModeBar': False})),
     ], style={'margin-top': -100})
 
 
-@app.callback(Output('assembly', 'children'),
-              [Input('assemble_risc3', 'n_clicks'),
-               Input('target', 'children')],
-              [State('input1', 'value')])
-def make_assembly_input_risk3(n_clicks, user_id, value):
-    """
-    (For register RISC architecture)
-    If there is an assembly code written in the textarea,
-    writes it into the cpu, attached to session/user id.
-    Returns a text area with a corresponding binary code.
-    :param n_clicks: is not used (is here by default)
-    :param user_id: id of the session/user, by which CPU can be accessed
-    :param value: assembly code
-    :return: text area with a binary code/assembler error
-    """
-    global cpu_dict
-    if not value or value == "input assembly code here":
-        binary_program = ""
-    else:
-        try:
-            binary_program = Assembler("risc3", value).binary_code
-            cpu_dict[user_id] = CPU("risc3", "neumann", "special", binary_program)
-        except AssemblerError as err:
-            binary_program = f'{err.args[0]}'
-    return dcc.Textarea(value=binary_program,
-                        style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
-                               "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
-                        disabled=True)
+# # Switch architecture and i/o type
+# # Update processor state
+# @app.callback(Output('info', 'children'),
+#               [Input('neumann', 'n_clicks'),
+#                Input('harvard', 'n_clicks'),
+#                Input('mimo', 'n_clicks'),
+#                Input('special', 'n_clicks'),
+#                Input('target', 'children')])
+# def switch(n_clicks1, n_clicks2, n_clicks3, n_clicks4, user_id):
+#     pass
 
 
-@app.callback(Output('assembly', 'children'),
-              [Input('assemble_risc2', 'n_clicks'),
-               Input('target', 'children')],
-              [State('input1', 'value')])
-def make_assembly_input_risk3(n_clicks, user_id, value):
-    """
-    (For Accumulator architecture)
-    If there is an assembly code written in the textarea,
-    writes it into the cpu, attached to session/user id.
-    Returns a text area with a corresponding binary code.
-    :param n_clicks: is not used (is here by default)
-    :param user_id: id of the session/user, by which CPU can be accessed
-    :param value: assembly code
-    :return: text area with a binary code/assembler error
-    """
-    global cpu_dict
-    if not value or value == "input assembly code here":
-        binary_program = ""
-    else:
-        try:
-            binary_program = Assembler("risc2", value).binary_code
-            cpu_dict[user_id] = CPU("risc2", "neumann", "special", binary_program)
-        except AssemblerError as err:
-            binary_program = f'{err.args[0]}'
-    return dcc.Textarea(value=binary_program,
-                        style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
-                               "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
-                        disabled=True)
-
-
-@app.callback(Output('assembly', 'children'),
-              [Input('assemble_risc1', 'n_clicks'),
-               Input('target', 'children')],
-              [State('input1', 'value')])
-def make_assembly_input_risk3(n_clicks, user_id, value):
-    """
-    (For Stack architecture)
-    If there is an assembly code written in the textarea,
-    writes it into the cpu, attached to session/user id.
-    Returns a text area with a corresponding binary code.
-    :param n_clicks: is not used (is here by default)
-    :param user_id: id of the session/user, by which CPU can be accessed
-    :param value: assembly code
-    :return: text area with a binary code/assembler error
-    """
-    global cpu_dict
-    if not value or value == "input assembly code here":
-        binary_program = ""
-    else:
-        try:
-            binary_program = Assembler("risc1", value).binary_code
-            cpu_dict[user_id] = CPU("risc1", "neumann", "special", binary_program)
-        except AssemblerError as err:
-            binary_program = f'{err.args[0]}'
-    return dcc.Textarea(value=binary_program,
-                        style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
-                               "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
-                        disabled=True)
-
-
-@app.callback(Output('assembly', 'children'),
-              [Input('assemble_cisc', 'n_clicks'),
-               Input('target', 'children')],
-              [State('input1', 'value')])
-def make_assembly_input_risk3(n_clicks, user_id, value):
-    """
-    (For register CISC architecture)
-    If there is an assembly code written in the textarea,
-    writes it into the cpu, attached to session/user id.
-    Returns a text area with a corresponding binary code.
-    :param n_clicks: is not used (is here by default)
-    :param user_id: id of the session/user, by which CPU can be accessed
-    :param value: assembly code
-    :return: text area with a binary code/assembler error
-    """
-    global cpu_dict
-    if not value or value == "input assembly code here":
-        binary_program = ""
-    else:
-        try:
-            binary_program = Assembler("cisc", value).binary_code
-            cpu_dict[user_id] = CPU("cisc", "neumann", "special", binary_program)
-        except AssemblerError as err:
-            binary_program = f'{err.args[0]}'
-    return dcc.Textarea(value=binary_program,
-                        style={'width': 170, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
-                               "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
-                        disabled=True)
-
+# TODO: implement :)
 
 # TODO: a help page callback
 # @app.callback(Output('hidden', 'children'),
@@ -344,17 +317,41 @@ def make_assembly_input_risk3(n_clicks, user_id, value):
 #     return dcc.Location(pathname=href, id="help_page")
 
 
+@app.callback(Output('tabs-content', 'children'),
+              [Input('tabs', 'value'),
+               Input('target', 'children')])
+def render_content_hex_bin(tab, user_id):
+    if user_id in user_dict:
+        binary_program = user_dict[user_id][2]
+    else:
+        binary_program = ''
+    if tab == 'binary':
+        return html.Div([
+            dcc.Textarea(value=binary_program,
+                         style={'width': 185, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
+                                "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
+                         disabled=True)
+        ])
+    elif tab == 'hexadecimal':
+        return html.Div([
+            dcc.Textarea(value=binary_program,
+                         style={'width': 185, 'height': 400, "color": assembly_font_color, 'font-size': '15px',
+                                "background-color": table_main_color, 'font-family': "Roboto Mono, monospace"},
+                         disabled=True)
+        ])
+
+
 # CREATE GRAPHIC ELEMENTS
-def make_instruction_slot(user_id):
+def make_instruction_slot(user_id, arch, io):
     """
     Return a table figure, with information from the instruction of the CPU,
     which belongs to that exact user and session.
     :return: plotly table
     """
-    if user_id not in cpu_dict:
-        cpu = CPU("risc3", "neumann", "special", "")
+    if user_id not in user_dict:
+        cpu = CPU("risc3", arch, io, "")
     else:
-        cpu = cpu_dict[user_id]
+        cpu = user_dict[user_id][0]
     fig = go.Figure(
         data=[
             go.Table(header=dict(values=[f"{cpu.instruction.to01()}\n"],
@@ -381,16 +378,16 @@ def make_instruction_slot(user_id):
     return fig
 
 
-def make_output_slot(user_id):
+def make_output_slot(user_id, arch, io):
     """
     Return a table figure, with information from the output device of the CPU,
     which belongs to that exact user and session.
     :return: plotly table
     """
-    if user_id not in cpu_dict:
-        cpu = CPU("risc3", "neumann", "special", '')
+    if user_id not in user_dict:
+        cpu = CPU("risc3", arch, io, '')
     else:
-        cpu = cpu_dict[user_id]
+        cpu = user_dict[user_id][0]
     shell_slots = []
     for port, device in cpu.ports_dictionary.items():
         shell_slots.append(str(device))
@@ -420,16 +417,16 @@ def make_output_slot(user_id):
     return fig
 
 
-def make_registers_slots(user_id):
+def make_registers_slots(user_id, arch, io):
     """
     Return a table figure, with information from registers of the CPU,
     which belongs to that exact user and session.
     :return: plotly table
     """
-    if user_id not in cpu_dict:
-        cpu = CPU("risc3", "neumann", "special", '')
+    if user_id not in user_dict:
+        cpu = CPU("risc3", arch, io, '')
     else:
-        cpu = cpu_dict[user_id]
+        cpu = user_dict[user_id][0]
     items = [(value.name, value._state.tobytes().hex()) for key, value in
              cpu.registers.items()]
     values = [[], []]
@@ -466,16 +463,16 @@ def make_registers_slots(user_id):
     return fig
 
 
-def make_memory_slots(user_id):
+def make_memory_slots(user_id, arch, io):
     """
     Return a table figure, with information from the memory of the CPU,
     which belongs to that exact user and session.
     :return: plotly table
     """
-    if user_id not in cpu_dict:
-        cpu = CPU("risc3", "neumann", "special", '')
+    if user_id not in user_dict:
+        cpu = CPU("risc3", arch, io, '')
     else:
-        cpu = cpu_dict[user_id]
+        cpu = user_dict[user_id][0]
     headers = ["Addr   :  "]
     for i in range(0, 32, 4):
         headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
@@ -530,6 +527,18 @@ def make_memory_slots(user_id):
 # TODO: access program examples and instructions
 # TODO: a hidden div for storing information about architecture (like "(neumann, special) (it will be by default),
 #  (harvard, mmio)"), so I can read from it before creating cpu in the first place
+# TODO: fix mov_high function
+
+# TODO: порожній рядок в коді видає помилку
+# TODO: оновлену версію асемблера на сервер закинути
+# TODO: щось IP register пише якусь фігню
+# TODO: До речі, що означає код інструкції 0x00? :=) -- воно на ньому висне...
+# TODO: додати adc i sbb, add-with-carry i subtract-with-borrow. і nop (як синонім xor %R00, %R00)
+# TODO: "REGISTER RISC", "REGISTER CISC" і т.д. варто зробити глобальними налаштуваннями -- натискання кнопки ресетить симулятор  у новому режимі.
+# TODO: FR побітово треба
+#  Бракує можливості редагувати регістри і пам'ять -- як до початку симуляції, (задати той же IP), так і в процесі.
+#  Нагадую, що квадратні дужки тут зайві: je [$off]
+
 # Run the program
 if __name__ == '__main__':
     # SERVER LAUNCH
