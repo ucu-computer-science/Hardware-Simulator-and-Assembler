@@ -41,35 +41,51 @@ app.layout = html.Div([
         # Dropdowns for isa, architecture and i/o mode
         html.Div([
 
-            dcc.Dropdown(
-                id='isa-dropdown',
-                options=[
-                    {'label': 'REGISTER RISC', 'value': 'risc3'},
-                    {'label': 'REGISTER CISC', 'value': 'cisc'},
-                    {'label': 'STACK', 'value': 'risc1'},
-                    {'label': 'ACCUMULATOR', 'value': 'risc2'},
-                ],
-                value='risc3',
-                style={'display': 'inline-block', 'width': 180}
-            ),
-            dcc.Dropdown(
-                id='architecture-dropdown',
-                options=[
-                    {'label': 'VON NEUMANN', 'value': 'neumann'},
-                    {'label': 'HARVARD', 'value': 'harvard'},
-                ],
-                value='neumann',
-                style={'display': 'inline-block', 'width': 180}
-            ),
-            dcc.Dropdown(
-                id='io-dropdown',
-                options=[
-                    {'label': 'MEMORY-MAPPED', 'value': 'mmio'},
-                    {'label': 'SPECIAL COMMANDS', 'value': 'special'},
-                ],
-                value='special',
-                style={'display': 'inline-block', 'width': 180}
-            ),
+            html.Div([
+
+                dcc.Dropdown(
+                    id='isa-dropdown',
+                    options=[
+                        {'label': 'REGISTER RISC', 'value': 'risc3'},
+                        {'label': 'REGISTER CISC', 'value': 'cisc', 'disabled': True},
+                        {'label': 'STACK', 'value': 'risc1'},
+                        {'label': 'ACCUMULATOR', 'value': 'risc2'},
+                    ],
+                    value='risc3',
+                    style={'width': 200},
+                    clearable=False,
+                ),
+            ], style={'display': 'inline-block'}),
+
+            html.Div([
+
+                dcc.Dropdown(
+                    id='architecture-dropdown',
+                    options=[
+                        {'label': 'VON NEUMANN', 'value': 'neumann'},
+                        {'label': 'HARVARD', 'value': 'harvard', 'disabled': True},
+                    ],
+                    value='neumann',
+                    style={'width': 200},
+                    clearable=False,
+                ),
+
+            ], style={'display': 'inline-block'}),
+
+            html.Div([
+
+                dcc.Dropdown(
+                    id='io-dropdown',
+                    options=[
+                        {'label': 'MEMORY-MAPPED', 'value': 'mmio', 'disabled': True},
+                        {'label': 'SPECIAL COMMANDS', 'value': 'special'},
+                    ],
+                    value='special',
+                    style={'width': 200},
+                    clearable=False,
+                ),
+
+            ], style={'display': 'inline-block'}),
 
         ], style={'display': 'inline-block', 'margin-left': 600}),
     ]),
@@ -80,22 +96,32 @@ app.layout = html.Div([
         # Assembler
         html.Div([
 
-            # Textarea for input of assembly code
-            dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
-                         style={'width': 235, 'height': 400, 'display': 'inline-block',
-                                "color": assembly['font'], 'font-size': '15px',
-                                "background-color": assembly['background'],
-                                'font-family': "Roboto Mono, monospace"},
-                         autoFocus='true'),
-
-            # Tabs with bin and hex code
             html.Div([
-                dcc.Tabs(id='TABS', value='tabs', children=[
-                    dcc.Tab(label='BIN', value='binary'),
-                    dcc.Tab(label='HEX', value='hexadecimal'),
-                ], style={'width': 185, 'height':50}),
-                html.Div(id='tabs-content')
-            ], style={'display': 'inline-block'})
+
+                # Textarea for input of assembly code
+                dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
+                             style={'width': 235, 'height': 400, 'display': 'inline-block',
+                                    "color": assembly['font'], 'font-size': '15px',
+                                    "background-color": assembly['background'],
+                                    'font-family': "Roboto Mono, monospace"},
+                             autoFocus='true'),
+
+                # Tabs with bin and hex code
+                html.Div([
+                    dcc.Tabs(id='TABS', value='tabs', children=[
+                        dcc.Tab(label='BIN', value='binary'),
+                        dcc.Tab(label='HEX', value='hexadecimal'),
+                    ], style={'width': 185, 'height': 50}),
+                    html.Div(id='tabs-content')
+                ], style={'display': 'inline-block'}),
+
+            ]),
+
+            # Button to assemble
+            html.Button('ASSEMBLE', id='assemble', n_clicks=0,
+                        style={'margin-left': 50, "color": button['font'],
+                               "background-color": button['background'],
+                               'width': 160})
 
         ]),
 
@@ -124,6 +150,9 @@ app.layout = html.Div([
      Input('architecture-dropdown', 'value'),
      Input('io-dropdown', 'value')])
 def update_output(isa, arch, io):
+    """
+
+    """
     return ' '.join([isa, arch, io])
 
 
@@ -140,6 +169,31 @@ def get_ip(value):
 
 
 # Save binary and hexadecimal code
+@app.callback(Output('code', 'children'),
+              [Input('assemble', 'n_clicks'),
+               Input('info', 'children'),
+               Input('id-storage', 'children')],
+              [State('input1', 'value')])
+def assemble(n_clicks, info, user_id, assembly_code):
+    isa, architecture, io = info.split()
+
+    global user_dict
+    if user_id not in user_dict:
+        user_dict[user_id] = CPU(isa, architecture, io, '')
+
+    if not assembly_code or assembly_code == "input assembly code here":
+        binary_program = hex_program = ''
+    else:
+        try:
+            binary_program = Assembler(isa, assembly_code).binary_code
+            user_dict[user_id] = CPU(isa, architecture, io, binary_program)
+            hex_program = '\n'.join(list(map(lambda x: hex(int(x, 2)), [x for x in binary_program.split('\n') if x])))
+
+        except AssemblerError as err:
+            binary_program = hex_program = f'{err.args[0]}'
+            user_dict[user_id] = CPU(isa, architecture, io, '')
+
+    return binary_program, hex_program
 
 
 # Create tabs content (bin and hex)
@@ -147,6 +201,9 @@ def get_ip(value):
               [Input('TABS', 'value'),
                Input('code', 'children')])
 def render_content_hex_bin(tab, code_lst):
+    """
+
+    """
     if tab == 'binary':
         return html.Div([
             dcc.Textarea(value=code_lst[0],
@@ -163,11 +220,12 @@ def render_content_hex_bin(tab, code_lst):
         ])
     else:
         return html.Div([
-            dcc.Textarea(value='',
+            dcc.Textarea(value=code_lst[0],
                          style={'width': 185, 'height': 400, "color": assembly['font'], 'font-size': '15px',
                                 "background-color": assembly['background'], 'font-family': "Roboto Mono, monospace"},
                          disabled=True)
         ])
+
 
 # CREATE GRAPHIC ELEMENTS OF THE PROCESSOR
 
@@ -177,4 +235,12 @@ if __name__ == '__main__':
     dev_server = app.run_server
     app.run_server(debug=True, threaded=True)
 
-# TODO: help page
+# TODO: help page,
+#  add program examples,
+#  cookies to save previous program,
+#  edit memory and registers,
+#  make next execute till the program is not finished (additional button, user can choose seconds),
+#  change memory slots,
+#  add new version to server,
+#  add bitwise flag,
+#  make table undraggable
