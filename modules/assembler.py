@@ -111,9 +111,10 @@ class Assembler:
 
         # Divide the program into lines
         for line in text.split("\n"):
-            self.line = line
-            if line.strip(" ").startswith("#"):
+            # Check if its an empty line or a comment line, skip if yes
+            if line.strip(" ").startswith("#") or line.isspace() or not line:
                 continue
+            self.line = line
 
             # Split instruction name and operands
             binary_line = ""
