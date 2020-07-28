@@ -60,9 +60,6 @@
 # self.tos_start - Top Of the Register Stack (TOS) = 4096  (Grows incrementing, Shrinks decrementing)
 # self.stack_start - Regular Stack = 0 (Grows incrementing, Shrinks decrementing)
 
-# TODO: There are probably still a couple of things not complying with the abovementioned conventions,
-#  the only way to find out is to check everything I guess
-
 # TODO: This module needs a lot of refactoring (after the available demo working properly), as
 #  it still has a lot of leftover curses functionality we are not going to need anymore,
 #  overall does not perform ideally, as it was made up on the go
@@ -182,14 +179,18 @@ class CPU:
         self.registers = dict()
         self.register_codes = dict()
 
+        # Create registers, work on special cases
         for register in registers_list:
             temp = Register(register[0], general_purpose=(register[1] == 1))
+
+            # Remember the starting point of the 'register stack' or 'memory stack'
             if register[0] == "TOS":
                 self.tos_start = 4096
                 temp.write_data(bin(self.tos_start)[2:])
             elif register[0] == "SP":
                 self.stack_start = 0
                 temp.write_data(bin(self.stack_start)[2:])
+
             self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
 
@@ -200,6 +201,9 @@ class CPU:
         """
         # Writing program instructions into to memory
         ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
+        # Determine the number of bits for each instruction, and start at the beginning of the program (0th index)
+        self.program_text = list(map(lambda x: len(x), program_text.split('\n')))
+        self.program_pointer = 0
         self.program_memory.write_data(ip_value // 8, bitarray(program_text.replace('\n', '')))
 
     def web_next_instruction(self):
@@ -241,25 +245,17 @@ class CPU:
             # bytes are going to be an immediate constant, change the read_state
             if self.isa in ["risc1", "risc2"] and self.opcode[0]:
                 self.read_state = "constant"
+            self.additional_jump = 0
 
         # If we are in the state of reading the two-byte encoded immediate constant,
         # read it and add to the list of operands
         if self.read_state == "constant":
-            # TODO: Redo long immediate reads, we don't have to jump to next instructions
-            #  This involves also redoing jumps and relying on those stupid newlines, counting bits
-            #  from the original file probably. i have no idea. It's currently supposed to work with
-            #  RISC3, but RISC1 and RISC2 are broken asf. I've changed the assembler so it would encode long immediate
-            #  constants on the same line, but this makes them look just like RISC3/CISC, can probably delete
-            #  a lot of the unique stuff created earlier
-
             self.long_immediate = self.program_memory.read_data(start_read_location + self.instruction_size[0],
                                                                 start_read_location + self.instruction_size[0] * 3)
 
             # In order to turn 12-bit signed number into 16-bit signed number, we copy the sign bit into all high bits
             self.long_immediate = bitarray(self.long_immediate.to01().rjust(16, self.long_immediate.to01()[0]))
-            logger.info(twos_complement(int(self.long_immediate.to01(), 2), 16))
-            ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + (self.instruction_size[0] * 2), 16)
-            self.registers["IP"].write_data(bin(ip_value)[2:])
+            self.additional_jump = self.instruction_size[0] * 2
             self.read_state = "opcode"
 
     def __execute_cycle(self):
@@ -271,9 +267,12 @@ class CPU:
         if self.curses_mode:
             is_close = self.curses_next_instruction()
 
-        self.execute()
-        ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2) + self.instruction_size[0], 16)
-        self.registers["IP"].write_data(bin(ip_value)[2:])
+        go_to_next_instruction = self.execute()
+        if go_to_next_instruction:
+            ip_val = int(self.registers["IP"]._state.to01(), 2)
+            ip_value = twos_complement(ip_val + self.instruction_size[0] + self.additional_jump, 16)
+            self.program_pointer += 1
+            self.registers["IP"].write_data(bin(ip_value)[2:])
 
         return is_close
 
@@ -290,8 +289,11 @@ class CPU:
         """
         Executes an instruction, decoding its operands, computing the
         result and saving it in the proper place
-        :return: NoneType
+        :return: bool - whether to go to the next instruction
         """
+        # The return value that tells whether we should go to the next instruction after the execution
+        go_to_next_instruction = True
+
         # Determine the point in the binary instruction where operands start
         start_point = self.__determine_start_point()
 
@@ -327,33 +329,40 @@ class CPU:
             # There is only one operand for a call function, and it determines the offset from the IP
             operand = operands_aliases[0]
             if operand.startswith("imm"):
-
                 if self.isa in ["risc3", "cisc"]:
                     # Calculate the new location of the instruction pointer, change it
                     imm_len = int(operand[3:])
-                    immediate_constant = twos_complement(int(operands_values[0].to01(), 2), imm_len)
+                    jump_num = twos_complement(int(operands_values[0].to01(), 2), imm_len)
                 else:
-                    immediate_constant = int(self.long_immediate.to01(), 2)
-
-                instr_size = self.instruction_size[0]
-                offset = (immediate_constant * instr_size) - instr_size
-                ip_value = int(self.registers["IP"]._state.to01(), 2)
-                self.registers["IP"].write_data(bin(ip_value + offset)[2:])
-
-            # There is only one operand for a call function, and it determines an absolute address in the memory
+                    jump_num = twos_complement(int(self.long_immediate.to01(), 2), self.instruction_size[0]*2)
             elif operand == "reg":
-                self.registers["IP"].write_data(operands_values[0])
+                jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
+
+            # Calculate the new offset in instructions
+            if jump_num >= 0:
+                jump_distance = sum(self.program_text[self.program_pointer:self.program_pointer+jump_num])
+            else:
+                jump_distance = -1*sum(self.program_text[self.program_pointer+jump_num:self.program_pointer])
+
+            # Change the instruction pointer
+            ip_value = int(self.registers["IP"]._state.to01(), 2)
+            self.registers["IP"].write_data(bin(ip_value + jump_distance)[2:])
+            self.program_pointer += jump_num
+
+            go_to_next_instruction = False
 
         # If the opcode type is return, we just move the instruction pointer back
         elif res_type == "ret":
 
             # TODO: Should we zero out the Link Register register after returning to it once?
+            # TODO: Currently does not work correctly as we do not update the program pointer because we can't...
             # In RISC-Register architecture we save the caller address in the Link Register,
             # otherwise we just push it on the stack
             if self.isa == "risc3":
                 self.registers["IP"].write_data(self.registers["LR"]._state)
             else:
                 self.registers["IP"].write_data(self.__pop_stack())
+            go_to_next_instruction = False
 
         # If the opcode is of type jump, we look at the Flag Register and move Instruction Pointer if needed
         elif res_type == "jmp":
@@ -386,22 +395,30 @@ class CPU:
             if should_jump:
 
                 # If the offset was specified with the number, its length was specified as well
+                # Else, just use the register length or long immediate length
                 if operands_aliases[0].startswith("imm") and self.isa in ["risc3", "cisc"]:
                     num_len = int(operands_aliases[0][3:])
                 else:
-                    # Else, just use the register length or long immediate length
                     num_len = 16
 
-                # Calculate the new location of the instruction pointer, change it
-                instr_size = self.instruction_size[0]
+                # Calculate the new offset in instructions
                 if self.isa in ["risc3", "cisc"]:
-                    num_val = operands_values[0].to01()
+                    jump_num = twos_complement(int(operands_values[0].to01(), 2), num_len)
                 else:
-                    num_val = self.long_immediate.to01()
+                    jump_num = twos_complement(int(self.long_immediate.to01(), 2), num_len)
 
-                offset = (twos_complement(int(num_val, 2), num_len) * instr_size) - instr_size
+                # Calculate the number of bits to jump
+                if jump_num >= 0:
+                    jump_distance = sum(self.program_text[self.program_pointer:self.program_pointer + jump_num])
+                else:
+                    jump_distance = -1*sum(self.program_text[self.program_pointer + jump_num:self.program_pointer])
+
+                # Change the instruction pointer
+                logger.info(f"jmp {jump_num} {jump_distance}")
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
-                self.registers["IP"].write_data(bin(ip_value + offset)[2:])
+                self.registers["IP"].write_data(bin(ip_value + jump_distance)[2:])
+                self.program_pointer += jump_num
+                go_to_next_instruction = False
 
         # If the opcode specified pushes the value on the stack
         elif res_type == "stackpush":
@@ -438,6 +455,8 @@ class CPU:
             # Write into the result destination
             else:
                 result_destination.write_data(result_value)
+
+        return go_to_next_instruction
 
     def __determine_start_point(self):
         """

@@ -19,6 +19,10 @@ logging.basicConfig(filename="../log.txt",
 logger = logging.getLogger('funclogger')
 
 
+# TODO: Redo the math processing here, because (I think) our right-adjustments kill any negative two's complement
+#  numbers, we should instead right-adjust them with the sign bit (as we do in processing long immediates)
+
+
 def load_store(operands, flag_register):
     """
     Loads value from memory to register
@@ -97,7 +101,7 @@ def add(operands, flag_register):
     :return: new value of the first register
     """
     reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin(twos_complement(reg1 + reg2, len(operands[-2])))[2:].rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 + reg2, len(operands[-2])))).rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
@@ -122,7 +126,7 @@ def sub(operands, flag_register):
     :return: new value of the first register
     """
     reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin(twos_complement(reg1 - reg2, len(operands[-2])))[2:].rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 - reg2, len(operands[-2])))).rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
@@ -146,13 +150,17 @@ def mul(operands, flag_register):
     :return: new value of the first register
     """
     reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin(twos_complement(reg1 * reg2, len(operands[-2])))[2:].rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 * reg2, len(operands[-2])))).rjust(16, "0")
+
+    logger.info(result)
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
         result = bin(twos_complement(reg1 * reg2, 18))[-16:]
     change_flag_result(flag_register, operands, result)
+
+    logger.info(result)
 
     return bitarray(result)
 
@@ -170,7 +178,7 @@ def div(operands, flag_register):
     :return: new value of the first register
     """
     reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin(twos_complement(reg1 // reg2, len(operands[-2])))[2:].rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 // reg2, len(operands[-2])))).rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
@@ -194,7 +202,7 @@ def bit_and(operands, flag_register):
    :return: new value of the first register
     """
     reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin(twos_complement(reg1 & reg2, len(operands[-2])))[2:].rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 & reg2, len(operands[-2])))).rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     change_flag_result(flag_register, operands, result)
@@ -215,7 +223,7 @@ def bit_or(operands, flag_register):
    :return: new value of the first register
     """
     reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin(twos_complement(reg1 | reg2, len(operands[-2])))[2:].rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 | reg2, len(operands[-2])))).rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     change_flag_result(flag_register, operands, result)
@@ -236,7 +244,7 @@ def bit_xor(operands, flag_register):
     :return: new value of the first register
     """
     reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin(twos_complement(reg1 ^ reg2, len(operands[-2])))[2:].rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 ^ reg2, len(operands[-2])))).rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     change_flag_result(flag_register, operands, result)
@@ -279,7 +287,7 @@ def lsh(operands, flag_register):
     :return: new value of the first register
     """
     reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin(twos_complement(reg1 << reg2, len(operands[-2])))[2:].rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 << reg2, len(operands[-2])))).rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
@@ -303,7 +311,7 @@ def rsh(operands, flag_register):
     :return: new value of the first register
     """
     reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin(twos_complement(reg1 >> reg2, len(operands[-2])))[2:].rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 >> reg2, len(operands[-2])))).rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
@@ -324,7 +332,7 @@ def cmp(operands, flag_register):
     :return: new value of the flag register
     """
     reg1, reg2 = prepare_arguments(operands[0], operands[1])
-    result = bin(twos_complement(reg1 - reg2, len(operands[1])))[2:].rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 - reg2, len(operands[1])))).rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
@@ -365,7 +373,7 @@ def test(operands, flag_register):
     :return: new value of the flag register
     """
     reg1, reg2 = prepare_arguments(operands[0], operands[1])
-    result = bin(twos_complement(reg1 & reg2, len(operands[1])))[2:]
+    result = bin_clean(bin(twos_complement(reg1 & reg2, len(operands[1]))))
 
     result = result.rjust(16, "0")
     flag_register._state = bitarray("0" * 16)
@@ -424,6 +432,13 @@ def prepare_arguments(arg1, arg2):
     :return: tuple with prepared arguments
     """
     return twos_complement(int(arg1.to01(), 2), len(arg1)), twos_complement(int(arg2.to01(), 2), len(arg2))
+
+
+def bin_clean(bin_str):
+    """
+    Cleans the result of bin() from [-0b]
+    """
+    return bin_str[3:] if bin_str.startswith('-') else bin_str[2:]
 
 
 functions_dictionary = {"load": load_store, "loadf": load_store, "loadi": load_store,
