@@ -350,7 +350,7 @@ def cmpe(operands, flag_register):
         "1"*16 if yes
     """
     reg1, reg2 = prepare_arguments(operands[0], operands[1])
-    return bitarray((reg1 == reg2) * 16)
+    return bitarray('1'*16 if (reg1 == reg2) else '0' * 16)
 
 
 def cmpb(operands, flag_register):
@@ -360,7 +360,7 @@ def cmpb(operands, flag_register):
         "1"*16 if yes
     """
     reg1, reg2 = prepare_arguments(operands[0], operands[1])
-    return bitarray((reg1 > reg2) * 16)
+    return bitarray('1'*16 if (reg1 > reg2) else '0' * 16)
 
 
 def test(operands, flag_register):

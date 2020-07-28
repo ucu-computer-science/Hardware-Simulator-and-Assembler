@@ -202,7 +202,7 @@ class CPU:
         # Writing program instructions into to memory
         ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
         # Determine the number of bits for each instruction, and start at the beginning of the program (0th index)
-        self.program_text = list(map(lambda x: len(x), program_text.split('\n')))
+        self.instr_size_list = list(map(lambda x: len(x), program_text.split('\n')))
         self.program_pointer = 0
         self.program_memory.write_data(ip_value // 8, bitarray(program_text.replace('\n', '')))
 
@@ -320,7 +320,7 @@ class CPU:
         if res_type == "call":
 
             # Remember the next instruction after the one which called the 'call' function
-            next_instruction = int(self.registers["IP"]._state.to01(), 2)
+            next_instruction = self.program_pointer + 1
             if self.isa == "risc3":
                 self.registers["LR"].write_data(bin(next_instruction)[2:])
             else:
@@ -340,9 +340,9 @@ class CPU:
 
             # Calculate the new offset in instructions
             if jump_num >= 0:
-                jump_distance = sum(self.program_text[self.program_pointer:self.program_pointer+jump_num])
+                jump_distance = sum(self.instr_size_list[self.program_pointer:self.program_pointer + jump_num])
             else:
-                jump_distance = -1*sum(self.program_text[self.program_pointer+jump_num:self.program_pointer])
+                jump_distance = -1*sum(self.instr_size_list[self.program_pointer + jump_num:self.program_pointer])
 
             # Change the instruction pointer
             ip_value = int(self.registers["IP"]._state.to01(), 2)
@@ -355,13 +355,20 @@ class CPU:
         elif res_type == "ret":
 
             # TODO: Should we zero out the Link Register register after returning to it once?
-            # TODO: Currently does not work correctly as we do not update the program pointer because we can't...
             # In RISC-Register architecture we save the caller address in the Link Register,
             # otherwise we just push it on the stack
             if self.isa == "risc3":
-                self.registers["IP"].write_data(self.registers["LR"]._state)
+                return_point = int(self.registers["LR"]._state.to01(), 2)
             else:
-                self.registers["IP"].write_data(self.__pop_stack())
+                return_point = self.__pop_stack()
+
+            ip_value = int(self.registers["IP"]._state.to01(), 2)
+            if self.program_pointer >= return_point:
+                destination = ip_value - sum(self.instr_size_list[return_point:self.program_pointer])
+            else:
+                destination = ip_value - sum(self.instr_size_list[self.program_pointer:return_point])
+
+            self.registers["IP"].write_data(destination)
             go_to_next_instruction = False
 
         # If the opcode is of type jump, we look at the Flag Register and move Instruction Pointer if needed
@@ -376,7 +383,7 @@ class CPU:
             if (jmp_spec := self.instructions_dict[self.opcode.to01()][0]) == "jmp":
                 should_jump = True
             elif jmp_spec == "jc":
-                if self.__pop_tos(pop=True) == bitarray("1" * 16):
+                if operands_values[0] == bitarray("1" * 16):
                     should_jump = True
             elif jmp_spec == "je":
                 should_jump = zero_flag
@@ -409,9 +416,9 @@ class CPU:
 
                 # Calculate the number of bits to jump
                 if jump_num >= 0:
-                    jump_distance = sum(self.program_text[self.program_pointer:self.program_pointer + jump_num])
+                    jump_distance = sum(self.instr_size_list[self.program_pointer:self.program_pointer + jump_num])
                 else:
-                    jump_distance = -1*sum(self.program_text[self.program_pointer + jump_num:self.program_pointer])
+                    jump_distance = -1*sum(self.instr_size_list[self.program_pointer + jump_num:self.program_pointer])
 
                 # Change the instruction pointer
                 logger.info(f"jmp {jump_num} {jump_distance}")
@@ -657,6 +664,9 @@ class CPU:
         :param second: bool - whether to return the value of the second-to-top register
         :param pop: bool - whether to move the stack behind the popped value
         """
+        # TODO: Stack architecture still is not complete, need to figure out when
+        #  we should pop the values and when we shouldn't.
+        #  Somehow it does not pop enough things and ends up reusing them :(
         start_read = int(self.registers["TOS"]._state.to01(), 2)
         if second and start_read > self.tos_start:
             start_read -= 16

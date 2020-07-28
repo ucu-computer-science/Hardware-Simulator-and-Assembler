@@ -1,9 +1,8 @@
-mov $72
-mov $33
+mov $101
 mov $100
-mov $108
-mov $114
-dup
+mov $99
+mov $98
+mov $97
 cmpe $72
 jc $3
 out $1
