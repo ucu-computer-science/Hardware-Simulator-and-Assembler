@@ -64,7 +64,7 @@ def mov_high(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the register
     """
-    return operands[0][:8] + operands[1]
+    return operands[1] + operands[0][8:]
 
 
 def mov(operands, flag_register):
