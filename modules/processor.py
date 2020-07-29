@@ -49,16 +49,24 @@
 #   * TOS
 #   * Index register
 #     etc.
-# They should contain the number of BITS from 0 to 2**16-1
-# This allows to easily work with non-byte aligned architectures (Stack ISA)
-# This allows to point to up to 65536 bits, and this is 8KiB, which I think is more than enough.
-# This requires to call read_data from memory with existing values if needed, using BIT OFFSETS
-# This requires to call write_data from memory with values//8, if needed, using BYTE OFFSETS
+# UPDATE: Instruction Pointer works with bytes, and thus can point up to 64KiB of 8-bit
+# (or 6-bit, depending on the architecture) bytes
+#
+# Other ones work with bytes too (SP, TOS, IR), but they are always 8-bits, and operate mainly on 16-bit words
+# Because read_data works with bits, you should specify the byte size of the pointer type
+# write_data works with (8-bit) byte starting locations so yeah
+# TODO: This probably should be changed to be consistent idk have no idea why this is even this way still
+# TODO: Need to rework everything according to these new standards :(
 #
 # Current standard values of these pointers are:
-# self.ip_start - Instruction Pointer = 1024 (Start point for program loading, Grows incrementing, Shrinks decrementing)
-# self.tos_start - Top Of the Register Stack (TOS) = 4096  (Grows incrementing, Shrinks decrementing)
-# self.stack_start - Regular Stack = 0 (Grows incrementing, Shrinks decrementing)
+# self.ip_start - Instruction Pointer = 512 byte
+# (Start point for program loading, Grows incrementing, Shrinks decrementing)
+#
+# self.tos_start - Top Of the Register Stack (TOS) = 256 byte
+# (Grows incrementing, Shrinks decrementing)
+#
+# self.stack_start - Regular Stack = 65536 (last) byte  (for now it's 1024)
+# (Grows decrementinh, Shrinks incrementing)
 
 # TODO: This module needs a lot of refactoring (after the available demo working properly), as
 #  it still has a lot of leftover curses functionality we are not going to need anymore,
@@ -106,7 +114,7 @@ class CPU:
     Provides all arithmetics and memory manipulations
     """
 
-    def __init__(self, isa, architecture, io_arch, program_text, program_start=1024, curses_mode=False):
+    def __init__(self, isa, architecture, io_arch, program_text, program_start=512, curses_mode=False):
         """
         Creates a new CPU.
         :param isa: chosen ISA
@@ -145,12 +153,12 @@ class CPU:
         with open(os.path.join("modules", "instructions.json"), "r") as file:
             self.instructions_dict = json.load(file)[self.isa]
 
-        # Determining the size of the instructions to read (size of the instruction, opcode size)
-        instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
+        # Determining the size of the instructions to read (size of the instruction, opcode size, byte size)
+        instruction_sizes = {"risc1": (6, 6, 6), "risc2": (8, 8, 8), "risc3": (16, 6, 8), "cisc": (8, 8, 8)}
         self.instruction_size = instruction_sizes[self.isa]
 
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
-        self.registers["IP"].write_data(bin(twos_complement(program_start, 16))[2:])
+        self.registers["IP"].write_data(bin(program_start)[2:])
         self.__load_program(program_text)
         self.read_state = "opcode"
         self.first_instruction = True
@@ -189,10 +197,10 @@ class CPU:
 
             # Remember the starting point of the 'register stack' or 'memory stack'
             if register[0] == "TOS":
-                self.tos_start = 4096
+                self.tos_start = 256
                 temp.write_data(bin(self.tos_start)[2:])
             elif register[0] == "SP":
-                self.stack_start = 0
+                self.stack_start = 1024
                 temp.write_data(bin(self.stack_start)[2:])
 
             self.registers[register[0]] = temp
@@ -204,11 +212,11 @@ class CPU:
         :param program_text: str - text of the binary program file
         """
         # Writing program instructions into to memory
-        ip_value = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
+        ip_value = int(self.registers["IP"]._state.to01(), 2)
         # Determine the number of bits for each instruction, and start at the beginning of the program (0th index)
-        self.instr_size_list = list(map(lambda x: len(x), program_text.split('\n')))
+        self.instr_size_list = list(map(lambda x: len(x)//self.instruction_size[2], program_text.split('\n')))
         self.program_pointer = 0
-        self.program_memory.write_data(ip_value // 8, bitarray(program_text.replace('\n', '')))
+        self.program_memory.write_data(ip_value*self.instruction_size[2], bitarray(program_text.replace('\n', '')))
 
     def web_next_instruction(self):
         """
@@ -237,7 +245,7 @@ class CPU:
         Reads a long immediate encoded in the next byets if the ISA uses those
         Does not actually move the instruction pointer to the next instruction
         """
-        start_read_location = twos_complement(int(self.registers["IP"]._state.to01(), 2), 16)
+        start_read_location = int(self.registers["IP"]._state.to01(), 2)*self.instruction_size[2]
         self.instruction = self.program_memory.read_data(start_read_location,
                                                          start_read_location + self.instruction_size[0])
 
@@ -254,12 +262,11 @@ class CPU:
         # If we are in the state of reading the two-byte encoded immediate constant,
         # read it and add to the list of operands
         if self.read_state == "constant":
-            self.long_immediate = self.program_memory.read_data(start_read_location + self.instruction_size[0],
-                                                                start_read_location + self.instruction_size[0] * 3)
+            self.long_immediate = self.program_memory.read_data(start_read_location + 1, start_read_location + 3)
 
             # In order to turn 12-bit signed number into 16-bit signed number, we copy the sign bit into all high bits
             self.long_immediate = bitarray(self.long_immediate.to01().rjust(16, self.long_immediate.to01()[0]))
-            self.additional_jump = self.instruction_size[0] * 2
+            self.additional_jump = 2
             self.read_state = "opcode"
 
     def __execute_cycle(self):
@@ -274,9 +281,10 @@ class CPU:
         go_to_next_instruction = self.execute()
         if go_to_next_instruction:
             ip_val = int(self.registers["IP"]._state.to01(), 2)
-            ip_value = twos_complement(ip_val + self.instruction_size[0] + self.additional_jump, 16)
+            bytes_per_instruction = self.instruction_size[0] // self.instruction_size[2]
+            ip_val = bin(ip_val + bytes_per_instruction + self.additional_jump)[2:]
             self.program_pointer += 1
-            self.registers["IP"].write_data(bin(ip_value)[2:])
+            self.registers["IP"].write_data(ip_val)
 
         return is_close
 
@@ -457,11 +465,11 @@ class CPU:
 
             # Write the result of the operation into the memory
             if memory_write_access:
-                self.data_memory.write_data(result_destination // 8, result_value)
+                self.data_memory.write_data(result_destination * 8, result_value)
 
                 # Move the TOS pointer if the instruction pushed into the virtual register stack
                 if tos_push:
-                    self.registers["TOS"].write_data(bin(result_destination + 16)[2:])
+                    self.registers["TOS"].write_data(bin(result_destination + 2)[2:])
 
             # Write into the result destination
             else:
@@ -649,18 +657,19 @@ class CPU:
         Pushes the value onto the memory stack, changing the position of the Stack Pointer register
         :param value: bitarray(16) - a value to be pushed into memory
         """
-        stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
-        self.data_memory.write_data(stack_pointer_value // 8, value)
-        self.registers["SP"]._state = bitarray(bin(stack_pointer_value + 16)[2:].rjust(16, '0'))
+        stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)*8
+        logger.info(str(stack_pointer_value))
+        self.data_memory.write_data(stack_pointer_value - 16, value)
+        self.registers["SP"]._state = bitarray(bin(stack_pointer_value//8 - 2)[2:].rjust(16, '0'))
 
     def __pop_stack(self):
         """
         Pops the last value from the memory stack, changing the position of the Stack Pointer register
         :return: bitarray - of size 16 representing the value of the register previously pushed onto the stack
         """
-        stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)
-        self.registers["SP"].write_data(bin(stack_pointer_value - 16)[2:])
-        return self.data_memory.read_data(stack_pointer_value - 16, stack_pointer_value)
+        stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)*8
+        self.registers["SP"].write_data(bin(stack_pointer_value//8 + 2)[2:])
+        return self.data_memory.read_data(stack_pointer_value, stack_pointer_value+16)
 
     def __pop_tos(self, second=False, pop=False):
         """
@@ -671,12 +680,12 @@ class CPU:
         # TODO: Stack architecture still is not complete, need to figure out when
         #  we should pop the values and when we shouldn't.
         #  Somehow it does not pop enough things and ends up reusing them :(
-        start_read = int(self.registers["TOS"]._state.to01(), 2)
+        start_read = int(self.registers["TOS"]._state.to01(), 2)*8
         if second and start_read > self.tos_start:
             start_read -= 16
         return_data = self.data_memory.read_data(start_read - 16, start_read)
         if pop:
-            self.registers["TOS"].write_data(bin(start_read - 16)[2:])
+            self.registers["TOS"].write_data(bin(start_read//8 - 2)[2:])
         return return_data
 
     # Below are the methods for curses-driven command-line interface

@@ -37,10 +37,10 @@ class Memory:
         :param data: data for writing into the memory
         :return: NoneType
         """
-        if (len(data) > (self.memory_size - location)):
-            raise MemoryError("Memory overflow")
+        if len(data) > (self.memory_size - location):
+            raise MemoryError(f"Memory overflow (Memory Size:{self.memory_size}, Location: {location})")
 
-        self.slots[location*8:location*8+len(data)] = data
+        self.slots[location:location+len(data)] = data
 
     def read_data(self, start_location, end_location):
         """
