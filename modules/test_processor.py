@@ -20,32 +20,36 @@ from modules.processor import CPU
 class TestCPU(unittest.TestCase):
     def setUp(self):
         """ Loads the common programs for testing """
+        with open(os.path.join("modules", "demos", "risc1", "alphabet_printout.bin"), "r") as file:
+            self.risc1_program_text = file.read()
+
         with open(os.path.join("modules", "program_examples", "assembly_test6.bin"), "r") as file:
-            self.program_text = file.read()
+            self.risc3_program_text = file.read()
 
     def test_program_loading(self):
         """ Tests the correct program loading in the memory """
-        cpu_neumann = CPU("risc3", "neumann", "special", self.program_text)
-        cpu_harvard = CPU("risc3", "harvard", "special", self.program_text)
+        cpu_neumann = CPU("risc3", "neumann", "special", self.risc3_program_text)
+        cpu_harvard = CPU("risc3", "harvard", "special", self.risc3_program_text)
 
         # Testing Neumann architecture
-        self.assertEqual(ba2hex(cpu_neumann.program_memory.slots[1024:1024 + 16*8]), "184119011a5b5500680488080c0263fc")
-        self.assertEqual(ba2hex(cpu_neumann.data_memory.slots[1024:1024 + 16*8]), "184119011a5b5500680488080c0263fc")
+        self.assertEqual(ba2hex(cpu_neumann.program_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
+        self.assertEqual(ba2hex(cpu_neumann.data_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
 
         # Testing Harvard architecture
         self.assertEqual(ba2hex(cpu_harvard.data_memory.slots), "0"*2048)
-        self.assertEqual(ba2hex(cpu_harvard.program_memory.slots[1024:1024 + 16*8]), "184119011a5b5500680488080c0263fc")
+        self.assertEqual(ba2hex(cpu_harvard.program_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
 
     def test_program_loading_offset(self):
         """ Tests the correct byte program_start for each architecture """
-        cpu_risc1 = CPU("risc1", "neumann", "special", self.program_text, program_start=512)
-        self.assertEqual(ba2hex(cpu_risc1.program_memory.slots[512:512 + 16 * 8]), "184119011a5b5500680488080c0263fc")
+        cpu_risc1 = CPU("risc1", "neumann", "special", self.risc1_program_text, program_start=512)
+        self.assertEqual(ba2hex(cpu_risc1.program_memory.slots[512*6:512*6 + 28*6]),
+                         "8819620648818e2062881866048ac00ec001a7ff00")
 
-        cpu_risc2 = CPU("risc2", "neumann", "special", self.program_text, program_start=512)
-        self.assertEqual(ba2hex(cpu_risc2.program_memory.slots[512:512 + 16 * 8]), "184119011a5b5500680488080c0263fc")
+        # cpu_risc2 = CPU("risc2", "neumann", "special", self.riscprogram_text, program_start=512)
+        # self.assertEqual(ba2hex(cpu_risc2.program_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
 
-        cpu_risc3 = CPU("risc3", "neumann", "special", self.program_text, program_start=512)
-        self.assertEqual(ba2hex(cpu_risc3.program_memory.slots[512:512 + 16 * 8]), "184119011a5b5500680488080c0263fc")
+        cpu_risc3 = CPU("risc3", "neumann", "special", self.risc3_program_text, program_start=512)
+        self.assertEqual(ba2hex(cpu_risc3.program_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
 
 
 if __name__ == '__main__':
