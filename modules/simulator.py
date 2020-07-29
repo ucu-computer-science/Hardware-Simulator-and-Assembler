@@ -43,7 +43,7 @@ class Simulator:
         parser.add_argument("--architecture",
                             help="specify the data/program architecture: neumann, harvard, harvardm")
         parser.add_argument("--output", help="specify the type of I/O: mmio, special")
-        parser.add_argument("--offset", help="provide the offset for the instructions in the memory")
+        parser.add_argument("--program_start", help="provide the program_start for the instructions in the memory")
 
         # Parsing the command line arguments
         args = parser.parse_args()

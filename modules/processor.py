@@ -71,6 +71,11 @@
 # TODO: Plus, we probably do not need any distinction between registers and memory, as memory can be
 #  really just a huge general-purpose register, or the other way around, whatever
 
+# TODO: Change the way memory things work, including: Instruction Pointer should work with bytes
+#  of different sizes (depending on the architecture), Stack should start at the end and grow downwards, etc.
+
+# TODO: Implement 'add carry' and similar operations for RISC2, RISC3 architectures
+
 import os
 import json
 import curses
@@ -101,14 +106,14 @@ class CPU:
     Provides all arithmetics and memory manipulations
     """
 
-    def __init__(self, isa, architecture, io_arch, program_text, offset=0, curses_mode=False):
+    def __init__(self, isa, architecture, io_arch, program_text, program_start=1024, curses_mode=False):
         """
         Creates a new CPU.
         :param isa: chosen ISA
         :param architecture: chosen Architecture type
         :param io_arch: chosen Input/Output type
         :param program_text: str - text of the binary program file
-        :param offset: location in the memory for the program code, as an offset from default
+        :param program_start: location in the memory for the program code, as an offset from default
         :return: NoneType
         """
         self.isa = isa
@@ -123,8 +128,8 @@ class CPU:
             self.data_memory = memory
             self.program_memory = memory
         elif architecture == "harvard":
-            self.data_memory = Memory(512)
-            self.program_memory = Memory(512)
+            self.data_memory = Memory(1024)
+            self.program_memory = Memory(1024)
 
         # Create the registers for the specified register architecture
         self.__create_registers()
@@ -145,8 +150,7 @@ class CPU:
         self.instruction_size = instruction_sizes[self.isa]
 
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
-        self.ip_start = 1024
-        self.registers["IP"].write_data(bin(twos_complement(self.ip_start + offset, 16))[2:])
+        self.registers["IP"].write_data(bin(twos_complement(program_start, 16))[2:])
         self.__load_program(program_text)
         self.read_state = "opcode"
         self.first_instruction = True
@@ -326,7 +330,7 @@ class CPU:
             else:
                 self.__push_stack(bitarray(bin(next_instruction)[2:].rjust(16, '0')))
 
-            # There is only one operand for a call function, and it determines the offset from the IP
+            # There is only one operand for a call function, and it determines the program_start from the IP
             operand = operands_aliases[0]
             if operand.startswith("imm"):
                 if self.isa in ["risc3", "cisc"]:
@@ -338,7 +342,7 @@ class CPU:
             elif operand == "reg":
                 jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
 
-            # Calculate the new offset in instructions
+            # Calculate the new program_start in instructions
             if jump_num >= 0:
                 jump_distance = sum(self.instr_size_list[self.program_pointer:self.program_pointer + jump_num])
             else:
@@ -401,14 +405,14 @@ class CPU:
             # If the jump condition was satisfied, jump to the value specified with the operand
             if should_jump:
 
-                # If the offset was specified with the number, its length was specified as well
+                # If the program_start was specified with the number, its length was specified as well
                 # Else, just use the register length or long immediate length
                 if operands_aliases[0].startswith("imm") and self.isa in ["risc3", "cisc"]:
                     num_len = int(operands_aliases[0][3:])
                 else:
                     num_len = 16
 
-                # Calculate the new offset in instructions
+                # Calculate the new program_start in instructions
                 if self.isa in ["risc3", "cisc"]:
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), num_len)
                 else:
