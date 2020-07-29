@@ -151,6 +151,12 @@ app.layout = html.Div([
             # Memory
             html.Div(id='memory'),
 
+            #
+            html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
+                        style={'margin-left': 50, "color": button['font'],
+                               "background-color": button['background'],
+                               'width': 160})
+
         ], style={'display': 'inline-block'}),
 
     ]),
@@ -177,6 +183,8 @@ app.layout = html.Div([
     html.Div(id='flags-storage', children=['0'] * 4, style={'display': 'none'}),
     # Output storage
     html.Div(id='output-storage', children='', style={'display': 'none'}),
+    # Storage for reaction on 'next instruction' button
+    html.Div(id='next-storage', children='0', style={'display': 'none'}),
 ])
 
 
@@ -286,6 +294,124 @@ def render_content_hex_bin(tab, code_lst):
 
 
 # UPDATE HIDDEN INFO FOR PROCESSOR
+@app.callback(Output('next-storage', 'children'),
+              [Input('next', 'n_clicks'),
+               Input('id-storage', 'children')])
+def update_next(n_clicks, user_id):
+    """
+    Return n_clicks for the 'next instruction' button,
+    so it changes hidden div, on which graohic elements of
+    the processor will react.
+    Executes next instruction in the cpu.
+
+    :param n_clicks: n_clicks for the 'next instruction' button
+    :param user_id: id of the session/user
+    :return: same n_clicks
+    """
+    if n_clicks > 0:
+        if user_id in user_dict:
+            user_dict[user_id].web_next_instruction()
+        return n_clicks
+
+
+@app.callback(Output('instruction-storage', 'children'),
+              [Input('next-storage', 'children'),
+               Input('id-storage', 'children')])
+def update_instruction(value, user_id):
+    """
+    Reacts on changes in the div, which is
+    affected by the 'next instruction' button
+
+    :param value: is not used
+    :param user_id: id of the session/user
+    :return: string instruction
+    """
+    if user_id in user_dict:
+        return f"{user_dict[user_id].instruction.to01()}"
+
+
+@app.callback(Output('registers-storage', 'children'),
+              [Input('next-storage', 'children'),
+               Input('id-storage', 'children')])
+def update_registers(value, user_id):
+    """
+    Reacts on changes in the div, which is
+    affected by the 'next instruction' button
+
+    :param value: is not used
+    :param user_id: id of the session/user
+    :return: string registers
+    """
+    if user_id in user_dict:
+        items = [(value.name, value._state.tobytes().hex()) for key, value in
+                 user_dict[user_id].registers.items()]
+        values = [[], []]
+        for i in range(1, len(items), 2):
+            values[0].append(f" {(items[i - 1][0] + ':').ljust(4, ' ')} {items[i - 1][1]}  ")
+            values[1].append(f"{(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}\n")
+        return str(values)
+
+
+@app.callback(Output('flags-storage', 'children'),
+              [Input('next-storage', 'children'),
+               Input('id-storage', 'children')])
+def update_flags(value, user_id):
+    """
+    Reacts on changes in the div, which is
+    affected by the 'next instruction' button
+
+    :param value: is not used
+    :param user_id: id of the session/user
+    :return: string flags
+    """
+    if user_id in user_dict:
+        cf, zf, of, sf = list(user_dict[user_id].registers['FR']._state.to01()[-4:])
+        return f"CF: {cf} ZF: {zf} OF: {of} SF: {sf}"
+
+
+@app.callback(Output('output-storage', 'children'),
+              [Input('next-storage', 'children'),
+               Input('id-storage', 'children')])
+def update_output(value, user_id):
+    """
+    Reacts on changes in the div, which is
+    affected by the 'next instruction' button
+
+    :param value: is not used
+    :param user_id: id of the session/user
+    :return: string output
+    """
+    if user_id in user_dict:
+        shell_slots = []
+        for port, device in user_dict[user_id].ports_dictionary.items():
+            shell_slots.append(str(device))
+        return " ".join(shell_slots)
+
+
+@app.callback(Output('memory-storage', 'children'),
+              [Input('next-storage', 'children'),
+               Input('id-storage', 'children')])
+def update_memory(value, user_id):
+    """
+    Reacts on changes in the div, which is
+    affected by the 'next instruction' button
+
+    :param value: is not used
+    :param user_id: id of the session/user
+    :return: string memory
+    """
+    if user_id in user_dict:
+        memory_data = [[], [], [], [], [], [], [], []]
+        for i in range(0, len(user_dict[user_id].data_memory.slots), 32 * 8):
+            string = ba2hex(user_dict[user_id].data_memory.slots[i:i + 32 * 8])
+            for x in range(8):
+                memory_data[x].append(" ".join([string[8 * x:8 * x + 8][y:y + 2] for y in range(0, 8, 2)]))
+        lst = []
+        for i in memory_data:
+            lst.append('\t'.join(i))
+        print(lst)
+        return ['\n'.join(lst), '']
+
 
 # APP CALLBACKS FOR CREATION OF GRAPHIC ELEMENTS OF THE PROCESSOR
 @app.callback(Output('instruction', 'children'),
@@ -363,6 +489,7 @@ def create_memory(value):
             for x in range(len(rows)):
                 data_lst[y].append(rows[x][y])
 
+        # Create a list of dictionaries (key -- column name)
         data = []
         for x in range(len(rows[0])):
             data.append(dict())
@@ -374,10 +501,6 @@ def create_memory(value):
                                     style_table={'height': '300px', 'overflowY': 'auto'})
 
 
-# [{'Model': 1, 'Weight': 0, 'Torque': 0, 'Width': 0, 'Height': 0, 'Efficiency': 0, 'Power': 0, 'Displacement': 0},
-#  {'Model': 2, 'Weight': 0, 'Torque': 0, 'Width': 0, 'Height': 0, 'Efficiency': 0, 'Power': 0, 'Displacement': 0},
-#  {'Model': 3, 'Weight': 0, 'Torque': 0, 'Width': 0, 'Height': 0, 'Efficiency': 0, 'Power': 0, 'Displacement': 0},
-#  {'Model': 4, 'Weight': 0, 'Torque': 0, 'Width': 0, 'Height': 0, 'Efficiency': 0, 'Power': 0, 'Displacement': 0}]
 # Run the program
 if __name__ == '__main__':
     # SERVER LAUNCH
@@ -387,7 +510,7 @@ if __name__ == '__main__':
 # TODO: help page,
 #  add program examples,
 #  cookies to save previous program,
-#  edit memory and registers,
+#  edit memory and registers (buttons: save manual changes, undo manual changes),
 #  make next execute till the program is not finished (additional button, user can choose seconds),
 #  change memory slots,
 #  add new version to server,
