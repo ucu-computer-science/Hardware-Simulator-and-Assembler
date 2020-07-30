@@ -1,3 +1,4 @@
+# Alphabet PrintOut | Stack-RISC example Assembly program
 # Load the starting ASCII value into TOS
 mov $65
 
