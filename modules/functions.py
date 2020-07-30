@@ -19,10 +19,6 @@ logging.basicConfig(filename="log.txt",
 logger = logging.getLogger('funclogger')
 
 
-# TODO: Redo the math processing here, because (I think) our right-adjustments kill any negative two's complement
-#  numbers, we should instead right-adjust them with the sign bit (as we do in processing long immediates)
-
-
 def load_store(operands, flag_register):
     """
     Loads value from memory to register

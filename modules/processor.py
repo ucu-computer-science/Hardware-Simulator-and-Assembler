@@ -79,9 +79,6 @@
 # TODO: Plus, we probably do not need any distinction between registers and memory, as memory can be
 #  really just a huge general-purpose register, or the other way around, whatever
 
-# TODO: Change the way memory things work, including: Instruction Pointer should work with bytes
-#  of different sizes (depending on the architecture), Stack should start at the end and grow downwards, etc.
-
 # TODO: Implement 'add carry' and similar operations for RISC2, RISC3 architectures
 
 import os
