@@ -71,8 +71,8 @@ pip install -r requirements.txt
 ## Testing:
 
 ```bash
-# modules/program_examples contains a lot of example programs for different architectures
-python3 modules/simulator.py --file modules/program_examples/assembly_test1.bin --isa RISC3 --architecture neumann --output special
+python3 modules/test_assembler.py
+python3 modules/test_processor.py
 ```
 
 ---
