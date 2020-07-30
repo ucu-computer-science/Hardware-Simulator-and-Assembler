@@ -4,12 +4,8 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
-# This is the main module of the virtual memory
-# TODO: It works pretty fine, though I still do not remember whether I should call write/read with bytes or bits,
-#  and this (at the moment I'm writing this) causes a few problems with new ISA implementations.
-#  The concept of writing and reading is pretty good though, and we should abstract away some of the ugliness
-#  of converting signed and unsigned bitarrays into decimal numbers in registers module too.
-#  And like, actually, is there any difference between registers and memory for us? Do we need two modules???
+# This is the main module of the virtual memory for the assembly hardware simulator
+# TODO: Is there any difference between registers and memory for us? Do we need two modules???
 
 from bitarray import bitarray
 
@@ -32,13 +28,13 @@ class Memory:
 
     def write_data(self, location, data):
         """
-        Writes the data in bytes to the memory starting at location
-        :param location: start location (bytes), where data should be stored
+        Writes the data to the memory starting at location
+        :param location: start location - in bits, from where the data is going to be stored (incrementingly)
         :param data: data for writing into the memory
         :return: NoneType
         """
         if len(data) > (self.memory_size - location):
-            raise MemoryError(f"Memory overflow (Memory Size:{self.memory_size}, Location: {location})")
+            raise SimulatorMemoryError(f"Memory overflow (Memory Size:{self.memory_size}, Location: {location})")
 
         self.slots[location:location+len(data)] = data
 
@@ -55,5 +51,5 @@ class Memory:
         return self.slots
 
 
-class MemoryError(Exception):
+class SimulatorMemoryError(Exception):
     """ Exception raised in the memory class modules """

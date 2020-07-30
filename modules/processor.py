@@ -7,7 +7,7 @@
 # This is the main module of the Hardware Simulator that processes binary instructions
 
 #     Emulates the work of a real computer with:
-#         * 8kb memory
+#         * 64kib memory (in the future, now it's just 1kib)
 #         * processor registers
 #
 #     Is supposed to handle a few ISA architectures:
@@ -53,10 +53,8 @@
 # (or 6-bit, depending on the architecture) bytes
 #
 # Other ones work with bytes too (SP, TOS, IR), but they are always 8-bits, and operate mainly on 16-bit words
-# Because read_data works with bits, you should specify the byte size of the pointer type
-# write_data works with (8-bit) byte starting locations so yeah
-# TODO: This probably should be changed to be consistent idk have no idea why this is even this way still
-# TODO: Need to rework everything according to these new standards :(
+# read_data works with bits
+# write_data works with bits
 #
 # Current standard values of these pointers are:
 # self.ip_start - Instruction Pointer = 512 byte
@@ -66,7 +64,7 @@
 # (Grows incrementing, Shrinks decrementing)
 #
 # self.stack_start - Regular Stack = 65536 (last) byte  (for now it's 1024)
-# (Grows decrementinh, Shrinks incrementing)
+# (Grows decrementing, Shrinks incrementing)
 
 # TODO: This module needs a lot of refactoring (after the available demo working properly), as
 #  it still has a lot of leftover curses functionality we are not going to need anymore,
@@ -127,20 +125,22 @@ class CPU:
 
         self.logger = logging.getLogger('processor')
 
+        # Disables the logger if we are not in debug mode
         if not debug_mode:
             self.logger.disabled = True
 
         self.logger.debug(f"Created new CPU instance (ISA: {self.isa}, Architecture: {self.architecture}, "
                     f"I/O: {self.io_arch}, CursesMode: {self.curses_mode})")
 
+        self.memory_size = 1024
         # Create data and program memory according to the specified architecture
         if architecture in ["neumann", "harvardm"]:
-            memory = Memory(1024)
+            memory = Memory(self.memory_size)
             self.data_memory = memory
             self.program_memory = memory
         elif architecture == "harvard":
-            self.data_memory = Memory(1024)
-            self.program_memory = Memory(1024)
+            self.data_memory = Memory(self.memory_size)
+            self.program_memory = Memory(self.memory_size)
 
         # Create the registers for the specified register architecture
         self.__create_registers()
@@ -218,10 +218,11 @@ class CPU:
         """
         # Writing program instructions into to memory
         ip_value = int(self.registers["IP"]._state.to01(), 2)
-        # Determine the number of bits for each instruction, and start at the beginning of the program (0th index)
-        self.instr_size_list = list(map(lambda x: len(x)//self.instruction_size[2], program_text.split('\n')))
-        self.program_pointer = 0
         self.program_memory.write_data(ip_value*self.instruction_size[2], bitarray(program_text.replace('\n', '')))
+
+        # Determine the number of bytes for each instruction, and start at the beginning of the program (0th index)
+        self.instr_size_list = list(map(lambda x: len(x) // self.instruction_size[2], program_text.split('\n')))
+        self.program_pointer = 0
         self.logger.debug(f"Program was loaded into program memory starting at {ip_value} byte")
         self.logger.debug(f"Instruction size list: {self.instr_size_list}")
 
@@ -712,9 +713,6 @@ class CPU:
         :param second: bool - whether to return the value of the second-to-top register
         :param pop: bool - whether to move the stack behind the popped value
         """
-        # TODO: Stack architecture still is not complete, need to figure out when
-        #  we should pop the values and when we shouldn't.
-        #  Somehow it does not pop enough things and ends up reusing them :(
         start_read = int(self.registers["TOS"]._state.to01(), 2)*8
         tos_val = start_read
         if second and start_read > self.tos_start:

@@ -1,6 +1,5 @@
 {
     "comments": "Each architecture contains a dict of instructions: encoding, name, result destination and list of operands",
-    "risc1_comments": "Stack architecture is probably going to have different type of instructions, an encoding as key, assembly name as the first value, a list for the simulator, a list of operands for the assembler",
     "risc1": {
         "000000": [
             "end",
