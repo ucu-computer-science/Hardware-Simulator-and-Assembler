@@ -153,7 +153,7 @@ app.layout = html.Div([
 
             #
             html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
-                        style={'margin-left': 50, "color": button['font'],
+                        style={"color": button['font'],
                                "background-color": button['background'],
                                'width': 160})
 
@@ -455,7 +455,7 @@ def create_output(value):
     :param value:
     :return:
     """
-    return dcc.Textarea(value=value, disabled=True)
+    return dcc.Textarea(value=value, disabled=True, style={'width':240})
 
 
 @app.callback(Output('memory', 'children'),
@@ -498,7 +498,8 @@ def create_memory(value):
 
         return dash_table.DataTable(columns=([{'id': i, 'name': i} for i in headers]),
                                     data=data,
-                                    style_table={'height': '300px', 'overflowY': 'auto'})
+                                    style_table={'height': '300px', 'overflowY': 'auto',
+                                                 'background-color':table['background']})
 
 
 # Run the program
@@ -515,4 +516,5 @@ if __name__ == '__main__':
 #  change memory slots,
 #  add new version to server,
 #  add bitwise flag,
-#  make table undraggable
+#  make table undraggable,
+#  fix table becoming dark
