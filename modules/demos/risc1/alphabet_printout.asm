@@ -1,4 +1,4 @@
-mov $101
+mov $72
 mov $100
 mov $99
 mov $98
@@ -6,4 +6,4 @@ mov $97
 cmpe $72
 jc $3
 out $1
-jmp $-4
+jmp $-3

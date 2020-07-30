@@ -10,8 +10,8 @@ from bitarray import bitarray
 # About Flag register:
 # Flags in the register are represented like  | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | CF | ZF | OF | SF |
 
-logging.basicConfig(filename="../log.txt",
-                    filemode='a',
+logging.basicConfig(filename="log.txt",
+                    filemode='w',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                     datefmt='%H:%M:%S',
                     level=logging.DEBUG)

@@ -11,7 +11,7 @@ from modules.processor import CPU
 
 # This module tests the basic functionality of the processor module, including
 # its initialization (registers, program text, memory etc.)
-# and the correct behaviour of all assembly isntructions
+# and the correct behaviour of all assembly instructions
 
 # TODO: Add more tests for each architecture
 

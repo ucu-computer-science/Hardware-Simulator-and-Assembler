@@ -3,26 +3,10 @@
 #
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
-
-
 import os
 import argparse
-import logging
 
 from modules.processor import CPU, SimulatorError
-
-# Set up the logging module so it would save everything to a file
-# (we are unable to track prints in real-time due to curses)
-logging.basicConfig(filename="log.txt",
-                    filemode='w',
-                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.DEBUG)
-
-logger = logging.getLogger('logger')
-# TODO: Add new logging statements
-#
-# TODO: Massively refactor and clean up this file, start with getting CPU into its own module
 
 
 class Simulator:

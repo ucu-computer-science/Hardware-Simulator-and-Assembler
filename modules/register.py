@@ -61,6 +61,9 @@ class Register:
             return self._state
         return RegisterError("Register is not accessible")
 
+    def __str__(self):
+        return self.name
+
 
 class RegisterError(Exception):
     """ Exception raised in register class module """

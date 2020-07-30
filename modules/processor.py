@@ -96,16 +96,6 @@ from modules.memory import Memory
 from modules.register import Register
 from modules.shell import Shell
 
-# Set up the logging module so it would save everything to a file
-# (we are unable to track prints in real-time due to curses)
-logging.basicConfig(filename="log.txt",
-                    filemode='w',
-                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.DEBUG)
-
-logger = logging.getLogger('logger')
-
 
 class CPU:
     """
@@ -114,7 +104,7 @@ class CPU:
     Provides all arithmetics and memory manipulations
     """
 
-    def __init__(self, isa, architecture, io_arch, program_text, program_start=512, curses_mode=False):
+    def __init__(self, isa, architecture, io_arch, program_text, program_start=512, curses_mode=False, debug_mode=True):
         """
         Creates a new CPU.
         :param isa: chosen ISA
@@ -129,6 +119,22 @@ class CPU:
         self.io_arch = io_arch
         self.curses_mode = curses_mode
         self.instruction = bitarray('')
+
+        # Set up the logging module so it would save everything to a file
+        # (we are unable to track prints in real-time due to curses)
+        logging.basicConfig(filename="log.txt",
+                            filemode='w',
+                            format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                            datefmt='%H:%M:%S',
+                            level=logging.DEBUG)
+
+        self.logger = logging.getLogger('processor')
+
+        if not debug_mode:
+            self.logger.disabled = True
+
+        self.logger.debug(f"Created new CPU instance (ISA: {self.isa}, Architecture: {self.architecture}, "
+                    f"I/O: {self.io_arch}, CursesMode: {self.curses_mode})")
 
         # Create data and program memory according to the specified architecture
         if architecture in ["neumann", "harvardm"]:
@@ -206,6 +212,8 @@ class CPU:
             self.registers[register[0]] = temp
             self.register_codes[register[2]] = temp
 
+        self.logger.debug(f"Created registers: {', '.join([register[0] for register in registers_list])}")
+
     def __load_program(self, program_text):
         """
         Loads the program into memory at Instruction Pointer
@@ -217,14 +225,18 @@ class CPU:
         self.instr_size_list = list(map(lambda x: len(x)//self.instruction_size[2], program_text.split('\n')))
         self.program_pointer = 0
         self.program_memory.write_data(ip_value*self.instruction_size[2], bitarray(program_text.replace('\n', '')))
+        self.logger.debug(f"Program was loaded into program memory starting at {ip_value} byte")
+        self.logger.debug(f"Instruction size list: {self.instr_size_list}")
 
     def web_next_instruction(self):
         """
         Executes the next instruction after button click on the webpage
         Only starts executing AFTER the first call, only reads the instruction on the first time
         """
+        self.logger.debug("Next instruction is executing")
         # If the instruction is 'end' - an empty string, terminate the execution
         if isinstance(self.instruction, bitarray) and self.instruction.to01() == ('0' * self.instruction_size[0]):
+            self.logger.debug("Next instruction is 'end' instruction")
             return
 
         if self.first_instruction:
@@ -259,15 +271,21 @@ class CPU:
                 self.read_state = "constant"
             self.additional_jump = 0
 
+        printout_temp = f"READ: Instruction: {self.instruction.to01()}, Opcode: {self.opcode.to01()}"
+
         # If we are in the state of reading the two-byte encoded immediate constant,
         # read it and add to the list of operands
         if self.read_state == "constant":
-            self.long_immediate = self.program_memory.read_data(start_read_location + 1, start_read_location + 3)
+            self.long_immediate = self.program_memory.read_data(start_read_location + 1*self.instruction_size[2],
+                                                                start_read_location + 3*self.instruction_size[2])
 
             # In order to turn 12-bit signed number into 16-bit signed number, we copy the sign bit into all high bits
             self.long_immediate = bitarray(self.long_immediate.to01().rjust(16, self.long_immediate.to01()[0]))
             self.additional_jump = 2
             self.read_state = "opcode"
+            printout_temp += f", Long immediate constant: {self.long_immediate.to01()}"
+
+        self.logger.debug(printout_temp)
 
     def __execute_cycle(self):
         """
@@ -279,13 +297,18 @@ class CPU:
             is_close = self.curses_next_instruction()
 
         go_to_next_instruction = self.execute()
+        self.logger.debug("FINISH decoding and executing the instruction")
+        registers_state = ', '.join([f'{name}: {ba2hex(register._state)}' for name, register in self.registers.items()])
+        self.logger.debug(F"Registers state: {registers_state}")
         if go_to_next_instruction:
             ip_val = int(self.registers["IP"]._state.to01(), 2)
             bytes_per_instruction = self.instruction_size[0] // self.instruction_size[2]
             ip_val = bin(ip_val + bytes_per_instruction + self.additional_jump)[2:]
             self.program_pointer += 1
             self.registers["IP"].write_data(ip_val)
+            self.logger.debug("MOVE IP to the next instruction")
 
+        self.logger.debug("-" * 100)
         return is_close
 
     def __update_devices(self):
@@ -294,6 +317,7 @@ class CPU:
         """
         for port, device in self.ports_dictionary.items():
             if device.io_type == "mmio":
+                self.logger.debug(f"Updating mmio device at {port}, memory[{device.start_point}:{device.end_point}]")
                 data = self.data_memory.read_data(device.start_point * 8, device.end_point * 8)
                 device._state = data
 
@@ -303,6 +327,7 @@ class CPU:
         result and saving it in the proper place
         :return: bool - whether to go to the next instruction
         """
+        self.logger.debug("START decoding and executing the instruction")
         # The return value that tells whether we should go to the next instruction after the execution
         go_to_next_instruction = True
 
@@ -314,13 +339,17 @@ class CPU:
             operands_aliases = self.instructions_dict[self.opcode.to01()][-1]
         else:
             operands_aliases = self.instructions_dict[self.opcode.to01()][1][1:]
+        self.logger.debug(f"INST INFO, <{self.instructions_dict[self.opcode.to01()][0]}> "
+                          f"Operands Aliases: {operands_aliases}")
+
+        # Get the values of the operands for this function
+        operands_values = self.__add_operands(start_point, operands_aliases)
 
         # Determine whether the memory is going to be affected as a
         # result of the operation and where to save it
         memory_write_access, result_destination, tos_push = self.__determine_result_dest(start_point, operands_aliases)
-
-        # Get the values of the operands for this function
-        operands_values = self.__add_operands(start_point, operands_aliases)
+        self.logger.debug(f"INST INFO (Memory Write Access: {memory_write_access}, "
+                          f"Destination: {result_destination}, TOS_Push: {tos_push})")
 
         # Different architectures have different kinds of instructions encodings
         if self.isa in ["risc3", "cisc"]:
@@ -360,6 +389,8 @@ class CPU:
             ip_value = int(self.registers["IP"]._state.to01(), 2)
             self.registers["IP"].write_data(bin(ip_value + jump_distance)[2:])
             self.program_pointer += jump_num
+            self.logger.debug(f"INST INFO: <call> (Distance: {jump_num}, Bytes: {jump_distance}, "
+                              f"Bits: {jump_distance*self.instruction_size[2]})")
 
             go_to_next_instruction = False
 
@@ -382,6 +413,7 @@ class CPU:
 
             self.registers["IP"].write_data(destination)
             go_to_next_instruction = False
+            self.logger.debug(f"INST INFO <ret> (Return Point {return_point})")
 
         # If the opcode is of type jump, we look at the Flag Register and move Instruction Pointer if needed
         elif res_type == "jmp":
@@ -433,14 +465,18 @@ class CPU:
                     jump_distance = -1*sum(self.instr_size_list[self.program_pointer + jump_num:self.program_pointer])
 
                 # Change the instruction pointer
-                logger.info(f"jmp {jump_num} {jump_distance}")
+                self.logger.debug(f"INST INFO <jmp> (Distance: {jump_num}, Bytes: {jump_distance}, "
+                                  f"Bits: {jump_distance*self.instruction_size[2]})")
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
                 self.registers["IP"].write_data(bin(ip_value + jump_distance)[2:])
                 self.program_pointer += jump_num
                 go_to_next_instruction = False
+            else:
+                self.logger.debug("INST INFO <jmp> not successful")
 
         # If the opcode specified pushes the value on the stack
         elif res_type == "stackpush":
+            self.logger.debug(f"INST INFO <stackpush>")
             self.__push_stack(operands_values[0])
 
         # If the opcode specified pops the value from the stack into the register
@@ -449,9 +485,10 @@ class CPU:
             if memory_write_access:
                 self.data_memory.write_data(result_destination // 8, popped_val)
                 if tos_push:
-                    self.registers["TOS"].write_data(bin(result_destination + 16)[2:])
+                    self.registers["TOS"].write_data(bin(result_destination + 2)[2:])
             else:
                 result_destination.write_data(popped_val)
+            self.logger.debug(f"INST INFO <stackpop> (Popped value {ba2hex(popped_val)}, )")
 
         # If the opcode specifies outputting to the device
         elif res_type == "out":
@@ -523,7 +560,7 @@ class CPU:
 
         # Determining where to save the result of the operation depending on type of the operation specified
         #
-        # RISC-Stack iSA
+        # RISC-Stack ISA
         if self.isa == "risc1":
 
             # Determining the result destination for RISC-Stack iSA
@@ -532,7 +569,7 @@ class CPU:
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
             elif res_type == "memtos":
                 memory_write_access = True
-                tos_val = int(self.registers["TOS"]._state.to01(), 2)
+                tos_val = int(self.registers["TOS"]._state.to01(), 2)*8
                 result_destination = int(self.data_memory.read_data(tos_val, tos_val + 16).to01(), 2)
             elif res_type == "fr":
                 result_destination = self.registers["FR"]
@@ -610,7 +647,7 @@ class CPU:
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
                 register_code = self.instruction[start_point:start_point + 3].to01()
-                tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)
+                tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)*8
                 operands_values.append(self.data_memory.read_data(tmp_register, tmp_register + 16))
                 start_point += 3
 
@@ -633,15 +670,15 @@ class CPU:
                 operands_values.append(self.__pop_tos(second=True))
 
             elif operand == "memtos":
-                tos_value = int(self.__pop_tos(pop=True).to01(), 2)
+                tos_value = int(self.__pop_tos(pop=True).to01(), 2)*8
                 operands_values.append(self.data_memory.read_data(tos_value, tos_value + 16))
 
             elif operand == "memir":
-                ir_value = int(self.registers["IR"]._state.to01(), 2)
+                ir_value = int(self.registers["IR"]._state.to01(), 2)*8
                 operands_values.append(self.data_memory.read_data(ir_value, ir_value + 16))
 
             elif operand == "memimm":
-                start_read = int(self.long_immediate.to01(), 2)
+                start_read = int(self.long_immediate.to01(), 2)*8
                 operands_values.append(self.data_memory.read_data(start_read, start_read + 16))
 
             elif operand in ["fr", "ir", "acc"]:
@@ -658,9 +695,9 @@ class CPU:
         :param value: bitarray(16) - a value to be pushed into memory
         """
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)*8
-        logger.info(str(stack_pointer_value))
         self.data_memory.write_data(stack_pointer_value - 16, value)
         self.registers["SP"]._state = bitarray(bin(stack_pointer_value//8 - 2)[2:].rjust(16, '0'))
+        self.logger.debug(f"Push to stack: {ba2hex(value)}")
 
     def __pop_stack(self):
         """
@@ -669,6 +706,7 @@ class CPU:
         """
         stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)*8
         self.registers["SP"].write_data(bin(stack_pointer_value//8 + 2)[2:])
+        self.logger.debug(f"Pop from stack: {ba2hex(self.registers['SP']._state)}")
         return self.data_memory.read_data(stack_pointer_value, stack_pointer_value+16)
 
     def __pop_tos(self, second=False, pop=False):
@@ -681,11 +719,14 @@ class CPU:
         #  we should pop the values and when we shouldn't.
         #  Somehow it does not pop enough things and ends up reusing them :(
         start_read = int(self.registers["TOS"]._state.to01(), 2)*8
+        tos_val = start_read
         if second and start_read > self.tos_start:
             start_read -= 16
         return_data = self.data_memory.read_data(start_read - 16, start_read)
         if pop:
-            self.registers["TOS"].write_data(bin(start_read//8 - 2)[2:])
+            self.registers["TOS"].write_data(bin(tos_val//8 - 2)[2:])
+        self.logger.debug(f"Pop from TOS stack: (newtosval: {ba2hex(self.registers['TOS']._state)}, "
+                          f"second: {second}, pop: {pop})")
         return return_data
 
     # Below are the methods for curses-driven command-line interface
