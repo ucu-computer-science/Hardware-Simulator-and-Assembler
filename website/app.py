@@ -13,6 +13,8 @@ from dash.dependencies import Input, Output, State
 from bitarray.util import ba2hex
 import uuid
 import dash_table
+import copy
+from functools import partial
 
 # Imports from the project
 from modules.processor import CPU
@@ -118,11 +120,29 @@ app.layout = html.Div([
 
             ]),
 
-            # Button to assemble
-            html.Button('ASSEMBLE', id='assemble', n_clicks=0,
-                        style={'margin-left': 50, "color": button['font'],
-                               "background-color": button['background'],
-                               'width': 160})
+            html.Div([
+                # Button to assemble
+                html.Button('ASSEMBLE', id='assemble', n_clicks=0,
+                            style={'margin-left': 50, "color": button['font'],
+                                   "background-color": button['background'],
+                                   'width': 160, 'display': 'inline-block'}),
+
+                html.Div([
+                    dcc.Dropdown(
+                        id='example-dropdown',
+                        options=[
+                            {'label': 'CHOOSE AN EXAMPLE PROGRAM', 'value': 'no', 'disabled': False},
+                            {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet', 'disabled': True},
+                            {'label': 'HELLO WORLD', 'value': 'hello', 'disabled': True},
+                        ],
+                        value='no',
+                        style={'width': 200},
+                        clearable=False
+                    ), ], style={'display': 'inline-block'})
+
+            ]),
+
+            dcc.Link('Need some help?', href='/help')
 
         ], style={'display': 'inline-block'}),
 
@@ -146,16 +166,35 @@ app.layout = html.Div([
 
                 ], style={'display': 'inline-block'}),
 
+                html.Div([
+
+                    html.Button('SAVE MANUAL CHANGES', id='save-manual', n_clicks=0,
+                                style={"color": not_working['font'],
+                                       "background-color": not_working['background'],
+                                       'width': 200, 'display': 'block'}),
+                    html.Button('UNDO MANUAL CHANGES', id='undo-manual', n_clicks=0,
+                                style={"color": not_working['font'],
+                                       "background-color": not_working['background'],
+                                       'width': 200, 'display': 'block'}),
+
+                ], style={'display': 'inline-block'})
+
             ]),
 
             # Memory
             html.Div(id='memory'),
 
-            #
             html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
                         style={"color": button['font'],
                                "background-color": button['background'],
-                               'width': 160})
+                               'width': 200}),
+
+            html.Button('RUN UNTIL FINISHED', id='run-until-finished', n_clicks=0,
+                        style={"color": button['font'],
+                               "background-color": button['background'],
+                               'width': 200}),
+
+            dcc.Textarea(value="inst per second", disabled=True, style={'rows': 1, 'width': 100})
 
         ], style={'display': 'inline-block'}),
 
@@ -168,8 +207,10 @@ app.layout = html.Div([
     # Id creation and storage
     html.Div(id='id-storage', style={'display': 'none'}),
     html.Div(id='id-creation', style={'display': 'none'}),
+
     # Binary and hexadecimal code translations storage
     html.Div(id='code', children=['', ''], style={'display': 'none'}),
+
     # Instruction storage
     html.Div(id='instruction-storage', children='0' * 16, style={'display': 'none'}),
     # Memory storage (in a list, because Harvard architecture has two separate memories)
@@ -183,8 +224,16 @@ app.layout = html.Div([
     html.Div(id='flags-storage', children=['0'] * 4, style={'display': 'none'}),
     # Output storage
     html.Div(id='output-storage', children='', style={'display': 'none'}),
+
     # Storage for reaction on 'next instruction' button
     html.Div(id='next-storage', children='0', style={'display': 'none'}),
+    # Storage for reaction on 'run until finished' button
+    html.Div(id='run-storage', children=dcc.Interval(
+        id='interval',
+        interval=1 * 100,
+        n_intervals=0, max_intervals=0
+    ), style={'display': 'none'}),
+
 ])
 
 
@@ -296,11 +345,13 @@ def render_content_hex_bin(tab, code_lst):
 # UPDATE HIDDEN INFO FOR PROCESSOR
 @app.callback(Output('next-storage', 'children'),
               [Input('next', 'n_clicks'),
-               Input('id-storage', 'children')])
-def update_next(n_clicks, user_id):
+               Input('id-storage', 'children'),
+               Input('interval', 'n_intervals')],
+              [State('next-storage', 'children')])
+def update_next(n_clicks, user_id, interval, state):
     """
     Return n_clicks for the 'next instruction' button,
-    so it changes hidden div, on which graohic elements of
+    so it changes hidden div, on which graphic elements of
     the processor will react.
     Executes next instruction in the cpu.
 
@@ -308,10 +359,31 @@ def update_next(n_clicks, user_id):
     :param user_id: id of the session/user
     :return: same n_clicks
     """
+    if interval > 0:
+        if user_id in user_dict:
+            user_dict[user_id].web_next_instruction()
+        return interval
     if n_clicks > 0:
         if user_id in user_dict:
             user_dict[user_id].web_next_instruction()
         return n_clicks
+
+
+@app.callback(
+    Output("interval", "max_intervals"),
+    [Input("run-until-finished", "n_clicks"),
+     Input('id-storage', 'children')],
+    [State("interval", "max_intervals")]
+)
+def run_interval(n, user_id, max_intervals):
+    if n and user_id in user_dict:
+        copied_cpu = copy.deepcopy(user_dict[user_id])
+        counter = 0
+        while copied_cpu.instruction.to01() != "0" * len(copied_cpu.instruction.to01()):
+            counter += 1
+            copied_cpu.web_next_instruction()
+
+        return counter
 
 
 @app.callback(Output('instruction-storage', 'children'),
@@ -345,11 +417,10 @@ def update_registers(value, user_id):
     if user_id in user_dict:
         items = [(value.name, value._state.tobytes().hex()) for key, value in
                  user_dict[user_id].registers.items()]
-        values = [[], []]
-        for i in range(1, len(items), 2):
-            values[0].append(f" {(items[i - 1][0] + ':').ljust(4, ' ')} {items[i - 1][1]}  ")
-            values[1].append(f"{(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}\n")
-        return str(values)
+        values = []
+        for i in range(len(items)):
+            values.append(f"{(items[i][0] + ':')} {items[i][1]}")
+        return values
 
 
 @app.callback(Output('flags-storage', 'children'),
@@ -365,8 +436,7 @@ def update_flags(value, user_id):
     :return: string flags
     """
     if user_id in user_dict:
-        cf, zf, of, sf = list(user_dict[user_id].registers['FR']._state.to01()[-4:])
-        return f"CF: {cf} ZF: {zf} OF: {of} SF: {sf}"
+        return list(user_dict[user_id].registers['FR']._state.to01()[-4:])
 
 
 @app.callback(Output('output-storage', 'children'),
@@ -409,7 +479,6 @@ def update_memory(value, user_id):
         lst = []
         for i in memory_data:
             lst.append('\t'.join(i))
-        print(lst)
         return ['\n'.join(lst), '']
 
 
@@ -433,7 +502,13 @@ def create_registers(value):
     :param value:
     :return:
     """
-    return dcc.Textarea(value=str(value))
+    regs = []
+    values = []
+    for i in value:
+        regs.append(i.split(' ')[0])
+        values.append(i.split(' ')[1])
+    return html.Div([dcc.Textarea(value='\n'.join(regs), style={'height': 150, 'width': 60}, disabled=True),
+                     dcc.Textarea(value='\n'.join(values), style={'height': 150, 'width': 60})])
 
 
 @app.callback(Output('flags', 'children'),
@@ -444,7 +519,20 @@ def create_flags(value):
     :param value:
     :return:
     """
-    return dcc.Textarea(value=str(value))
+    return html.Div([
+        html.Div([dcc.Markdown("CF", style={'display': 'inline-block', 'color': text_color}),
+                  dcc.Textarea(id='cf', value=value[0], style={'display': 'inline-block', 'width': 30})],
+                 style={'display': 'inline-block'}),
+        html.Div([dcc.Markdown("ZF", style={'display': 'inline-block', 'color': text_color}),
+                  dcc.Textarea(id='zf', value=value[1], style={'display': 'inline-block', 'width': 30})],
+                 style={'display': 'inline-block'}),
+        html.Div([dcc.Markdown("OF", style={'display': 'inline-block', 'color': text_color}),
+                  dcc.Textarea(id='of', value=value[2], style={'display': 'inline-block', 'width': 30})],
+                 style={'display': 'inline-block'}),
+        html.Div([dcc.Markdown("SF", style={'display': 'inline-block', 'color': text_color}),
+                  dcc.Textarea(id='sf', value=value[3], style={'display': 'inline-block', 'width': 30})],
+                 style={'display': 'inline-block'}),
+    ])
 
 
 @app.callback(Output('output', 'children'),
@@ -455,7 +543,7 @@ def create_output(value):
     :param value:
     :return:
     """
-    return dcc.Textarea(value=value, disabled=True, style={'width':240})
+    return dcc.Textarea(value=value, disabled=True, style={'width': 220})
 
 
 @app.callback(Output('memory', 'children'),
@@ -499,7 +587,7 @@ def create_memory(value):
         return dash_table.DataTable(columns=([{'id': i, 'name': i} for i in headers]),
                                     data=data,
                                     style_table={'height': '300px', 'overflowY': 'auto',
-                                                 'background-color':table['background']})
+                                                 'background-color': table['background']})
 
 
 # Run the program
