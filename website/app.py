@@ -385,6 +385,7 @@ def add_example(example_name, app_examples):
     elif example_name == 'hello':
         return app_examples[1]
 
+
 # UPDATE HIDDEN INFO FOR PROCESSOR
 @app.callback(Output('next-storage', 'children'),
               [Input('next', 'n_clicks'),
@@ -586,11 +587,15 @@ def create_registers(value):
     for i in value:
         regs.append(i.split(' ')[0])
         values.append(i.split(' ')[1])
-    return html.Div([dcc.Markdown(' '.join(regs), style={'color': text_color, 'width': 40,
-                                                         'display': 'inline-block'}, ),
-                     dcc.Textarea(value='\n'.join(values),
-                                  style={'width': 80, 'display': 'inline-block', 'height': len(regs) * 23,
-                                         'font-size': 18})])
+
+
+    return html.Div([html.Div([dcc.Markdown(' '.join(regs), style={'color': text_color, 'width': 40}, ),], style={
+                                                         'display': 'inline-block', }),
+                     html.Div([dash_table.DataTable(columns=([{'id': '1', 'name': '1'}]),
+                                          data=([{'1': register} for register in values]),
+                                          style_table={'overflowY': 'auto'},
+                                          style_header={'display': 'none'})], style={
+                                                         'display': 'inline-block', })])
 
 
 @app.callback([Output('cf', 'value'),
