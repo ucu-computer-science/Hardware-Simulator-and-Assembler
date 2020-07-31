@@ -11,6 +11,7 @@ import dash_html_components as html
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 from bitarray.util import ba2hex
+from bitarray import bitarray
 import uuid
 import dash_table
 import copy
@@ -22,7 +23,7 @@ from modules.assembler import Assembler, AssemblerError
 from website.color_palette_and_layout import table_header, table, button, assembly, background_color, title_color, \
     text_color, not_working, layout, external_stylesheets
 
-# CPU DICTIONARY ( key=user.id, value=[cpu, buttons list (number of clicks)] )
+# CPU DICTIONARY ( key=user.id, value=dict(cpu, intervals) )
 user_dict = dict()
 # Numbers of buttons (used to change type of isa during cpu creation, are same for every session and user)
 buttons = {0: 'risc1', 1: 'risc2', 2: 'risc3', 3: 'cisc'}
@@ -131,11 +132,10 @@ app.layout = html.Div([
                     dcc.Dropdown(
                         id='example-dropdown',
                         options=[
-                            {'label': 'CHOOSE AN EXAMPLE PROGRAM', 'value': 'no', 'disabled': False},
                             {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet', 'disabled': True},
                             {'label': 'HELLO WORLD', 'value': 'hello', 'disabled': True},
                         ],
-                        value='no',
+                        placeholder="CHOOSE AN EXAMPLE PROGRAM",
                         style={'width': 200},
                         clearable=False
                     ), ], style={'display': 'inline-block'})
@@ -160,7 +160,24 @@ app.layout = html.Div([
                 # Flags and output
                 html.Div([
 
-                    html.Div(id='flags', style={'display': 'inline-block'}),
+                    html.Div([
+                        html.Div([dcc.Markdown("CF", style={'display': 'inline-block', 'color': text_color}),
+                                  dcc.Textarea(id='cf', value='0',
+                                               style={'display': 'inline-block', 'width': 30})],
+                                 style={'display': 'inline-block'}),
+                        html.Div([dcc.Markdown("ZF", style={'display': 'inline-block', 'color': text_color}),
+                                  dcc.Textarea(id='zf', value='0',
+                                               style={'display': 'inline-block', 'width': 30})],
+                                 style={'display': 'inline-block'}),
+                        html.Div([dcc.Markdown("OF", style={'display': 'inline-block', 'color': text_color}),
+                                  dcc.Textarea(id='of', value='0',
+                                               style={'display': 'inline-block', 'width': 30})],
+                                 style={'display': 'inline-block'}),
+                        html.Div([dcc.Markdown("SF", style={'display': 'inline-block', 'color': text_color}),
+                                  dcc.Textarea(id='sf', value='0',
+                                               style={'display': 'inline-block', 'width': 30})],
+                                 style={'display': 'inline-block'}),
+                    ]),
 
                     html.Div(id='output', style={'display': 'inline-block'}),
 
@@ -169,12 +186,12 @@ app.layout = html.Div([
                 html.Div([
 
                     html.Button('SAVE MANUAL CHANGES', id='save-manual', n_clicks=0,
-                                style={"color": not_working['font'],
-                                       "background-color": not_working['background'],
+                                style={"color": button['font'],
+                                       "background-color": button['background'],
                                        'width': 200, 'display': 'block'}),
                     html.Button('UNDO MANUAL CHANGES', id='undo-manual', n_clicks=0,
-                                style={"color": not_working['font'],
-                                       "background-color": not_working['background'],
+                                style={"color": button['font'],
+                                       "background-color": button['background'],
                                        'width': 200, 'display': 'block'}),
 
                 ], style={'display': 'inline-block'})
@@ -194,7 +211,10 @@ app.layout = html.Div([
                                "background-color": button['background'],
                                'width': 200}),
 
-            dcc.Textarea(value="inst per second", disabled=True, style={'rows': 1, 'width': 100})
+            html.Div
+            ([dcc.Markdown('instructions per second', style={'color': text_color}),
+              dcc.Textarea(id='seconds', value="1", style={'rows': 1, 'width': 100})],
+             style={'display': 'inline-block'}),
 
         ], style={'display': 'inline-block'}),
 
@@ -230,8 +250,8 @@ app.layout = html.Div([
     # Storage for reaction on 'run until finished' button
     html.Div(id='run-storage', children=dcc.Interval(
         id='interval',
-        interval=1 * 100,
-        n_intervals=0, max_intervals=0
+        interval=1 * 1000,
+        n_intervals=0, disabled=True
     ), style={'display': 'none'}),
 
 ])
@@ -290,19 +310,22 @@ def assemble(n_clicks, info, user_id, assembly_code):
 
     global user_dict
     if user_id not in user_dict:
-        user_dict[user_id] = CPU(isa, architecture, io, '')
+        user_dict[user_id] = dict()
+        user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
+        user_dict[user_id]['save-manual'] = 0
+        user_dict[user_id]['undo-manual'] = 0
 
     if not assembly_code or assembly_code == "input assembly code here":
         binary_program = hex_program = ''
     else:
         try:
             binary_program = Assembler(isa, assembly_code).binary_code
-            user_dict[user_id] = CPU(isa, architecture, io, binary_program)
+            user_dict[user_id]['cpu'] = CPU(isa, architecture, io, binary_program)
             hex_program = '\n'.join(list(map(lambda x: hex(int(x, 2)), [x for x in binary_program.split('\n') if x])))
 
         except AssemblerError as err:
             binary_program = hex_program = f'{err.args[0]}'
-            user_dict[user_id] = CPU(isa, architecture, io, '')
+            user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
 
     return binary_program, hex_program
 
@@ -346,9 +369,8 @@ def render_content_hex_bin(tab, code_lst):
 @app.callback(Output('next-storage', 'children'),
               [Input('next', 'n_clicks'),
                Input('id-storage', 'children'),
-               Input('interval', 'n_intervals')],
-              [State('next-storage', 'children')])
-def update_next(n_clicks, user_id, interval, state):
+               Input('interval', 'n_intervals')])
+def update_next(n_clicks, user_id, interval):
     """
     Return n_clicks for the 'next instruction' button,
     so it changes hidden div, on which graphic elements of
@@ -361,29 +383,43 @@ def update_next(n_clicks, user_id, interval, state):
     """
     if interval > 0:
         if user_id in user_dict:
-            user_dict[user_id].web_next_instruction()
+            user_dict[user_id]['cpu'].web_next_instruction()
         return interval
     if n_clicks > 0:
         if user_id in user_dict:
-            user_dict[user_id].web_next_instruction()
+            user_dict[user_id]['cpu'].web_next_instruction()
         return n_clicks
 
 
+# Work with intervals
 @app.callback(
-    Output("interval", "max_intervals"),
+    Output("interval", "disabled"),
     [Input("run-until-finished", "n_clicks"),
-     Input('id-storage', 'children')],
-    [State("interval", "max_intervals")]
+     Input('id-storage', 'children'),
+     Input("instruction-storage", "children")]
 )
-def run_interval(n, user_id, max_intervals):
-    if n and user_id in user_dict:
-        copied_cpu = copy.deepcopy(user_dict[user_id])
-        counter = 0
-        while copied_cpu.instruction.to01() != "0" * len(copied_cpu.instruction.to01()):
-            counter += 1
-            copied_cpu.web_next_instruction()
+def run_interval(n, user_id, instruction):
+    if not n:
+        user_dict[user_id]['intervals'] = 0
+    if user_id in user_dict:
+        if instruction == '0' * len(instruction):
+            user_dict[user_id]['intervals'] = n
+            return True
+        elif n > user_dict[user_id]['intervals']:
+            return False
+    return True
 
-        return counter
+
+@app.callback(
+    Output("interval", "interval"),
+    [Input("seconds", "value")]
+)
+def update_seconds(instructions):
+    try:
+        int(instructions)
+        return 1000 / int(instructions)
+    except ValueError:
+        return 1 * 1000
 
 
 @app.callback(Output('instruction-storage', 'children'),
@@ -399,7 +435,7 @@ def update_instruction(value, user_id):
     :return: string instruction
     """
     if user_id in user_dict:
-        return f"{user_dict[user_id].instruction.to01()}"
+        return f"{user_dict[user_id]['cpu'].instruction.to01()}"
 
 
 @app.callback(Output('registers-storage', 'children'),
@@ -414,9 +450,10 @@ def update_registers(value, user_id):
     :param user_id: id of the session/user
     :return: string registers
     """
+    # TODO: turn into a table
     if user_id in user_dict:
         items = [(value.name, value._state.tobytes().hex()) for key, value in
-                 user_dict[user_id].registers.items()]
+                 user_dict[user_id]['cpu'].registers.items()]
         values = []
         for i in range(len(items)):
             values.append(f"{(items[i][0] + ':')} {items[i][1]}")
@@ -425,18 +462,40 @@ def update_registers(value, user_id):
 
 @app.callback(Output('flags-storage', 'children'),
               [Input('next-storage', 'children'),
-               Input('id-storage', 'children')])
-def update_flags(value, user_id):
+               Input('id-storage', 'children'),
+               Input('save-manual', 'n_clicks'),
+               Input('undo-manual', 'n_clicks')
+               ],
+              [State('cf', 'value'),
+               State('zf', 'value'),
+               State('of', 'value'),
+               State('sf', 'value'),
+               ])
+def update_flags(value, user_id, save_manual, undo_manual, cf, zf, of, sf):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
+    # TODO: about manual
 
     :param value: is not used
     :param user_id: id of the session/user
     :return: string flags
     """
     if user_id in user_dict:
-        return list(user_dict[user_id].registers['FR']._state.to01()[-4:])
+        if save_manual > user_dict[user_id]['save-manual']:
+            user_dict[user_id]['save-manual'] = save_manua
+            user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
+
+            return [cf, zf, of, sf]
+        elif undo_manual > user_dict[user_id]['undo-manual']:
+            user_dict[user_id]['undo-manual'] = undo_manual
+            cf, zf, of, sf = user_dict[user_id]['cpu'].registers['FR']._state.to01()[12], \
+                             user_dict[user_id]['cpu'].registers['FR']._state.to01()[13], \
+                             user_dict[user_id]['cpu'].registers['FR']._state.to01()[14], \
+                             user_dict[user_id]['cpu'].registers['FR']._state.to01()[15]
+            return [cf, zf, of, sf]
+        else:
+            return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
 
 
 @app.callback(Output('output-storage', 'children'),
@@ -453,7 +512,7 @@ def update_output(value, user_id):
     """
     if user_id in user_dict:
         shell_slots = []
-        for port, device in user_dict[user_id].ports_dictionary.items():
+        for port, device in user_dict[user_id]['cpu'].ports_dictionary.items():
             shell_slots.append(str(device))
         return " ".join(shell_slots)
 
@@ -472,8 +531,8 @@ def update_memory(value, user_id):
     """
     if user_id in user_dict:
         memory_data = [[], [], [], [], [], [], [], []]
-        for i in range(0, len(user_dict[user_id].data_memory.slots), 32 * 8):
-            string = ba2hex(user_dict[user_id].data_memory.slots[i:i + 32 * 8])
+        for i in range(0, len(user_dict[user_id]['cpu'].data_memory.slots), 32 * 8):
+            string = ba2hex(user_dict[user_id]['cpu'].data_memory.slots[i:i + 32 * 8])
             for x in range(8):
                 memory_data[x].append(" ".join([string[8 * x:8 * x + 8][y:y + 2] for y in range(0, 8, 2)]))
         lst = []
@@ -507,11 +566,17 @@ def create_registers(value):
     for i in value:
         regs.append(i.split(' ')[0])
         values.append(i.split(' ')[1])
-    return html.Div([dcc.Textarea(value='\n'.join(regs), style={'height': 150, 'width': 60}, disabled=True),
-                     dcc.Textarea(value='\n'.join(values), style={'height': 150, 'width': 60})])
+    return html.Div([dcc.Markdown(' '.join(regs), style={'color': text_color, 'width': 40,
+                                                         'display': 'inline-block'}, ),
+                     dcc.Textarea(value='\n'.join(values),
+                                  style={'width': 80, 'display': 'inline-block', 'height': len(regs) * 23,
+                                         'font-size': 18})])
 
 
-@app.callback(Output('flags', 'children'),
+@app.callback([Output('cf', 'value'),
+               Output('zf', 'value'),
+               Output('of', 'value'),
+               Output('sf', 'value')],
               [Input('flags-storage', 'children')])
 def create_flags(value):
     """
@@ -519,20 +584,7 @@ def create_flags(value):
     :param value:
     :return:
     """
-    return html.Div([
-        html.Div([dcc.Markdown("CF", style={'display': 'inline-block', 'color': text_color}),
-                  dcc.Textarea(id='cf', value=value[0], style={'display': 'inline-block', 'width': 30})],
-                 style={'display': 'inline-block'}),
-        html.Div([dcc.Markdown("ZF", style={'display': 'inline-block', 'color': text_color}),
-                  dcc.Textarea(id='zf', value=value[1], style={'display': 'inline-block', 'width': 30})],
-                 style={'display': 'inline-block'}),
-        html.Div([dcc.Markdown("OF", style={'display': 'inline-block', 'color': text_color}),
-                  dcc.Textarea(id='of', value=value[2], style={'display': 'inline-block', 'width': 30})],
-                 style={'display': 'inline-block'}),
-        html.Div([dcc.Markdown("SF", style={'display': 'inline-block', 'color': text_color}),
-                  dcc.Textarea(id='sf', value=value[3], style={'display': 'inline-block', 'width': 30})],
-                 style={'display': 'inline-block'}),
-    ])
+    return value[0], value[1], value[2], value[3]
 
 
 @app.callback(Output('output', 'children'),
