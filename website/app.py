@@ -22,6 +22,7 @@ from modules.processor import CPU
 from modules.assembler import Assembler, AssemblerError
 from website.color_palette_and_layout import table_header, table, button, assembly, background_color, title_color, \
     text_color, not_working, layout, external_stylesheets
+from website.example_programs import examples
 
 # CPU DICTIONARY ( key=user.id, value=dict(cpu, intervals) )
 user_dict = dict()
@@ -132,8 +133,8 @@ app.layout = html.Div([
                     dcc.Dropdown(
                         id='example-dropdown',
                         options=[
-                            {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet', 'disabled': True},
-                            {'label': 'HELLO WORLD', 'value': 'hello', 'disabled': True},
+                            {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
+                            {'label': 'HELLO WORLD', 'value': 'hello'},
                         ],
                         placeholder="CHOOSE AN EXAMPLE PROGRAM",
                         style={'width': 200},
@@ -248,11 +249,11 @@ app.layout = html.Div([
     # Storage for reaction on 'next instruction' button
     html.Div(id='next-storage', children='0', style={'display': 'none'}),
     # Storage for reaction on 'run until finished' button
-    html.Div(id='run-storage', children=dcc.Interval(
-        id='interval',
-        interval=1 * 1000,
-        n_intervals=0, disabled=True
-    ), style={'display': 'none'}),
+    html.Div(id='run-storage', children=dcc.Interval(id='interval', interval=1 * 1000, n_intervals=0, disabled=True),
+             style={'display': 'none'}),
+
+    # Example storage (for risc3 by default)
+    html.Div(id='examples', children=examples['risc3'], style={'display': 'none'}),
 
 ])
 
@@ -364,6 +365,25 @@ def render_content_hex_bin(tab, code_lst):
                          disabled=True)
         ])
 
+
+# Update div with examples
+@app.callback(
+    Output('examples', 'children'),
+    [Input('isa-dropdown', 'value')])
+def update_examples(isa):
+    return examples[isa]
+
+
+# Add a chosen example to the textarea
+@app.callback(
+    Output('input1', 'value'),
+    [Input('example-dropdown', 'value'),
+     Input('examples', 'children')])
+def add_example(example_name, app_examples):
+    if example_name == 'alphabet':
+        return app_examples[0]
+    elif example_name == 'hello':
+        return app_examples[1]
 
 # UPDATE HIDDEN INFO FOR PROCESSOR
 @app.callback(Output('next-storage', 'children'),
@@ -651,10 +671,8 @@ if __name__ == '__main__':
 # TODO: help page,
 #  add program examples,
 #  cookies to save previous program,
-#  edit memory and registers (buttons: save manual changes, undo manual changes),
-#  make next execute till the program is not finished (additional button, user can choose seconds),
-#  change memory slots,
+#  edit memory and registers,
+#  change memory slots (numeration????????),
 #  add new version to server,
-#  add bitwise flag,
 #  make table undraggable,
 #  fix table becoming dark
