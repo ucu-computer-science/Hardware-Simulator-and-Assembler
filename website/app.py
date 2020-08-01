@@ -504,7 +504,7 @@ def update_flags(value, user_id, save_manual, undo_manual, cf, zf, of, sf):
     """
     if user_id in user_dict:
         if save_manual > user_dict[user_id]['save-manual']:
-            user_dict[user_id]['save-manual'] = save_manua
+            user_dict[user_id]['save-manual'] = save_manual
             user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
 
             return [cf, zf, of, sf]
@@ -588,14 +588,10 @@ def create_registers(value):
         regs.append(i.split(' ')[0])
         values.append(i.split(' ')[1])
 
-
-    return html.Div([html.Div([dcc.Markdown(' '.join(regs), style={'color': text_color, 'width': 40}, ),], style={
-                                                         'display': 'inline-block', }),
-                     html.Div([dash_table.DataTable(columns=([{'id': '1', 'name': '1'}]),
-                                          data=([{'1': register} for register in values]),
-                                          style_table={'overflowY': 'auto'},
-                                          style_header={'display': 'none'})], style={
-                                                         'display': 'inline-block', })])
+    return html.Div([html.Div(dash_table.DataTable(
+        columns=([{'id': regs[i], 'name': regs[i]}]),
+        data=([{regs[i]: values[i]}]),
+    ), style={'display':'inline-block'}) for i in range(len(regs))])
 
 
 @app.callback([Output('cf', 'value'),
@@ -674,10 +670,10 @@ if __name__ == '__main__':
     app.run_server(debug=True, threaded=True)
 
 # TODO: help page,
-#  add program examples,
 #  cookies to save previous program,
 #  edit memory and registers,
 #  change memory slots (numeration????????),
 #  add new version to server,
 #  make table undraggable,
-#  fix table becoming dark
+#  fix table becoming dark,
+#  documentation
