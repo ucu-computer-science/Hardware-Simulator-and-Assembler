@@ -1,0 +1,100 @@
+
+#wrapper .VirtualizedSelectFocusedOption {
+    background-color: #272954;
+}
+
+#isa-dropdown > div > div {
+    width: 200px;
+    background-color: rgb(38, 39, 61);
+    font-family: "Roboto Mono", monospace;
+    color: #9090AC;
+    font-size: 17px;
+}
+
+#architecture-dropdown > div > div {
+    width: 200px;
+    background-color: rgb(38, 39, 61);
+    font-family: "Roboto Mono", monospace;
+    color: #9090AC;
+    font-size: 17px;
+}
+
+#io-dropdown > div > div {
+    width: 200px;
+    background-color: rgb(38, 39, 61);
+    font-family: "Roboto Mono", monospace;
+    color: #9090AC;
+    font-size: 17px;
+}
+
+#example-dropdown > div > div {
+    width: 200px;
+    background-color: rgb(38, 39, 61);
+    font-family: "Roboto Mono", monospace;
+    color: #9090AC;
+    font-size: 17px;
+}
+
+
+#react-select-2--value-item {
+    background-color: rgb(38, 39, 61);
+    font-family: "Roboto Mono", monospace;
+    color: #9090AC;
+    font-size: 17px;
+}
+
+
+#react-select-3--value-item {
+    background-color: rgb(38, 39, 61);
+    font-family: "Roboto Mono", monospace;
+    color: #9090AC;
+    font-size: 17px;
+}
+
+
+#react-select-4--value-item {
+    background-color: rgb(38, 39, 61);
+    font-family: "Roboto Mono", monospace;
+    color: #9090AC;
+    font-size: 17px;
+}
+
+#react-select-5--value-item {
+    background-color: rgb(38, 39, 61);
+    font-family: "Roboto Mono", monospace;
+    color: #9090AC;
+    font-size: 17px;
+}
+
+#react-select-5--value > div.Select-placeholder {
+    background-color: rgb(38, 39, 61);
+    font-family: "Roboto Mono", monospace;
+    color: #9090AC;
+    font-size: 17px;
+}
+
+#wrapper .dash-spreadsheet-container .dash-spreadsheet-inner table {
+    border-collapse: collapse;
+    font-family: monospace;
+    --accent: #9090AC;
+    --border: lightgrey;
+    --text-color: rgb(147, 182, 213);
+    --hover: #fdfdfd;
+    --background-color-ellipses: #fdfdfd;
+    --faded-text: #fafafa;
+    --faded-text-header: #b4b4b4;
+    --selected-background: #9090AC;
+    --faded-dropdown: #f0f0f0;
+    --muted: #c8c8c8;
+}
+
+td.dash-cell.cell--selected.focused {
+    background-color: #51537C !important;
+    text-align: center;
+    font-family: "Roboto Mono", monospace;
+    font-size: 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(147, 182, 213) !important;
+    color: rgb(147, 182, 213) !important;
+}

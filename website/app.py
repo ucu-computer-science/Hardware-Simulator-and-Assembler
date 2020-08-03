@@ -4,11 +4,9 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
-import time
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 from bitarray.util import ba2hex, hex2ba
 from bitarray import bitarray
@@ -16,14 +14,13 @@ import uuid
 import dash_table
 from flask import Flask, render_template
 import json
-import copy
-from functools import partial
 
 # Imports from the project
 from modules.processor import CPU
 from modules.assembler import Assembler, AssemblerError
 from website.color_palette_and_layout import table_header, table, button, assembly, background_color, title_color, \
-    text_color, not_working, layout, external_stylesheets
+    text_color, not_working, layout, style_header, style_cell, tab_style, tab_selected_style, \
+    dropdown_style1, dropdown_style2
 from website.example_programs import examples
 
 # CPU DICTIONARY ( key=user.id, value=dict(cpu, intervals) )
@@ -33,6 +30,7 @@ buttons = {0: 'risc1', 1: 'risc2', 2: 'risc3', 3: 'cisc'}
 
 # Create app
 server = Flask(__name__)
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)', ]
 app = dash.Dash(name=__name__, server=server, external_stylesheets=external_stylesheets)
 app.title = "ASSEMBLY SIMULATOR"
 
@@ -44,7 +42,19 @@ app.layout = html.Div([
         # Title
         dcc.Markdown("ASSEMBLY SIMULATOR",
                      style={'color': title_color, 'font-family': "Roboto Mono, monospace",
-                            'font-size': '25px', 'display': 'inline-block'}),
+                            'font-size': '25px', 'display': 'inline-block', 'margin-left': 100, 'margin-top': 5}),
+
+        dcc.Markdown("CHOOSE ISA:",
+                     style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                            'font-size': '18px', 'display': 'inline-block', 'margin-left': 510}),
+
+        dcc.Markdown("ARCHITECTURE:",
+                     style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                            'font-size': '18px', 'display': 'inline-block', 'margin-left': 60}),
+
+        dcc.Markdown("I/O MODE:",
+                     style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                            'font-size': '18px', 'display': 'inline-block', 'margin-left': 100}),
 
         # Dropdowns for isa, architecture and i/o mode
         html.Div([
@@ -60,7 +70,7 @@ app.layout = html.Div([
                         {'label': 'ACCUMULATOR', 'value': 'risc2'},
                     ],
                     value='risc3',
-                    style={'width': 200},
+                    style=dropdown_style1,
                     clearable=False,
                 ),
             ], style={'display': 'inline-block'}),
@@ -74,7 +84,7 @@ app.layout = html.Div([
                         {'label': 'HARVARD', 'value': 'harvard', 'disabled': True},
                     ],
                     value='neumann',
-                    style={'width': 200},
+                    style=dropdown_style1,
                     clearable=False,
                 ),
 
@@ -89,14 +99,14 @@ app.layout = html.Div([
                         {'label': 'SPECIAL COMMANDS', 'value': 'special'},
                     ],
                     value='special',
-                    style={'width': 200},
+                    style=dropdown_style1,
                     clearable=False,
                 ),
 
             ], style={'display': 'inline-block'}),
 
-        ], style={'display': 'inline-block', 'margin-left': 600}),
-    ]),
+        ], style={'display': 'inline-block', 'margin-left': 800}),
+    ], style={'margin-bottom': 20}),
 
     # ASSEMBLER AND PROCESSOR
     html.Div([
@@ -107,46 +117,38 @@ app.layout = html.Div([
             html.Div([
 
                 # Textarea for input of assembly code
-                dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
-                             style={'width': 235, 'height': 400, 'display': 'inline-block',
-                                    "color": assembly['font'], 'font-size': '15px',
-                                    "background-color": assembly['background'],
-                                    'font-family': "Roboto Mono, monospace"},
-                             autoFocus='true'),
+                html.Div([
+                    dcc.Markdown("ASSEMBLY CODE:",
+                                 style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                                        'font-size': '18px', 'margin-left': 60}),
+                    dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
+                                 style={'width': 235, 'height': 400,
+                                        "color": assembly['font'], 'font-size': '15px',
+                                        "background-color": assembly['background'],
+                                        'font-family': "Roboto Mono, monospace", 'margin-left': 20},
+                                 autoFocus='true'),
+
+                ], style={'display': 'inline-block', }),
 
                 # Tabs with bin and hex code
                 html.Div([
                     dcc.Tabs(id='TABS', value='tabs', children=[
-                        dcc.Tab(label='BIN', value='binary'),
-                        dcc.Tab(label='HEX', value='hexadecimal'),
-                    ], style={'width': 185, 'height': 50}),
+                        dcc.Tab(label='BIN:', value='binary', style=tab_style, selected_style=tab_selected_style),
+                        dcc.Tab(label='HEX:', value='hexadecimal', style=tab_style, selected_style=tab_selected_style),
+                    ], style={'width': 185, 'height': 58}),
                     html.Div(id='tabs-content')
-                ], style={'display': 'inline-block'}),
+                ], style={'display': 'inline-block', 'margin-left': 10}),
 
             ]),
 
             html.Div([
                 # Button to assemble
                 html.Button('ASSEMBLE', id='assemble', n_clicks=0,
-                            style={'margin-left': 50, "color": button['font'],
+                            style={'margin-left': 54, 'margin-top': 15, "color": button['font'],
                                    "background-color": button['background'],
                                    'width': 160, 'display': 'inline-block'}),
 
-                html.Div([
-                    dcc.Dropdown(
-                        id='example-dropdown',
-                        options=[
-                            {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
-                            {'label': 'HELLO WORLD', 'value': 'hello'},
-                        ],
-                        placeholder="CHOOSE AN EXAMPLE PROGRAM",
-                        style={'width': 200},
-                        clearable=False
-                    ), ], style={'display': 'inline-block'})
-
             ]),
-
-            dcc.Link('Need some help?', href='/help', refresh=True)
 
         ], style={'display': 'inline-block'}),
 
@@ -156,12 +158,12 @@ app.layout = html.Div([
             html.Div([
 
                 # Next instruction
-                html.Div(id='instruction', style={'display': 'inline-block', 'margin-right': 10}),
+                html.Div(id='instruction', style={'display': 'inline-block', 'margin-right': 15}),
 
                 # Output, registers and flags
                 html.Div([
 
-                    html.Div(id='output', style={'display': 'inline-block', 'margin-right': 10}),
+                    html.Div(id='output', style={'display': 'inline-block', 'margin-right': 15}),
 
                     # Registers
                     html.Div(html.Div(id='registers', children=dash_table.DataTable(id='registers-table',
@@ -180,8 +182,11 @@ app.layout = html.Div([
                                                                                              'R00', 'R01', 'R02',
                                                                                              'R03'][i]: '0000' for i in
                                                                                             range(4)}]),
-                                                                                    editable=True), ),
-                             style={'display': 'inline-block', 'margin-right': 10}),
+                                                                                    style_header=style_header[0],
+                                                                                    style_cell=style_cell[0],
+                                                                                    editable=True,
+                                                                                    ), ),
+                             style={'display': 'inline-block', 'margin-right': 15}),
 
                     html.Div(id='flags', children=dash_table.DataTable(id='flags-table',
                                                                        columns=([{'id': ['CF', 'ZF', 'OF', 'SF'][i],
@@ -189,53 +194,76 @@ app.layout = html.Div([
                                                                                               i] + ': '} for i in
                                                                                  range(4)]),
                                                                        data=([{['CF', 'ZF', 'OF', 'SF'][i]: '0' for i in
-                                                                               range(4)}]), ),
-                             style={'display': 'inline-block', 'margin-right': 10}),
+                                                                               range(4)}]),
+                                                                       style_header=style_header[0],
+                                                                       style_cell=style_cell[0], ),
+                             style={'display': 'inline-block', 'margin-right': 30}),
+
+                    html.Div
+                        ([
+
+                        dash_table.DataTable(id='seconds',
+                                             columns=([{'id': '1', 'name': 'INSTRUCTION PER SECOND'}]),
+                                             data=([{'1': '1'}]),
+                                             style_header=style_header[0],
+                                             style_cell=style_cell[0],
+                                             editable=True),
+
+                    ],
+                        style={'display': 'inline-block'}),
 
                 ], style={'display': 'inline-block'}),
-
-                html.Div([
-
-                    html.Button('SAVE MANUAL CHANGES', id='save-manual', n_clicks=0,
-                                style={"color": button['font'],
-                                       "background-color": button['background'],
-                                       'width': 200, 'display': 'block'}),
-                    html.Button('UNDO MANUAL CHANGES', id='undo-manual', n_clicks=0,
-                                style={"color": button['font'],
-                                       "background-color": button['background'],
-                                       'width': 200, 'display': 'block'}),
-
-                ], style={'display': 'inline-block'})
 
             ]),
 
             # Memory
             html.Div(id='memory', style={'margin-top': 20, 'margin-bottom': 20}),
 
-            html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
-                        style={"color": button['font'],
-                               "background-color": button['background'],
-                               'width': 200}),
+            html.Div([
+                dcc.Dropdown(
+                    id='example-dropdown',
+                    options=[
+                        {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
+                        {'label': 'HELLO WORLD', 'value': 'hello'},
+                    ],
+                    placeholder="CHOOSE AN EXAMPLE PROGRAM",
+                    style=dropdown_style2,
+                    clearable=False
+                ), ], style={'display': 'inline-block', 'margin-right': 120}),
 
-            html.Button('RUN | STOP', id='run-until-finished', n_clicks=0,
-                        style={"color": button['font'],
-                               "background-color": button['background'],
-                               'width': 200}),
+            html.Div([html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
+                                  style={"color": button['font'],
+                                         "background-color": button['background'],
+                                         'width': 200, 'display': 'block', 'margin-bottom': 15}),
 
-            html.Div
-                ([
+                      html.Button('RUN | STOP', id='run-until-finished', n_clicks=0,
+                                  style={"color": button['font'],
+                                         "background-color": button['background'],
+                                         'width': 200, 'display': 'block'}), ],
+                     style={'display': 'inline-block', 'margin-right': 30}),
 
-                dash_table.DataTable(id='seconds',
-                                     columns=([{'id': '1', 'name': 'instructions per second'}]),
-                                     data=([{'1': '1'}]),
-                                     editable=True),
+            html.Div([
+                html.Div([
 
-            ],
-                style={'display': 'inline-block'}),
+                    html.Button('SAVE MANUAL CHANGES', id='save-manual', n_clicks=0,
+                                style={"color": button['font'],
+                                       "background-color": button['background'],
+                                       'width': 220, 'display': 'block', 'margin-bottom': 15}),
+                    html.Button('UNDO MANUAL CHANGES', id='undo-manual', n_clicks=0,
+                                style={"color": button['font'],
+                                       "background-color": button['background'],
+                                       'width': 220, 'display': 'block'}),
+                ]),
 
-        ], style={'display': 'inline-block', 'margin-left': 20}),
+            ], style={'display': 'inline-block'})
+
+        ], style={'display': 'inline-block', 'margin-left': 70}),
 
     ]),
+
+    # Link to a help page
+    dcc.Link('Need some help?', href='/help', refresh=True,
+             style={'color': text_color, 'margin-top': 55, 'margin-left': 24, 'display': 'block'}),
 
     # HIDDEN DIVS
 
@@ -271,7 +299,7 @@ app.layout = html.Div([
     # Example storage (for risc3 by default)
     html.Div(id='examples', children=examples['risc3'], style={'display': 'none'}),
 
-])
+], id="wrapper", )
 
 
 # APP CALLBACKS FOR INPUT/OUTPUT OF THE INFORMATION, ASSEMBLER
@@ -363,22 +391,23 @@ def render_content_hex_bin(tab, code_lst):
     if tab == 'binary':
         return html.Div([
             dcc.Textarea(value=code_lst[0],
-                         style={'width': 185, 'height': 400, "color": assembly['font'], 'font-size': '15px',
-                                "background-color": assembly['background'], 'font-family': "Roboto Mono, monospace"},
+                         style={'width': 185, 'height': 400, "color": table['font'], 'font-size': '15px',
+                                "background-color": table['background'], 'font-family': "Roboto Mono, monospace"},
                          disabled=True)
         ])
     elif tab == 'hexadecimal':
         return html.Div([
             dcc.Textarea(value=code_lst[1],
-                         style={'width': 185, 'height': 400, "color": assembly['font'], 'font-size': '15px',
-                                "background-color": assembly['background'], 'font-family': "Roboto Mono, monospace"},
+                         style={'text-align': 'right', 'width': 185, 'height': 400, "color": table['font'],
+                                'font-size': '15px',
+                                "background-color": table['background'], 'font-family': "Roboto Mono, monospace"},
                          disabled=True)
         ])
     else:
         return html.Div([
             dcc.Textarea(value=code_lst[0],
-                         style={'width': 185, 'height': 400, "color": assembly['font'], 'font-size': '15px',
-                                "background-color": assembly['background'], 'font-family': "Roboto Mono, monospace"},
+                         style={'width': 185, 'height': 400, "color": table['font'], 'font-size': '15px',
+                                "background-color": table['background'], 'font-family': "Roboto Mono, monospace"},
                          disabled=True)
         ])
 
@@ -413,7 +442,8 @@ def create_instruction(value):
     :return:
     """
     return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
-                                data=([{'1': value}])),
+                                data=([{'1': value}]), style_header=style_header[0],
+                                style_cell=style_cell[0], ),
 
 
 @app.callback(Output('registers', 'children'),
@@ -433,6 +463,8 @@ def create_registers(value):
     return html.Div(dash_table.DataTable(id='registers-table',
                                          columns=([{'id': regs[i], 'name': regs[i]} for i in range(len(regs))]),
                                          data=([{regs[i]: values[i] for i in range(len(regs))}]),
+                                         style_header=style_header[0],
+                                         style_cell=style_cell[0],
                                          editable=True
                                          ))
 
@@ -448,7 +480,10 @@ def create_flags(value):
     flags = ['CF', 'ZF', 'OF', 'SF']
     return dash_table.DataTable(id='flags-table',
                                 columns=([{'id': flags[i], 'name': flags[i] + ': '} for i in range(len(flags))]),
-                                data=([{flags[i]: value[i] for i in range(len(flags))}]), editable=True)
+                                data=([{flags[i]: value[i] for i in range(len(flags))}]),
+                                style_header=style_header[0],
+                                style_cell=style_cell[0],
+                                editable=True)
 
 
 @app.callback(Output('output', 'children'),
@@ -461,6 +496,8 @@ def create_output(value):
     """
     return dash_table.DataTable(columns=([{'id': '1', 'name': 'OUTPUT'}]),
                                 data=([{'1': value}]),
+                                style_header=style_header[0],
+                                style_cell=style_cell[0],
                                 style_table={'width': '150px'}),
 
 
@@ -504,8 +541,10 @@ def create_memory(value):
 
         return dash_table.DataTable(columns=([{'id': i, 'name': i} for i in headers]),
                                     data=data,
-                                    style_table={'height': '300px', 'overflowY': 'auto',
-                                                 'background-color': table['background']})
+                                    style_header=style_header[0],
+                                    style_cell=style_cell[0],
+                                    style_table={'height': '300px', 'overflowY': 'auto'},
+                                    )
 
 
 # UPDATE HIDDEN INFO FOR PROCESSOR
