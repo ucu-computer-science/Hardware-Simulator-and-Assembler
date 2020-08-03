@@ -10,10 +10,12 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
-from bitarray.util import ba2hex
+from bitarray.util import ba2hex, hex2ba
 from bitarray import bitarray
 import uuid
 import dash_table
+from flask import Flask, render_template
+import json
 import copy
 from functools import partial
 
@@ -30,7 +32,8 @@ user_dict = dict()
 buttons = {0: 'risc1', 1: 'risc2', 2: 'risc3', 3: 'cisc'}
 
 # Create app
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server = Flask(__name__)
+app = dash.Dash(name=__name__, server=server, external_stylesheets=external_stylesheets)
 app.title = "ASSEMBLY SIMULATOR"
 
 # MAIN LAYOUT
@@ -143,44 +146,51 @@ app.layout = html.Div([
 
             ]),
 
-            dcc.Link('Need some help?', href='/help')
+            dcc.Link('Need some help?', href='/help', refresh=True)
 
         ], style={'display': 'inline-block'}),
 
         # Processor
-        html.Div([
+        html.Div(className='row', children=[
 
             html.Div([
 
                 # Next instruction
-                html.Div(id='instruction', style={'display': 'inline-block'}),
+                html.Div(id='instruction', style={'display': 'inline-block', 'margin-right': 10}),
 
-                # Registers
-                html.Div(id='registers', style={'display': 'inline-block'}),
-
-                # Flags and output
+                # Output, registers and flags
                 html.Div([
 
-                    html.Div([
-                        html.Div([dcc.Markdown("CF", style={'display': 'inline-block', 'color': text_color}),
-                                  dcc.Textarea(id='cf', value='0',
-                                               style={'display': 'inline-block', 'width': 30})],
-                                 style={'display': 'inline-block'}),
-                        html.Div([dcc.Markdown("ZF", style={'display': 'inline-block', 'color': text_color}),
-                                  dcc.Textarea(id='zf', value='0',
-                                               style={'display': 'inline-block', 'width': 30})],
-                                 style={'display': 'inline-block'}),
-                        html.Div([dcc.Markdown("OF", style={'display': 'inline-block', 'color': text_color}),
-                                  dcc.Textarea(id='of', value='0',
-                                               style={'display': 'inline-block', 'width': 30})],
-                                 style={'display': 'inline-block'}),
-                        html.Div([dcc.Markdown("SF", style={'display': 'inline-block', 'color': text_color}),
-                                  dcc.Textarea(id='sf', value='0',
-                                               style={'display': 'inline-block', 'width': 30})],
-                                 style={'display': 'inline-block'}),
-                    ]),
+                    html.Div(id='output', style={'display': 'inline-block', 'margin-right': 10}),
 
-                    html.Div(id='output', style={'display': 'inline-block'}),
+                    # Registers
+                    html.Div(html.Div(id='registers', children=dash_table.DataTable(id='registers-table',
+                                                                                    columns=([{'id': ['SP', 'IP', 'LR',
+                                                                                                      'FR', 'R00',
+                                                                                                      'R01', 'R02',
+                                                                                                      'R03'][i],
+                                                                                               'name':
+                                                                                                   ['SP', 'IP', 'LR',
+                                                                                                    'FR', 'R00', 'R01',
+                                                                                                    'R02', 'R03'][
+                                                                                                       i] + ': '} for i
+                                                                                              in
+                                                                                              range(4)]),
+                                                                                    data=([{['SP', 'IP', 'LR', 'FR',
+                                                                                             'R00', 'R01', 'R02',
+                                                                                             'R03'][i]: '0000' for i in
+                                                                                            range(4)}]),
+                                                                                    editable=True), ),
+                             style={'display': 'inline-block', 'margin-right': 10}),
+
+                    html.Div(id='flags', children=dash_table.DataTable(id='flags-table',
+                                                                       columns=([{'id': ['CF', 'ZF', 'OF', 'SF'][i],
+                                                                                  'name': ['CF', 'ZF', 'OF', 'SF'][
+                                                                                              i] + ': '} for i in
+                                                                                 range(4)]),
+                                                                       data=([{['CF', 'ZF', 'OF', 'SF'][i]: '0' for i in
+                                                                               range(4)}]), ),
+                             style={'display': 'inline-block', 'margin-right': 10}),
 
                 ], style={'display': 'inline-block'}),
 
@@ -200,24 +210,30 @@ app.layout = html.Div([
             ]),
 
             # Memory
-            html.Div(id='memory'),
+            html.Div(id='memory', style={'margin-top': 20, 'margin-bottom': 20}),
 
             html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
                         style={"color": button['font'],
                                "background-color": button['background'],
                                'width': 200}),
 
-            html.Button('RUN UNTIL FINISHED', id='run-until-finished', n_clicks=0,
+            html.Button('RUN | STOP', id='run-until-finished', n_clicks=0,
                         style={"color": button['font'],
                                "background-color": button['background'],
                                'width': 200}),
 
             html.Div
-            ([dcc.Markdown('instructions per second', style={'color': text_color}),
-              dcc.Textarea(id='seconds', value="1", style={'rows': 1, 'width': 100})],
-             style={'display': 'inline-block'}),
+                ([
 
-        ], style={'display': 'inline-block'}),
+                dash_table.DataTable(id='seconds',
+                                     columns=([{'id': '1', 'name': 'instructions per second'}]),
+                                     data=([{'1': '1'}]),
+                                     editable=True),
+
+            ],
+                style={'display': 'inline-block'}),
+
+        ], style={'display': 'inline-block', 'margin-left': 20}),
 
     ]),
 
@@ -279,7 +295,8 @@ def update_output(isa, arch, io):
 
 
 # Create user id
-@app.callback(Output('id-storage', 'children'), [Input('id-creation', 'children')])
+@app.callback(Output('id-storage', 'children'),
+              [Input('id-creation', 'children')])
 def get_ip(value):
     """
     Return randomly generated id each time new session starts
@@ -386,6 +403,111 @@ def add_example(example_name, app_examples):
         return app_examples[1]
 
 
+# APP CALLBACKS FOR CREATION OF GRAPHIC ELEMENTS OF THE PROCESSOR
+@app.callback(Output('instruction', 'children'),
+              [Input('instruction-storage', 'children')])
+def create_instruction(value):
+    """
+    # TODO
+    :param value:
+    :return:
+    """
+    return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
+                                data=([{'1': value}])),
+
+
+@app.callback(Output('registers', 'children'),
+              [Input('registers-storage', 'children')])
+def create_registers(value):
+    """
+    # TODO
+    :param value:
+    :return:
+    """
+    regs = []
+    values = []
+    for i in value:
+        regs.append(i.split(' ')[0])
+        values.append(i.split(' ')[1])
+
+    return html.Div(dash_table.DataTable(id='registers-table',
+                                         columns=([{'id': regs[i], 'name': regs[i]} for i in range(len(regs))]),
+                                         data=([{regs[i]: values[i] for i in range(len(regs))}]),
+                                         editable=True
+                                         ))
+
+
+@app.callback(Output('flags', 'children'),
+              [Input('flags-storage', 'children')])
+def create_flags(value):
+    """
+    # TODO
+    :param value:
+    :return:
+    """
+    flags = ['CF', 'ZF', 'OF', 'SF']
+    return dash_table.DataTable(id='flags-table',
+                                columns=([{'id': flags[i], 'name': flags[i] + ': '} for i in range(len(flags))]),
+                                data=([{flags[i]: value[i] for i in range(len(flags))}]), editable=True)
+
+
+@app.callback(Output('output', 'children'),
+              [Input('output-storage', 'children')])
+def create_output(value):
+    """
+    # TODO
+    :param value:
+    :return:
+    """
+    return dash_table.DataTable(columns=([{'id': '1', 'name': 'OUTPUT'}]),
+                                data=([{'1': value}]),
+                                style_table={'width': '150px'}),
+
+
+@app.callback(Output('memory', 'children'),
+              [Input('memory-storage', 'children')])
+def create_memory(value):
+    """
+    # TODO
+    :param value:
+    :return:
+    """
+    if not value[1]:
+        headers = ["Addr   :  "]
+        for i in range(0, 32, 4):
+            headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
+                           f"{hex(i + 2)[2:].rjust(2, '0')} {hex(i + 3)[2:].rjust(2, '0')}")
+
+        rows = []
+        for i in range(0, 1024, 32):
+            rows.append(hex(i)[2:].rjust(8, "0"))
+
+        temp_lst1 = value[0].split('\n')
+        memory_data = []
+        for i in temp_lst1:
+            memory_data.append(i.split('\t'))
+
+        rows = [rows] + memory_data
+
+        data_lst = []
+        for y in range(len(rows[0])):
+            data_lst.append([])
+            for x in range(len(rows)):
+                data_lst[y].append(rows[x][y])
+
+        # Create a list of dictionaries (key -- column name)
+        data = []
+        for x in range(len(rows[0])):
+            data.append(dict())
+            for y in range(len(rows)):
+                data[x][headers[y]] = data_lst[x][y]
+
+        return dash_table.DataTable(columns=([{'id': i, 'name': i} for i in headers]),
+                                    data=data,
+                                    style_table={'height': '300px', 'overflowY': 'auto',
+                                                 'background-color': table['background']})
+
+
 # UPDATE HIDDEN INFO FOR PROCESSOR
 @app.callback(Output('next-storage', 'children'),
               [Input('next', 'n_clicks'),
@@ -417,9 +539,10 @@ def update_next(n_clicks, user_id, interval):
     Output("interval", "disabled"),
     [Input("run-until-finished", "n_clicks"),
      Input('id-storage', 'children'),
-     Input("instruction-storage", "children")]
+     Input("instruction-storage", "children")],
+    [State("interval", "disabled")]
 )
-def run_interval(n, user_id, instruction):
+def run_interval(n, user_id, instruction, current_state):
     if not n:
         user_dict[user_id]['intervals'] = 0
     if user_id in user_dict:
@@ -427,18 +550,21 @@ def run_interval(n, user_id, instruction):
             user_dict[user_id]['intervals'] = n
             return True
         elif n > user_dict[user_id]['intervals']:
-            return False
+            user_dict[user_id]['intervals'] = n
+            return not current_state
+        else:
+            return current_state
     return True
 
 
 @app.callback(
     Output("interval", "interval"),
-    [Input("seconds", "value")]
+    [Input("seconds", "data")]
 )
 def update_seconds(instructions):
     try:
-        int(instructions)
-        return 1000 / int(instructions)
+        int(instructions[0]['1'])
+        return 1000 / int(instructions[0]['1'])
     except ValueError:
         return 1 * 1000
 
@@ -461,18 +587,30 @@ def update_instruction(value, user_id):
 
 @app.callback(Output('registers-storage', 'children'),
               [Input('next-storage', 'children'),
-               Input('id-storage', 'children')])
-def update_registers(value, user_id):
+               Input('id-storage', 'children'),
+               Input('save-manual', 'n_clicks'),
+               Input('undo-manual', 'n_clicks')
+               ],
+              [State('registers-table', 'data')])
+def update_registers(value_not_used, user_id, save_manual, undo_manual, data):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
 
-    :param value: is not used
+    :param value_not_used: is not used
     :param user_id: id of the session/user
     :return: string registers
     """
-    # TODO: turn into a table
     if user_id in user_dict:
+        if save_manual > user_dict[user_id]['save-manual']:
+            user_dict[user_id]['save-manual'] = save_manual
+            new_reg_dict = data[0]
+            for key, value in new_reg_dict.items():
+                user_dict[user_id]['cpu'].registers[key[:-1]]._state = hex2ba(value)
+
+        elif undo_manual > user_dict[user_id]['undo-manual']:
+            user_dict[user_id]['undo-manual'] = undo_manual
+
         items = [(value.name, value._state.tobytes().hex()) for key, value in
                  user_dict[user_id]['cpu'].registers.items()]
         values = []
@@ -487,12 +625,8 @@ def update_registers(value, user_id):
                Input('save-manual', 'n_clicks'),
                Input('undo-manual', 'n_clicks')
                ],
-              [State('cf', 'value'),
-               State('zf', 'value'),
-               State('of', 'value'),
-               State('sf', 'value'),
-               ])
-def update_flags(value, user_id, save_manual, undo_manual, cf, zf, of, sf):
+              [State('flags-table', 'data')])
+def update_flags(value, user_id, save_manual, undo_manual, data):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -505,15 +639,14 @@ def update_flags(value, user_id, save_manual, undo_manual, cf, zf, of, sf):
     if user_id in user_dict:
         if save_manual > user_dict[user_id]['save-manual']:
             user_dict[user_id]['save-manual'] = save_manual
+            cf, zf, of, sf = data[0]['CF'], data[0]['ZF'], data[0]['OF'], data[0]['SF'],
             user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
 
             return [cf, zf, of, sf]
         elif undo_manual > user_dict[user_id]['undo-manual']:
             user_dict[user_id]['undo-manual'] = undo_manual
-            cf, zf, of, sf = user_dict[user_id]['cpu'].registers['FR']._state.to01()[12], \
-                             user_dict[user_id]['cpu'].registers['FR']._state.to01()[13], \
-                             user_dict[user_id]['cpu'].registers['FR']._state.to01()[14], \
-                             user_dict[user_id]['cpu'].registers['FR']._state.to01()[15]
+            cf, zf, of, sf = list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:])
+
             return [cf, zf, of, sf]
         else:
             return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
@@ -562,116 +695,24 @@ def update_memory(value, user_id):
         return ['\n'.join(lst), '']
 
 
-# APP CALLBACKS FOR CREATION OF GRAPHIC ELEMENTS OF THE PROCESSOR
-@app.callback(Output('instruction', 'children'),
-              [Input('instruction-storage', 'children')])
-def create_instruction(value):
-    """
-    # TODO
-    :param value:
-    :return:
-    """
-    return dcc.Textarea(value=value, disabled=True)
+# HELP PAGE
+@app.server.route('/help')
+def template_test():
+    with open("docs/help.json", "r") as file:
+        help_dict = json.load(file)
+    with open("modules/registers.json", "r") as file:
+        register_dict = json.load(file)["risc3"]
 
-
-@app.callback(Output('registers', 'children'),
-              [Input('registers-storage', 'children')])
-def create_registers(value):
-    """
-    # TODO
-    :param value:
-    :return:
-    """
-    regs = []
-    values = []
-    for i in value:
-        regs.append(i.split(' ')[0])
-        values.append(i.split(' ')[1])
-
-    return html.Div([html.Div(dash_table.DataTable(
-        columns=([{'id': regs[i], 'name': regs[i]}]),
-        data=([{regs[i]: values[i]}]),
-    ), style={'display':'inline-block'}) for i in range(len(regs))])
-
-
-@app.callback([Output('cf', 'value'),
-               Output('zf', 'value'),
-               Output('of', 'value'),
-               Output('sf', 'value')],
-              [Input('flags-storage', 'children')])
-def create_flags(value):
-    """
-    # TODO
-    :param value:
-    :return:
-    """
-    return value[0], value[1], value[2], value[3]
-
-
-@app.callback(Output('output', 'children'),
-              [Input('output-storage', 'children')])
-def create_output(value):
-    """
-    # TODO
-    :param value:
-    :return:
-    """
-    return dcc.Textarea(value=value, disabled=True, style={'width': 220})
-
-
-@app.callback(Output('memory', 'children'),
-              [Input('memory-storage', 'children')])
-def create_memory(value):
-    """
-    # TODO
-    :param value:
-    :return:
-    """
-    if not value[1]:
-        headers = ["Addr   :  "]
-        for i in range(0, 32, 4):
-            headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
-                           f"{hex(i + 2)[2:].rjust(2, '0')} {hex(i + 3)[2:].rjust(2, '0')}")
-
-        rows = []
-        for i in range(0, 1024, 32):
-            rows.append(hex(i)[2:].rjust(8, "0"))
-
-        temp_lst1 = value[0].split('\n')
-        memory_data = []
-        for i in temp_lst1:
-            memory_data.append(i.split('\t'))
-
-        rows = [rows] + memory_data
-
-        data_lst = []
-        for y in range(len(rows[0])):
-            data_lst.append([])
-            for x in range(len(rows)):
-                data_lst[y].append(rows[x][y])
-
-        # Create a list of dictionaries (key -- column name)
-        data = []
-        for x in range(len(rows[0])):
-            data.append(dict())
-            for y in range(len(rows)):
-                data[x][headers[y]] = data_lst[x][y]
-
-        return dash_table.DataTable(columns=([{'id': i, 'name': i} for i in headers]),
-                                    data=data,
-                                    style_table={'height': '300px', 'overflowY': 'auto',
-                                                 'background-color': table['background']})
+    p_style = "color: #FFFFFF; padding-left: 12%; width: 75%"
+    return render_template('help.html', items=help_dict, p_style=p_style, reg_dict=register_dict)
 
 
 # Run the program
 if __name__ == '__main__':
-    # SERVER LAUNCH
-    dev_server = app.run_server
-    app.run_server(debug=True, threaded=True)
-
-# TODO: help page,
+    app.run_server(debug=True, use_reloader=False)
+# TODO:
 #  cookies to save previous program,
-#  edit memory and registers,
+#  edit memory,
 #  change memory slots (numeration????????),
 #  add new version to server,
 #  make table undraggable,
