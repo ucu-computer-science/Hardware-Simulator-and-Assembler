@@ -6,6 +6,7 @@
 
 # This is the main module of the virtual memory for the assembly hardware simulator
 # TODO: Is there any difference between registers and memory for us? Do we need two modules???
+# TODO: We might consider using the sparse representation of memory, especially for 64kib
 
 from bitarray import bitarray
 
