@@ -38,3 +38,16 @@ mul %R01, %R01, %R02
 
 div %R01, %R01, %R02
 # 0x2002 is now in R01
+
+mov_low %R02, $5
+and %R00, %R01, %R02
+# R00 contains 0x0000
+
+or %R00, %R01, %R02
+# R00 contains 0x2007
+
+xor %R00, %R00, %R01
+# R00 contains 0x0005
+
+not %R00, %R00
+# R00 contains 0xFFFA

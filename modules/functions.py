@@ -250,7 +250,7 @@ def bit_xor(operands, flag_register):
 
 def bit_not(operands, flag_register):
     """
-    Performs bitwise and on two registers, saving the result in the third one
+    Performs bitwise not on the second register, saving the result in the first one
 
     Zero operand the value of the first register
     First one is the value of the second register (main operand in the operation)
@@ -260,9 +260,7 @@ def bit_not(operands, flag_register):
     :return: new value of the first register
     """
     result = operands[-1].to01()
-    result.replace("1", "2")
-    result.replace("0", "1")
-    result.replace("2", "0")
+    result = result.replace("1", "2").replace("0", "1").replace("2", "0")
 
     # flag_register._state = bitarray("0" * 16)
     # change_flag_result(flag_register, operands, result)
@@ -438,12 +436,12 @@ def bin_clean(bin_str):
 
 
 functions_dictionary = {"load": load_store, "loadf": load_store, "loadi": load_store,
+                        "store": load_store, "storef": load_store, "storei": load_store,
                         "swap": load_store, "dup": load_store, "dup2": load_store,
                         "mov_low": mov_low, "mov_high": mov_high, "mov": mov,
                         "add": add, "sub": sub, "inc": add, "dec": sub,
                         "mul": mul, "div": div,
                         "and": bit_and, "or": bit_or,
                         "xor": bit_xor, "not": bit_not,
-                        "store": load_store, "storef": load_store, "storei": load_store,
                         "cmp": cmp, "cmpe": cmpe, "cmpb": cmpb,
                         "lsh": lsh, "rsh": rsh, "test": test}
