@@ -1,5 +1,3 @@
-import plotly.graph_objects as go
-
 # COLOR PALETTE
 # TABLES
 table_main_color = '#414364'
@@ -31,12 +29,6 @@ not_working_bg = '#5C5C5C'
 not_working_text = '#AFAFB2'
 
 not_working = {"background": not_working_bg, "font": not_working_text}
-
-# TRANSPARENT LAYOUT FOR FIGURES
-layout = go.Layout(
-    paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)'
-)
 
 
 style_header = {'backgroundColor': background_color, 'border': f'1px {background_color}',

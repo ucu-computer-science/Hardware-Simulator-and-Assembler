@@ -10,16 +10,17 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from bitarray.util import ba2hex, hex2ba
 from bitarray import bitarray
+from copy import deepcopy
 import uuid
 import dash_table
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import json
 
 # Imports from the project
 from modules.processor import CPU
 from modules.assembler import Assembler, AssemblerError
 from website.color_palette_and_layout import table_header, table, button, assembly, background_color, title_color, \
-    text_color, not_working, layout, style_header, style_cell, tab_style, tab_selected_style, \
+    text_color, not_working, style_header, style_cell, tab_style, tab_selected_style, \
     dropdown_style1, dropdown_style2
 from website.example_programs import examples
 
@@ -30,8 +31,9 @@ buttons = {0: 'risc1', 1: 'risc2', 2: 'risc3', 3: 'cisc'}
 
 # Create app
 server = Flask(__name__)
+server.secret_key = b'_5#y2L"F4Q8'
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)', ]
-app = dash.Dash(name=__name__, server=server, external_stylesheets=external_stylesheets)
+app = dash.Dash(name=__name__, server=server, external_stylesheets=external_stylesheets, routes_pathname_prefix='/')
 app.title = "ASSEMBLY SIMULATOR"
 
 # MAIN LAYOUT
@@ -121,7 +123,8 @@ app.layout = html.Div([
                     dcc.Markdown("ASSEMBLY CODE:",
                                  style={'color': text_color, 'font-family': "Roboto Mono, monospace",
                                         'font-size': '18px', 'margin-left': 60}),
-                    dcc.Textarea(id="input1", spellCheck='false', value="input assembly code here",
+                    dcc.Textarea(id="input1", spellCheck='false',
+                                 value="loading...",
                                  style={'width': 235, 'height': 400,
                                         "color": assembly['font'], 'font-size': '15px',
                                         "background-color": assembly['background'],
@@ -146,7 +149,8 @@ app.layout = html.Div([
                 html.Button('ASSEMBLE', id='assemble', n_clicks=0,
                             style={'margin-left': 54, 'margin-top': 15, "color": button['font'],
                                    "background-color": button['background'],
-                                   'width': 160, 'display': 'inline-block'}),
+                                   'width': 160, 'display': 'inline-block', 'font-family': "Roboto Mono, monospace",
+                                   'font-size': 13}),
 
             ]),
 
@@ -234,12 +238,14 @@ app.layout = html.Div([
             html.Div([html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
                                   style={"color": button['font'],
                                          "background-color": button['background'],
-                                         'width': 200, 'display': 'block', 'margin-bottom': 15}),
+                                         'width': 200, 'display': 'block', 'margin-bottom': 15,
+                                         'font-family': "Roboto Mono, monospace", 'font-size': 13}),
 
                       html.Button('RUN | STOP', id='run-until-finished', n_clicks=0,
                                   style={"color": button['font'],
                                          "background-color": button['background'],
-                                         'width': 200, 'display': 'block'}), ],
+                                         'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
+                                         'font-size': 13}), ],
                      style={'display': 'inline-block', 'margin-right': 30}),
 
             html.Div([
@@ -248,11 +254,13 @@ app.layout = html.Div([
                     html.Button('SAVE MANUAL CHANGES', id='save-manual', n_clicks=0,
                                 style={"color": button['font'],
                                        "background-color": button['background'],
-                                       'width': 220, 'display': 'block', 'margin-bottom': 15}),
+                                       'width': 220, 'display': 'block', 'margin-bottom': 15,
+                                       'font-family': "Roboto Mono, monospace", 'font-size': 13}),
                     html.Button('UNDO MANUAL CHANGES', id='undo-manual', n_clicks=0,
                                 style={"color": button['font'],
                                        "background-color": button['background'],
-                                       'width': 220, 'display': 'block'}),
+                                       'width': 220, 'display': 'block', 'font-family': "Roboto Mono, monospace",
+                                       'font-size': 13}),
                 ]),
 
             ], style={'display': 'inline-block'})
@@ -261,9 +269,14 @@ app.layout = html.Div([
 
     ]),
 
-    # Link to a help page
-    dcc.Link('Need some help?', href='/help', refresh=True,
-             style={'color': text_color, 'margin-top': 55, 'margin-left': 24, 'display': 'block'}),
+    # Link to a help page and license name (someday github link)
+    html.Div([dcc.Link('Need some help?', href='/help', refresh=True,
+                       style={'color': text_color, 'display': 'inline-block',
+                              'font-family': "Roboto Mono, monospace"}),
+              html.Div("GNU General Public License v3.0", style={'color': text_color, 'display': 'inline-block',
+                                                                 'font-family': "Roboto Mono, monospace",
+                                                                 'margin-left': 960})],
+             style={'margin-left': 24, 'margin-top': 55, 'display': 'block'}),
 
     # HIDDEN DIVS
 
@@ -272,6 +285,9 @@ app.layout = html.Div([
     # Id creation and storage
     html.Div(id='id-storage', style={'display': 'none'}),
     html.Div(id='id-creation', style={'display': 'none'}),
+
+    # Input code storage (mostly for coookies)
+    html.Div(id='input-code', children='', style={'display': 'none'}),
 
     # Binary and hexadecimal code translations storage
     html.Div(id='code', children=['', ''], style={'display': 'none'}),
@@ -308,8 +324,9 @@ app.layout = html.Div([
     Output('info', 'children'),
     [Input('isa-dropdown', 'value'),
      Input('architecture-dropdown', 'value'),
-     Input('io-dropdown', 'value')])
-def update_output(isa, arch, io):
+     Input('io-dropdown', 'value'),
+     Input('id-storage', 'children')])
+def update_output(isa, arch, io, user_id):
     """
     Update main information about the cpu,
     depending on the choice from dropdowns.
@@ -325,15 +342,19 @@ def update_output(isa, arch, io):
 # Create user id
 @app.callback(Output('id-storage', 'children'),
               [Input('id-creation', 'children')])
-def get_ip(value):
+def get_id(value):
     """
     Return randomly generated id each time new session starts
 
     :param value: is not used (is here by default)
     :return: random id
     """
-    session_id = str(uuid.uuid4())
-    return session_id
+    if 'user_id' in session:
+        user_id = session['user_id']
+    else:
+        user_id = str(uuid.uuid4())
+        session['user_id'] = user_id
+    return user_id
 
 
 # Save binary and hexadecimal code
@@ -360,9 +381,15 @@ def assemble(n_clicks, info, user_id, assembly_code):
         user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
         user_dict[user_id]['save-manual'] = 0
         user_dict[user_id]['undo-manual'] = 0
+        user_dict[user_id]['code'] = ''
+        user_dict[user_id]['binhex'] = ['', '']
 
-    if not assembly_code or assembly_code == "input assembly code here":
+    if not assembly_code or assembly_code in ["input assembly code here", "loading...", '']:
         binary_program = hex_program = ''
+        if not user_dict[user_id]['code']:
+            user_dict[user_id]['cpu'] = CPU(isa, architecture, io, binary_program)
+            user_dict[user_id]['code'] = assembly_code
+            user_dict[user_id]['binhex'] = [binary_program, hex_program]
     else:
         try:
             binary_program = Assembler(isa, assembly_code).binary_code
@@ -372,6 +399,8 @@ def assemble(n_clicks, info, user_id, assembly_code):
         except AssemblerError as err:
             binary_program = hex_program = f'{err.args[0]}'
             user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
+        user_dict[user_id]['code'] = assembly_code
+        user_dict[user_id]['binhex'] = [binary_program, hex_program]
 
     return binary_program, hex_program
 
@@ -379,8 +408,9 @@ def assemble(n_clicks, info, user_id, assembly_code):
 # Create tabs content (bin and hex)
 @app.callback(Output('tabs-content', 'children'),
               [Input('TABS', 'value'),
-               Input('code', 'children')])
-def render_content_hex_bin(tab, code_lst):
+               Input('code', 'children'),
+               Input('id-storage', 'children')])
+def render_content_hex_bin(tab, code_lst, user_id):
     """
     Render two tabs: with binary and with hexadecimal code translations
 
@@ -388,6 +418,8 @@ def render_content_hex_bin(tab, code_lst):
     :param code_lst: list with binary and with hexadecimal code translations
     :return: tabs
     """
+    if user_id in user_dict:
+        code_lst = user_dict[user_id]['binhex']
     if tab == 'binary':
         return html.Div([
             dcc.Textarea(value=code_lst[0],
@@ -422,14 +454,30 @@ def update_examples(isa):
 
 # Add a chosen example to the textarea
 @app.callback(
-    Output('input1', 'value'),
+    Output('input-code', 'children'),
     [Input('example-dropdown', 'value'),
-     Input('examples', 'children')])
-def add_example(example_name, app_examples):
+     Input('examples', 'children'),
+     Input('id-storage', 'children')])
+def add_example(example_name, app_examples, user_id):
     if example_name == 'alphabet':
         return app_examples[0]
     elif example_name == 'hello':
         return app_examples[1]
+    if user_id in user_dict:
+        if user_dict[user_id]['code']:
+            return user_dict[user_id]['code']
+        else:
+            return "input assembly code here"
+    else:
+        return "input assembly code here"
+
+
+# Add current code to the textarea
+@app.callback(
+    Output('input1', 'value'),
+    [Input('input-code', 'children')])
+def code(input_code):
+    return input_code
 
 
 # APP CALLBACKS FOR CREATION OF GRAPHIC ELEMENTS OF THE PROCESSOR
@@ -584,10 +632,15 @@ def update_next(n_clicks, user_id, interval):
 def run_interval(n, user_id, instruction, current_state):
     if not n:
         user_dict[user_id]['intervals'] = 0
-    if user_id in user_dict:
+    elif user_id in user_dict:
         if instruction == '0' * len(instruction):
+            copied_cpu = deepcopy(user_dict[user_id]['cpu'])
+            copied_cpu.web_next_instruction()
             user_dict[user_id]['intervals'] = n
-            return True
+            if copied_cpu.instruction.to01() == instruction:
+                return True
+            else:
+                return not current_state
         elif n > user_dict[user_id]['intervals']:
             user_dict[user_id]['intervals'] = n
             return not current_state
@@ -622,6 +675,7 @@ def update_instruction(value, user_id):
     """
     if user_id in user_dict:
         return f"{user_dict[user_id]['cpu'].instruction.to01()}"
+    return '0' * 16
 
 
 @app.callback(Output('registers-storage', 'children'),
@@ -656,6 +710,7 @@ def update_registers(value_not_used, user_id, save_manual, undo_manual, data):
         for i in range(len(items)):
             values.append(f"{(items[i][0] + ':')} {items[i][1]}")
         return values
+    return ['SP: 0400', 'IP: 0200', 'LR: 0000', 'FR: 0000', 'R00: 0000', 'R01: 0000', 'R02: 0000', 'R03: 0000']
 
 
 @app.callback(Output('flags-storage', 'children'),
@@ -689,6 +744,7 @@ def update_flags(value, user_id, save_manual, undo_manual, data):
             return [cf, zf, of, sf]
         else:
             return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
+    return [0, 0, 0, 0]
 
 
 @app.callback(Output('output-storage', 'children'),
@@ -708,6 +764,7 @@ def update_output(value, user_id):
         for port, device in user_dict[user_id]['cpu'].ports_dictionary.items():
             shell_slots.append(str(device))
         return " ".join(shell_slots)
+    return ""
 
 
 @app.callback(Output('memory-storage', 'children'),
@@ -732,6 +789,9 @@ def update_memory(value, user_id):
         for i in memory_data:
             lst.append('\t'.join(i))
         return ['\n'.join(lst), '']
+    lst1 = '\t'.join(['00 00 00 00'] * 32)
+    lst2 = '\n'.join([lst1] * 8)
+    return [lst2, '']
 
 
 # HELP PAGE
@@ -746,14 +806,18 @@ def template_test():
     return render_template('help.html', items=help_dict, p_style=p_style, reg_dict=register_dict)
 
 
+@app.server.route('/')
+def index():
+    resp = make_response(app)
+    return resp
+
+
 # Run the program
 if __name__ == '__main__':
-    app.run_server(debug=True, use_reloader=False)
+    app.run_server(debug=True)
 # TODO:
 #  cookies to save previous program,
 #  edit memory,
 #  change memory slots (numeration????????),
 #  add new version to server,
-#  make table undraggable,
-#  fix table becoming dark,
 #  documentation
