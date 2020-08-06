@@ -8,7 +8,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-from bitarray.util import ba2hex, hex2ba
+from bitarray.util import ba2hex, hex2ba, int2ba, ba2int
 from bitarray import bitarray
 from copy import deepcopy
 import uuid
@@ -21,7 +21,8 @@ from modules.processor import CPU
 from modules.assembler import Assembler, AssemblerError
 from website.color_palette_and_layout import table_header, table, button, assembly, background_color, title_color, \
     text_color, not_working, style_header, style_cell, tab_style, tab_selected_style, \
-    dropdown_style1, dropdown_style2
+    dropdown_style1, dropdown_style2, table_main_color, table_main_font_color, table_header_color, help_color, \
+    help_font_color, style_memory_header, memory_font
 from website.example_programs import examples
 
 # CPU DICTIONARY ( key=user.id, value=dict(cpu, intervals) )
@@ -135,7 +136,7 @@ app.layout = html.Div([
 
                 # Tabs with bin and hex code
                 html.Div([
-                    dcc.Tabs(id='TABS', value='tabs', children=[
+                    dcc.Tabs(id='TABS', value='binary', children=[
                         dcc.Tab(label='BIN:', value='binary', style=tab_style, selected_style=tab_selected_style),
                         dcc.Tab(label='HEX:', value='hexadecimal', style=tab_style, selected_style=tab_selected_style),
                     ], style={'width': 185, 'height': 58}),
@@ -162,35 +163,38 @@ app.layout = html.Div([
             html.Div([
 
                 # Next instruction
-                html.Div(id='instruction', style={'display': 'inline-block', 'margin-right': 15}),
+                html.Div(id='instruction', style={'display': 'inline-block', 'margin-right': 10
+                                                  }),
 
                 # Output, registers and flags
                 html.Div([
 
-                    html.Div(id='output', style={'display': 'inline-block', 'margin-right': 15}),
+                    html.Div(id='output', style={'display': 'inline-block', 'margin-right': 10}),
 
                     # Registers
                     html.Div(html.Div(id='registers', children=dash_table.DataTable(id='registers-table',
-                                                                                    columns=([{'id': ['SP', 'IP', 'LR',
-                                                                                                      'FR', 'R00',
-                                                                                                      'R01', 'R02',
-                                                                                                      'R03'][i],
-                                                                                               'name':
-                                                                                                   ['SP', 'IP', 'LR',
-                                                                                                    'FR', 'R00', 'R01',
-                                                                                                    'R02', 'R03'][
-                                                                                                       i] + ': '} for i
-                                                                                              in
-                                                                                              range(4)]),
-                                                                                    data=([{['SP', 'IP', 'LR', 'FR',
-                                                                                             'R00', 'R01', 'R02',
-                                                                                             'R03'][i]: '0000' for i in
+                                                                                    columns=(
+                                                                                        [{'id': ['SP:', 'IP:', 'LR:',
+                                                                                                 'FR:', 'R00:',
+                                                                                                 'R01:', 'R02:',
+                                                                                                 'R03:'][i],
+                                                                                          'name':
+                                                                                              ['SP', 'IP', 'LR',
+                                                                                               'FR', 'R00', 'R01',
+                                                                                               'R02', 'R03'][
+                                                                                                  i] + ': '} for i
+                                                                                         in
+                                                                                         range(4)]),
+                                                                                    data=([{['SP:', 'IP:', 'LR:',
+                                                                                             'FR:', 'R00:',
+                                                                                             'R01:', 'R02:',
+                                                                                             'R03:'][i]: '0000' for i in
                                                                                             range(4)}]),
-                                                                                    style_header=style_header[0],
-                                                                                    style_cell=style_cell[0],
+                                                                                    style_header=style_header,
+                                                                                    style_cell=style_cell,
                                                                                     editable=True,
                                                                                     ), ),
-                             style={'display': 'inline-block', 'margin-right': 15}),
+                             style={'display': 'inline-block', 'margin-right': 10}),
 
                     html.Div(id='flags', children=dash_table.DataTable(id='flags-table',
                                                                        columns=([{'id': ['CF', 'ZF', 'OF', 'SF'][i],
@@ -199,18 +203,18 @@ app.layout = html.Div([
                                                                                  range(4)]),
                                                                        data=([{['CF', 'ZF', 'OF', 'SF'][i]: '0' for i in
                                                                                range(4)}]),
-                                                                       style_header=style_header[0],
-                                                                       style_cell=style_cell[0], ),
-                             style={'display': 'inline-block', 'margin-right': 30}),
+                                                                       style_header=style_header,
+                                                                       style_cell=style_cell, ),
+                             style={'display': 'inline-block', 'margin-right': 10}),
 
                     html.Div
                         ([
 
                         dash_table.DataTable(id='seconds',
-                                             columns=([{'id': '1', 'name': 'INSTRUCTION PER SECOND'}]),
+                                             columns=([{'id': '1', 'name': 'INSTRUCTION PER SECOND (Hz)'}]),
                                              data=([{'1': '1'}]),
-                                             style_header=style_header[0],
-                                             style_cell=style_cell[0],
+                                             style_header=style_header,
+                                             style_cell=style_cell,
                                              editable=True),
 
                     ],
@@ -221,7 +225,11 @@ app.layout = html.Div([
             ]),
 
             # Memory
-            html.Div(id='memory', style={'margin-top': 20, 'margin-bottom': 20}),
+            html.Div([dcc.Tabs(id='memory-tabs', value='data_memory', vertical=True,children=[
+                dcc.Tab(label='DATA MEMORY:', value='data_memory'),
+                dcc.Tab(label='PROGRAM MEMORY:', value='program_memory', disabled=True)
+            ]), html.Div(id='memory')
+                      ], style={'margin-top': 20, 'margin-bottom': 20, 'float': 'left'}),
 
             html.Div([
                 dcc.Dropdown(
@@ -270,13 +278,17 @@ app.layout = html.Div([
     ]),
 
     # Link to a help page and license name (someday github link)
-    html.Div([dcc.Link('Need some help?', href='/help', refresh=True,
-                       style={'color': text_color, 'display': 'inline-block',
+    html.Div([dcc.Link(html.Button('INSTRUCTION SET (HELP)', style={"color": help_font_color,
+                                                                    "background-color": help_color,
+                                                                    'margin-bottom': 15,
+                                                                    'font-family': "Roboto Mono, monospace",
+                                                                    'font-size': 13}), href='/help', refresh=True,
+                       style={'color': text_color, 'display': 'block',
                               'font-family': "Roboto Mono, monospace"}),
-              html.Div("GNU General Public License v3.0", style={'color': text_color, 'display': 'inline-block',
+              html.Div("GNU General Public License v3.0", style={'color': text_color, 'display': 'block',
                                                                  'font-family': "Roboto Mono, monospace",
-                                                                 'margin-left': 960})],
-             style={'margin-left': 24, 'margin-top': 55, 'display': 'block'}),
+                                                                 'margin-left': 1100, 'margin-top': -35})],
+             style={'margin-left': 14, 'margin-top': 40, 'display': 'block'}),
 
     # HIDDEN DIVS
 
@@ -312,9 +324,14 @@ app.layout = html.Div([
     html.Div(id='run-storage', children=dcc.Interval(id='interval', interval=1 * 1000, n_intervals=0, disabled=True),
              style={'display': 'none'}),
 
+    # Storage to hold seconds for instruction per second
+    html.Div(id='seconds-storage', children=1, style={'display': 'none'}),
+
     # Example storage (for risc3 by default)
     html.Div(id='examples', children=examples['risc3'], style={'display': 'none'}),
 
+    # Instruction pointer storage (for risc3 by default)
+    html.Div(id='ip-storage', children=512, style={'display': 'none'}),
 ], id="wrapper", )
 
 
@@ -359,11 +376,12 @@ def get_id(value):
 
 # Save binary and hexadecimal code
 @app.callback(Output('code', 'children'),
-              [Input('assemble', 'n_clicks'),
-               Input('info', 'children'),
-               Input('id-storage', 'children')],
-              [State('input1', 'value')])
-def assemble(n_clicks, info, user_id, assembly_code):
+              [Input('assemble', 'n_clicks')],
+              [State('info', 'children'),
+               State('id-storage', 'children'),
+               State('input1', 'value'),
+               State('ip-storage', 'children')])
+def assemble(n_clicks, info, user_id, assembly_code, ip):
     """
     Translate input assembly code to binary and hexadecimal ones.
 
@@ -373,36 +391,39 @@ def assemble(n_clicks, info, user_id, assembly_code):
     :param assembly_code: input assembly code
     :return: binary and hexadecimal codes or assembler error
     """
-    isa, architecture, io = info.split()
+    if n_clicks:
+        isa, architecture, io = info.split()
 
-    global user_dict
-    if user_id not in user_dict:
-        user_dict[user_id] = dict()
-        user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
-        user_dict[user_id]['save-manual'] = 0
-        user_dict[user_id]['undo-manual'] = 0
-        user_dict[user_id]['code'] = ''
-        user_dict[user_id]['binhex'] = ['', '']
+        global user_dict
+        if user_id not in user_dict:
+            user_dict[user_id] = dict()
+            user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
+            user_dict[user_id]['save-manual'] = 0
+            user_dict[user_id]['undo-manual'] = 0
+            user_dict[user_id]['code'] = ''
+            user_dict[user_id]['binhex'] = ['', '']
 
-    if not assembly_code or assembly_code in ["input assembly code here", "loading...", '']:
-        binary_program = hex_program = ''
-        if not user_dict[user_id]['code']:
-            user_dict[user_id]['cpu'] = CPU(isa, architecture, io, binary_program)
+        if not assembly_code or assembly_code in ["input assembly code here", "loading...", '']:
+            binary_program = hex_program = ''
+            if not user_dict[user_id]['code']:
+                user_dict[user_id]['cpu'] = CPU(isa, architecture, io, binary_program, ip)
+                user_dict[user_id]['code'] = assembly_code
+                user_dict[user_id]['binhex'] = [binary_program, hex_program]
+        else:
+            try:
+                binary_program = Assembler(isa, assembly_code).binary_code
+                user_dict[user_id]['cpu'] = CPU(isa, architecture, io, binary_program, ip)
+                hex_program = '\n'.join(
+                    list(map(lambda x: hex(int(x, 2))[2:], [x for x in binary_program.split('\n') if x])))
+
+            except AssemblerError as err:
+                binary_program = hex_program = f'{err.args[0]}'
+                user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '', ip)
             user_dict[user_id]['code'] = assembly_code
             user_dict[user_id]['binhex'] = [binary_program, hex_program]
-    else:
-        try:
-            binary_program = Assembler(isa, assembly_code).binary_code
-            user_dict[user_id]['cpu'] = CPU(isa, architecture, io, binary_program)
-            hex_program = '\n'.join(list(map(lambda x: hex(int(x, 2)), [x for x in binary_program.split('\n') if x])))
 
-        except AssemblerError as err:
-            binary_program = hex_program = f'{err.args[0]}'
-            user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
-        user_dict[user_id]['code'] = assembly_code
-        user_dict[user_id]['binhex'] = [binary_program, hex_program]
-
-    return binary_program, hex_program
+        return binary_program, hex_program
+    return '', ''
 
 
 # Create tabs content (bin and hex)
@@ -490,8 +511,8 @@ def create_instruction(value):
     :return:
     """
     return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
-                                data=([{'1': value}]), style_header=style_header[0],
-                                style_cell=style_cell[0], ),
+                                data=([{'1': value}]), style_header=style_header,
+                                style_cell=style_cell, ),
 
 
 @app.callback(Output('registers', 'children'),
@@ -511,8 +532,12 @@ def create_registers(value):
     return html.Div(dash_table.DataTable(id='registers-table',
                                          columns=([{'id': regs[i], 'name': regs[i]} for i in range(len(regs))]),
                                          data=([{regs[i]: values[i] for i in range(len(regs))}]),
-                                         style_header=style_header[0],
-                                         style_cell=style_cell[0],
+                                         style_header=style_header,
+                                         style_cell={'backgroundColor': table_main_color,
+                                                     'color': table_main_font_color, 'textAlign': 'center',
+                                                     'border': f'1px {table_header_color}',
+                                                     'font-family': "Roboto Mono, monospace", 'font-size': 12,
+                                                     'minWidth': 33.5},
                                          editable=True
                                          ))
 
@@ -529,8 +554,8 @@ def create_flags(value):
     return dash_table.DataTable(id='flags-table',
                                 columns=([{'id': flags[i], 'name': flags[i] + ': '} for i in range(len(flags))]),
                                 data=([{flags[i]: value[i] for i in range(len(flags))}]),
-                                style_header=style_header[0],
-                                style_cell=style_cell[0],
+                                style_header=style_header,
+                                style_cell=style_cell,
                                 editable=True)
 
 
@@ -544,55 +569,65 @@ def create_output(value):
     """
     return dash_table.DataTable(columns=([{'id': '1', 'name': 'OUTPUT'}]),
                                 data=([{'1': value}]),
-                                style_header=style_header[0],
-                                style_cell=style_cell[0],
+                                style_header=style_header,
+                                style_cell=style_cell,
                                 style_table={'width': '150px'}),
 
 
 @app.callback(Output('memory', 'children'),
-              [Input('memory-storage', 'children')])
-def create_memory(value):
+              [Input('memory-tabs', 'value'),
+               Input('memory-storage', 'children')])
+def create_memory(tab, value):
     """
     # TODO
     :param value:
     :return:
     """
-    if not value[1]:
-        headers = ["Addr   :  "]
-        for i in range(0, 32, 4):
-            headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
-                           f"{hex(i + 2)[2:].rjust(2, '0')} {hex(i + 3)[2:].rjust(2, '0')}")
+    if tab == 'data_memory':
+        if not value[1]:
+            headers = ["Addr   :  "]
+            for i in range(0, 32, 4):
+                headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
+                               f"{hex(i + 2)[2:].rjust(2, '0')} {hex(i + 3)[2:].rjust(2, '0')}")
 
-        rows = []
-        for i in range(0, 1024, 32):
-            rows.append(hex(i)[2:].rjust(8, "0"))
+            rows = []
+            for i in range(0, 1024, 32):
+                rows.append(hex(i)[2:].rjust(8, "0"))
 
-        temp_lst1 = value[0].split('\n')
-        memory_data = []
-        for i in temp_lst1:
-            memory_data.append(i.split('\t'))
+            temp_lst1 = value[0].split('\n')
+            memory_data = []
+            for i in temp_lst1:
+                memory_data.append(i.split('\t'))
 
-        rows = [rows] + memory_data
+            rows = [rows] + memory_data
 
-        data_lst = []
-        for y in range(len(rows[0])):
-            data_lst.append([])
-            for x in range(len(rows)):
-                data_lst[y].append(rows[x][y])
+            data_lst = []
+            for y in range(len(rows[0])):
+                data_lst.append([])
+                for x in range(len(rows)):
+                    data_lst[y].append(rows[x][y])
 
-        # Create a list of dictionaries (key -- column name)
-        data = []
-        for x in range(len(rows[0])):
-            data.append(dict())
-            for y in range(len(rows)):
-                data[x][headers[y]] = data_lst[x][y]
+            # Create a list of dictionaries (key -- column name)
+            data = []
+            for x in range(len(rows[0])):
+                data.append(dict())
+                for y in range(len(rows)):
+                    data[x][headers[y]] = data_lst[x][y]
 
-        return dash_table.DataTable(columns=([{'id': i, 'name': i} for i in headers]),
-                                    data=data,
-                                    style_header=style_header[0],
-                                    style_cell=style_cell[0],
-                                    style_table={'height': '300px', 'overflowY': 'auto'},
-                                    )
+            return dash_table.DataTable(columns=([{'id': i, 'name': i} for i in headers]),
+                                        data=data,
+                                        style_header=style_memory_header,
+                                        style_cell=style_cell,
+                                        style_cell_conditional=[
+                                            {
+                                                'if': {'column_id': headers[0]},
+                                                'color': memory_font
+                                            }
+                                        ],
+                                        style_table={'height': '300px', 'overflowY': 'auto'},
+                                        )
+    else:
+        pass
 
 
 # UPDATE HIDDEN INFO FOR PROCESSOR
@@ -630,7 +665,7 @@ def update_next(n_clicks, user_id, interval):
     [State("interval", "disabled")]
 )
 def run_interval(n, user_id, instruction, current_state):
-    if not n:
+    if not n and user_id in user_dict:
         user_dict[user_id]['intervals'] = 0
     elif user_id in user_dict:
         if instruction == '0' * len(instruction):
@@ -651,14 +686,33 @@ def run_interval(n, user_id, instruction, current_state):
 
 @app.callback(
     Output("interval", "interval"),
+    [Input('seconds-storage', 'children'), ]
+)
+def update_seconds_interval(instructions):
+    return 1000 / instructions
+
+
+@app.callback(
+    Output('seconds-storage', 'children'),
     [Input("seconds", "data")]
 )
-def update_seconds(instructions):
+def update_seconds_div(instructions):
     try:
-        int(instructions[0]['1'])
-        return 1000 / int(instructions[0]['1'])
+        inst_per_second = int(instructions[0]['1'])
+        if inst_per_second >= 10:
+            inst_per_second = 9
+        return inst_per_second
     except ValueError:
-        return 1 * 1000
+        return 1
+
+
+@app.callback(
+    Output("seconds", "data"),
+    [Input('next', 'n_clicks')],
+    [State('interval', 'interval')]
+)
+def update_seconds_table(n_clicks, interval):
+    return [{'1': (interval / 1000) ** (-1)}]
 
 
 @app.callback(Output('instruction-storage', 'children'),
@@ -678,14 +732,66 @@ def update_instruction(value, user_id):
     return '0' * 16
 
 
-@app.callback(Output('registers-storage', 'children'),
+@app.callback(Output('flags-storage', 'children'),
               [Input('next-storage', 'children'),
                Input('id-storage', 'children'),
                Input('save-manual', 'n_clicks'),
                Input('undo-manual', 'n_clicks')
                ],
+              [State('flags-table', 'data'),
+               State('registers-table', 'data')])
+def update_flags(value, user_id, save_manual, undo_manual, data_flags, data_regs):
+    """
+    Reacts on changes in the div, which is
+    affected by the 'next instruction' button
+    # TODO: about manual
+
+    :param value: is not used
+    :param user_id: id of the session/user
+    :return: string flags
+    """
+    if user_id in user_dict:
+        flags = ''.join([data_flags[0]['CF'], data_flags[0]['ZF'], data_flags[0]['OF'], data_flags[0]['SF']])
+        if list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:]) == [data_flags[0]['CF'],
+                                                                                  data_flags[0]['ZF'],
+                                                                                  data_flags[0]['OF'],
+                                                                                  data_flags[0]['SF']]:
+            if user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:] != hex2ba(data_regs[0]['FR:']).to01().rjust(
+                    4, '0')[12:]:
+                flags = hex2ba(data_regs[0]['FR:']).to01()[-4:]
+            else:
+                save_manual -= 1
+
+        if save_manual > user_dict[user_id]['save-manual']:
+            user_dict[user_id]['save-manual'] = save_manual
+            try:
+                cf, zf, of, sf = list(flags)
+                user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
+
+                return [cf, zf, of, sf]
+            except ValueError:
+                cf, zf, of, sf = list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:])
+
+                return [cf, zf, of, sf]
+        elif undo_manual > user_dict[user_id]['undo-manual']:
+            user_dict[user_id]['undo-manual'] = undo_manual
+            cf, zf, of, sf = list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:])
+
+            return [cf, zf, of, sf]
+        else:
+            return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
+    return ['0', '0', '0', '0']
+
+
+@app.callback(Output('registers-storage', 'children'),
+              [Input('next-storage', 'children'),
+               Input('id-storage', 'children'),
+               Input('save-manual', 'n_clicks'),
+               Input('undo-manual', 'n_clicks'),
+               Input('ip-storage', 'children'),
+               ],
               [State('registers-table', 'data')])
-def update_registers(value_not_used, user_id, save_manual, undo_manual, data):
+def update_registers(value_not_used, user_id, save_manual, undo_manual, ip_changes, data):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -699,7 +805,7 @@ def update_registers(value_not_used, user_id, save_manual, undo_manual, data):
             user_dict[user_id]['save-manual'] = save_manual
             new_reg_dict = data[0]
             for key, value in new_reg_dict.items():
-                user_dict[user_id]['cpu'].registers[key[:-1]]._state = hex2ba(value)
+                user_dict[user_id]['cpu'].registers[key[:-1]]._state = bitarray(hex2ba(value).to01().rjust(16, '0'))
 
         elif undo_manual > user_dict[user_id]['undo-manual']:
             user_dict[user_id]['undo-manual'] = undo_manual
@@ -710,41 +816,10 @@ def update_registers(value_not_used, user_id, save_manual, undo_manual, data):
         for i in range(len(items)):
             values.append(f"{(items[i][0] + ':')} {items[i][1]}")
         return values
+    elif ip_changes != 512:
+        return ['SP: 0400', f'IP: {ba2hex(int2ba(int(ip_changes), 16))}', 'LR: 0000', 'FR: 0000', 'R00: 0000',
+                'R01: 0000', 'R02: 0000', 'R03: 0000']
     return ['SP: 0400', 'IP: 0200', 'LR: 0000', 'FR: 0000', 'R00: 0000', 'R01: 0000', 'R02: 0000', 'R03: 0000']
-
-
-@app.callback(Output('flags-storage', 'children'),
-              [Input('next-storage', 'children'),
-               Input('id-storage', 'children'),
-               Input('save-manual', 'n_clicks'),
-               Input('undo-manual', 'n_clicks')
-               ],
-              [State('flags-table', 'data')])
-def update_flags(value, user_id, save_manual, undo_manual, data):
-    """
-    Reacts on changes in the div, which is
-    affected by the 'next instruction' button
-    # TODO: about manual
-
-    :param value: is not used
-    :param user_id: id of the session/user
-    :return: string flags
-    """
-    if user_id in user_dict:
-        if save_manual > user_dict[user_id]['save-manual']:
-            user_dict[user_id]['save-manual'] = save_manual
-            cf, zf, of, sf = data[0]['CF'], data[0]['ZF'], data[0]['OF'], data[0]['SF'],
-            user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
-
-            return [cf, zf, of, sf]
-        elif undo_manual > user_dict[user_id]['undo-manual']:
-            user_dict[user_id]['undo-manual'] = undo_manual
-            cf, zf, of, sf = list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:])
-
-            return [cf, zf, of, sf]
-        else:
-            return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
-    return [0, 0, 0, 0]
 
 
 @app.callback(Output('output-storage', 'children'),
@@ -794,6 +869,29 @@ def update_memory(value, user_id):
     return [lst2, '']
 
 
+# Update buttons
+@app.callback([Output('save-manual', 'n_clicks'),
+               Output('undo-manual', 'n_clicks'), ],
+              [Input('id-storage', 'children')])
+def update_buttons(user_id):
+    if user_id in user_dict:
+        return user_dict[user_id]['save-manual'], user_dict[user_id]['undo-manual']
+    return 0, 0
+
+
+# Update IP - info
+@app.callback(Output('ip-storage', 'children'),
+              [Input('next', 'n_clicks'),
+               Input('save-manual', 'n_clicks'),
+               Input('undo-manual', 'n_clicks')
+               ],
+              [State('registers-table', 'data')])
+def update_ip(n_clicks, save_manual, undo_manual, data):
+    if not n_clicks and save_manual:
+        return ba2int(hex2ba(data[0]['IP:']))
+    return 512
+
+
 # HELP PAGE
 @app.server.route('/help')
 def template_test():
@@ -816,8 +914,9 @@ def index():
 if __name__ == '__main__':
     app.run_server(debug=True)
 # TODO:
-#  cookies to save previous program,
 #  edit memory,
-#  change memory slots (numeration????????),
-#  add new version to server,
+#  keep size of registers when editing,
+#  change ip,
+#  two mems for stack,
 #  documentation
+
