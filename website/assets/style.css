@@ -98,3 +98,23 @@ td.dash-cell.cell--selected.focused {
     border-color: rgb(147, 182, 213) !important;
     color: rgb(147, 182, 213) !important;
 }
+
+body::-webkit-scrollbar {
+    width: 0em;
+}
+
+#input1::-webkit-scrollbar {
+    width: 0em;
+}
+
+#mem1::-webkit-scrollbar {
+    width: 0em;
+}
+
+#mem2::-webkit-scrollbar {
+    width: 0em;
+}
+
+#bin_hex::-webkit-scrollbar {
+    width: 0em;
+}

@@ -1,3 +1,4 @@
+from copy import deepcopy
 # COLOR PALETTE
 # TABLES
 table_main_color = '#414364'
@@ -5,6 +6,11 @@ table_header_color = '#414364'
 table_main_font_color = '#93B6D5'
 table_header_font_color = '#93B6D5'
 memory_font = '#9090AC'
+
+memory_tab = '#2D2E46'
+memory_tab_selected = '#52557C'
+memory_tab_font = '#696985'
+memory_tab_selected_font = '#9C9CB6'
 
 table_header = {"background": table_header_color, "font": table_header_font_color}
 table = {"background": table_main_color, "font": table_main_font_color}
@@ -55,6 +61,13 @@ tab_style = {
     'font-size': '18px'
 }
 
+memory_tab_style = deepcopy(tab_style)
+memory_tab_style['font-size'] = 12
+memory_tab_style['backgroundColor'] = memory_tab
+memory_tab_style['color'] = memory_tab_font
+memory_tab_style['padding'] = 3
+
+
 tab_selected_style = {
     'borderTop': f'1px solid {background_color}',
     'borderBottom': f'1px solid {background_color}',
@@ -65,6 +78,17 @@ tab_selected_style = {
     'color': text_color,
     'font-size': '18px'
 }
+
+memory_selected_tab_style = deepcopy(tab_selected_style)
+memory_selected_tab_style['font-size'] = 12
+memory_selected_tab_style['backgroundColor'] = memory_tab_selected
+memory_selected_tab_style['color'] = memory_tab_selected_font
+memory_selected_tab_style['padding'] = 3
+
+memory_selected_tab_style2 = deepcopy(memory_selected_tab_style)
+memory_selected_tab_style2['color'] = text_color
+memory_selected_tab_style2['backgroundColor'] = background_color
+
 
 dropdown_style1 = {'width': 200, 'backgroundColor': background_color,
                    'font-family': "Roboto Mono, monospace",

@@ -22,7 +22,7 @@ from modules.assembler import Assembler, AssemblerError
 from website.color_palette_and_layout import table_header, table, button, assembly, background_color, title_color, \
     text_color, not_working, style_header, style_cell, tab_style, tab_selected_style, \
     dropdown_style1, dropdown_style2, table_main_color, table_main_font_color, table_header_color, help_color, \
-    help_font_color, style_memory_header, memory_font
+    help_font_color, style_memory_header, memory_font, memory_tab_style, memory_selected_tab_style, memory_selected_tab_style2
 from website.example_programs import examples
 
 # CPU DICTIONARY ( key=user.id, value=dict(cpu, intervals) )
@@ -84,7 +84,7 @@ app.layout = html.Div([
                     id='architecture-dropdown',
                     options=[
                         {'label': 'VON NEUMANN', 'value': 'neumann'},
-                        {'label': 'HARVARD', 'value': 'harvard', 'disabled': True},
+                        {'label': 'HARVARD', 'value': 'harvard'},
                     ],
                     value='neumann',
                     style=dropdown_style1,
@@ -109,7 +109,7 @@ app.layout = html.Div([
             ], style={'display': 'inline-block'}),
 
         ], style={'display': 'inline-block', 'margin-left': 800}),
-    ], style={'margin-bottom': 20}),
+    ], style={'margin-bottom': 5}),
 
     # ASSEMBLER AND PROCESSOR
     html.Div([
@@ -225,11 +225,14 @@ app.layout = html.Div([
             ]),
 
             # Memory
-            html.Div([dcc.Tabs(id='memory-tabs', value='data_memory', vertical=True,children=[
-                dcc.Tab(label='DATA MEMORY:', value='data_memory'),
-                dcc.Tab(label='PROGRAM MEMORY:', value='program_memory', disabled=True)
-            ]), html.Div(id='memory')
-                      ], style={'margin-top': 20, 'margin-bottom': 20, 'float': 'left'}),
+            html.Div(id='memory-div', children=[dcc.Tabs(id='memory-tabs', value='data_memory', children=[
+                dcc.Tab(label='DATA MEMORY:', id='data-memory-tab', value='data_memory', style=memory_tab_style,
+                        selected_style=memory_selected_tab_style),
+                dcc.Tab(label='PROGRAM MEMORY:', id='program-memory-tab', value='program_memory',
+                        style=memory_tab_style,
+                        selected_style=memory_selected_tab_style, disabled_style=memory_tab_style)
+            ], style={'height': 45}), html.Div(id='memory')
+                                                ], style={'margin-bottom': 20, 'margin-top': 20}),
 
             html.Div([
                 dcc.Dropdown(
@@ -284,7 +287,7 @@ app.layout = html.Div([
                                                                     'font-family': "Roboto Mono, monospace",
                                                                     'font-size': 13}), href='/help', refresh=True,
                        style={'color': text_color, 'display': 'block',
-                              'font-family': "Roboto Mono, monospace"}),
+                              'font-family': "Roboto Mono, monospace", 'width': 260}),
               html.Div("GNU General Public License v3.0", style={'color': text_color, 'display': 'block',
                                                                  'font-family': "Roboto Mono, monospace",
                                                                  'margin-left': 1100, 'margin-top': -35})],
@@ -443,14 +446,14 @@ def render_content_hex_bin(tab, code_lst, user_id):
         code_lst = user_dict[user_id]['binhex']
     if tab == 'binary':
         return html.Div([
-            dcc.Textarea(value=code_lst[0],
+            dcc.Textarea(id='bin_hex', value=code_lst[0],
                          style={'width': 185, 'height': 400, "color": table['font'], 'font-size': '15px',
                                 "background-color": table['background'], 'font-family': "Roboto Mono, monospace"},
                          disabled=True)
         ])
     elif tab == 'hexadecimal':
         return html.Div([
-            dcc.Textarea(value=code_lst[1],
+            dcc.Textarea(id='bin_hex', value=code_lst[1],
                          style={'text-align': 'right', 'width': 185, 'height': 400, "color": table['font'],
                                 'font-size': '15px',
                                 "background-color": table['background'], 'font-family': "Roboto Mono, monospace"},
@@ -458,7 +461,7 @@ def render_content_hex_bin(tab, code_lst, user_id):
         ])
     else:
         return html.Div([
-            dcc.Textarea(value=code_lst[0],
+            dcc.Textarea(id='bin_hex', value=code_lst[0],
                          style={'width': 185, 'height': 400, "color": table['font'], 'font-size': '15px',
                                 "background-color": table['background'], 'font-family': "Roboto Mono, monospace"},
                          disabled=True)
@@ -574,6 +577,25 @@ def create_output(value):
                                 style_table={'width': '150px'}),
 
 
+@app.callback(Output('memory-div', 'children'),
+              [Input('info', 'children')])
+def change_memory_tabs(info):
+    arch = info.split()[1]
+    if arch == 'neumann':
+        return [dcc.Tabs(id='memory-tabs', value='data_memory', children=[
+            dcc.Tab(label='PROGRAM AND DATA MEMORY', id='data-memory-tab', value='data_memory', style=memory_tab_style,
+                    selected_style=memory_selected_tab_style2),
+        ], style={'height': 25}), html.Div(id='memory')]
+    else:
+        return [dcc.Tabs(id='memory-tabs', value='data_memory', children=[
+            dcc.Tab(label='DATA MEMORY:', id='data-memory-tab', value='data_memory', style=memory_tab_style,
+                    selected_style=memory_selected_tab_style),
+            dcc.Tab(label='PROGRAM MEMORY:', id='program-memory-tab', value='program_memory',
+                    style=memory_tab_style,
+                    selected_style=memory_selected_tab_style, disabled_style=memory_tab_style)
+        ], style={'height': 25}), html.Div(id='memory')]
+
+
 @app.callback(Output('memory', 'children'),
               [Input('memory-tabs', 'value'),
                Input('memory-storage', 'children')])
@@ -614,7 +636,7 @@ def create_memory(tab, value):
                 for y in range(len(rows)):
                     data[x][headers[y]] = data_lst[x][y]
 
-            return dash_table.DataTable(columns=([{'id': i, 'name': i} for i in headers]),
+            return dash_table.DataTable(id='mem1', columns=([{'id': i, 'name': i} for i in headers]),
                                         data=data,
                                         style_header=style_memory_header,
                                         style_cell=style_cell,
@@ -624,10 +646,53 @@ def create_memory(tab, value):
                                                 'color': memory_font
                                             }
                                         ],
+                                        fixed_rows={'headers': True},
                                         style_table={'height': '300px', 'overflowY': 'auto'},
                                         )
     else:
-        pass
+        if not value[1]:
+            headers = ["Addr   :  "]
+            for i in range(0, 32, 4):
+                headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
+                               f"{hex(i + 2)[2:].rjust(2, '0')} {hex(i + 3)[2:].rjust(2, '0')}")
+
+            rows = []
+            for i in range(0, 1024, 32):
+                rows.append(hex(i)[2:].rjust(8, "0"))
+
+            temp_lst1 = value[0].split('\n')
+            memory_data = []
+            for i in temp_lst1:
+                memory_data.append(i.split('\t'))
+
+            rows = [rows] + memory_data
+
+            data_lst = []
+            for y in range(len(rows[0])):
+                data_lst.append([])
+                for x in range(len(rows)):
+                    data_lst[y].append(rows[x][y])
+
+            # Create a list of dictionaries (key -- column name)
+            data = []
+            for x in range(len(rows[0])):
+                data.append(dict())
+                for y in range(len(rows)):
+                    data[x][headers[y]] = data_lst[x][y]
+
+            return dash_table.DataTable(id='mem2', columns=([{'id': i, 'name': i} for i in headers]),
+                                        data=data,
+                                        style_header=style_memory_header,
+                                        style_cell=style_cell,
+                                        style_cell_conditional=[
+                                            {
+                                                'if': {'column_id': headers[0]},
+                                                'color': memory_font
+                                            }
+                                        ],
+                                        fixed_rows={'headers': True},
+                                        style_table={'height': '300px', 'overflowY': 'auto'},
+                                        )
 
 
 # UPDATE HIDDEN INFO FOR PROCESSOR
@@ -699,8 +764,8 @@ def update_seconds_interval(instructions):
 def update_seconds_div(instructions):
     try:
         inst_per_second = int(instructions[0]['1'])
-        if inst_per_second >= 10:
-            inst_per_second = 9
+        if inst_per_second >= 8:
+            inst_per_second = 7
         return inst_per_second
     except ValueError:
         return 1
@@ -887,7 +952,7 @@ def update_buttons(user_id):
                ],
               [State('registers-table', 'data')])
 def update_ip(n_clicks, save_manual, undo_manual, data):
-    if not n_clicks and save_manual:
+    if save_manual:
         return ba2int(hex2ba(data[0]['IP:']))
     return 512
 
@@ -915,8 +980,5 @@ if __name__ == '__main__':
     app.run_server(debug=True)
 # TODO:
 #  edit memory,
-#  keep size of registers when editing,
-#  change ip,
 #  two mems for stack,
 #  documentation
-
