@@ -107,11 +107,7 @@ body::-webkit-scrollbar {
     width: 0em;
 }
 
-#mem1::-webkit-scrollbar {
-    width: 0em;
-}
-
-#mem2::-webkit-scrollbar {
+#mem::-webkit-scrollbar {
     width: 0em;
 }
 

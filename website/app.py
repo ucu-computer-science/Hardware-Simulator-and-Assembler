@@ -22,13 +22,43 @@ from modules.assembler import Assembler, AssemblerError
 from website.color_palette_and_layout import table_header, table, button, assembly, background_color, title_color, \
     text_color, not_working, style_header, style_cell, tab_style, tab_selected_style, \
     dropdown_style1, dropdown_style2, table_main_color, table_main_font_color, table_header_color, help_color, \
-    help_font_color, style_memory_header, memory_font, memory_tab_style, memory_selected_tab_style, memory_selected_tab_style2
+    help_font_color, style_memory_header, memory_font, memory_tab_style, memory_selected_tab_style, \
+    memory_selected_tab_style2
 from website.example_programs import examples
 
 # CPU DICTIONARY ( key=user.id, value=dict(cpu, intervals) )
 user_dict = dict()
 # Numbers of buttons (used to change type of isa during cpu creation, are same for every session and user)
 buttons = {0: 'risc1', 1: 'risc2', 2: 'risc3', 3: 'cisc'}
+# Empty memoty cells
+base_headers = ['Addr   :  ', '00 01 02 03', '04 05 06 07', '08 09 0a 0b', '0c 0d 0e 0f', '10 11 12 13', '14 15 16 17',
+                '18 19 1a 1b', '1c 1d 1e 1f']
+indexes = []
+for i in range(0, 1024, 32):
+    indexes.append(hex(i)[2:].rjust(8, "0"))
+base_data = []
+for x in range(32):
+    base_data.append(dict())
+    for y in range(9):
+        if y == 0:
+            base_data[x][base_headers[y]] = indexes[x]
+        else:
+            base_data[x][base_headers[y]] = '00 00 00 00'
+
+empty_memory = dash_table.DataTable(id='mem', columns=([{'id': i, 'name': i} for i in base_headers]),
+                                    data=base_data,
+                                    style_header=style_memory_header,
+                                    style_cell=style_cell,
+                                    style_cell_conditional=[
+                                        {
+                                            'if': {'column_id': base_headers[0]},
+                                            'color': memory_font
+                                        }
+                                    ],
+                                    fixed_rows={'headers': True},
+                                    style_table={'height': '300px', 'overflowY': 'auto'},
+                                    editable=True
+                                    )
 
 # Create app
 server = Flask(__name__)
@@ -226,13 +256,11 @@ app.layout = html.Div([
 
             # Memory
             html.Div(id='memory-div', children=[dcc.Tabs(id='memory-tabs', value='data_memory', children=[
-                dcc.Tab(label='DATA MEMORY:', id='data-memory-tab', value='data_memory', style=memory_tab_style,
-                        selected_style=memory_selected_tab_style),
-                dcc.Tab(label='PROGRAM MEMORY:', id='program-memory-tab', value='program_memory',
+                dcc.Tab(label='PROGRAM AND DATA MEMORY', id='data-memory-tab', value='data_memory',
                         style=memory_tab_style,
-                        selected_style=memory_selected_tab_style, disabled_style=memory_tab_style)
-            ], style={'height': 45}), html.Div(id='memory')
-                                                ], style={'margin-bottom': 20, 'margin-top': 20}),
+                        selected_style=memory_selected_tab_style2),
+            ], style={'height': 25}), html.Div(id='memory', children=empty_memory)],
+                     style={'margin-bottom': 20, 'margin-top': 20}),
 
             html.Div([
                 dcc.Dropdown(
@@ -401,10 +429,15 @@ def assemble(n_clicks, info, user_id, assembly_code, ip):
         if user_id not in user_dict:
             user_dict[user_id] = dict()
             user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
-            user_dict[user_id]['save-manual'] = 0
-            user_dict[user_id]['undo-manual'] = 0
+            user_dict[user_id]['save-manual-flags'] = 0
+            user_dict[user_id]['undo-manual-flags'] = 0
+            user_dict[user_id]['save-manual-registers'] = 0
+            user_dict[user_id]['undo-manual-registers'] = 0
+            user_dict[user_id]['save-manual-memory'] = 0
+            user_dict[user_id]['undo-manual-memory'] = 0
             user_dict[user_id]['code'] = ''
             user_dict[user_id]['binhex'] = ['', '']
+            user_dict[user_id]['flags-changed'] = False
 
         if not assembly_code or assembly_code in ["input assembly code here", "loading...", '']:
             binary_program = hex_program = ''
@@ -578,14 +611,15 @@ def create_output(value):
 
 
 @app.callback(Output('memory-div', 'children'),
-              [Input('info', 'children')])
-def change_memory_tabs(info):
+              [Input('next', 'n_clicks')],
+              [State('info', 'children')])
+def change_memory_tabs(n_clicks, info):
     arch = info.split()[1]
     if arch == 'neumann':
         return [dcc.Tabs(id='memory-tabs', value='data_memory', children=[
             dcc.Tab(label='PROGRAM AND DATA MEMORY', id='data-memory-tab', value='data_memory', style=memory_tab_style,
                     selected_style=memory_selected_tab_style2),
-        ], style={'height': 25}), html.Div(id='memory')]
+        ], style={'height': 25}), html.Div(id='memory', children=empty_memory)]
     else:
         return [dcc.Tabs(id='memory-tabs', value='data_memory', children=[
             dcc.Tab(label='DATA MEMORY:', id='data-memory-tab', value='data_memory', style=memory_tab_style,
@@ -593,7 +627,7 @@ def change_memory_tabs(info):
             dcc.Tab(label='PROGRAM MEMORY:', id='program-memory-tab', value='program_memory',
                     style=memory_tab_style,
                     selected_style=memory_selected_tab_style, disabled_style=memory_tab_style)
-        ], style={'height': 25}), html.Div(id='memory')]
+        ], style={'height': 25}), html.Div(id='memory', children=empty_memory)]
 
 
 @app.callback(Output('memory', 'children'),
@@ -606,93 +640,92 @@ def create_memory(tab, value):
     :return:
     """
     if tab == 'data_memory':
-        if not value[1]:
-            headers = ["Addr   :  "]
-            for i in range(0, 32, 4):
-                headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
-                               f"{hex(i + 2)[2:].rjust(2, '0')} {hex(i + 3)[2:].rjust(2, '0')}")
+        headers = ["Addr   :  "]
+        for i in range(0, 32, 4):
+            headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
+                           f"{hex(i + 2)[2:].rjust(2, '0')} {hex(i + 3)[2:].rjust(2, '0')}")
 
-            rows = []
-            for i in range(0, 1024, 32):
-                rows.append(hex(i)[2:].rjust(8, "0"))
+        rows = []
+        for i in range(0, 1024, 32):
+            rows.append(hex(i)[2:].rjust(8, "0"))
 
-            temp_lst1 = value[0].split('\n')
-            memory_data = []
-            for i in temp_lst1:
-                memory_data.append(i.split('\t'))
+        temp_lst1 = value[0].split('\n')
+        memory_data = []
+        for i in temp_lst1:
+            memory_data.append(i.split('\t'))
 
-            rows = [rows] + memory_data
+        rows = [rows] + memory_data
 
-            data_lst = []
-            for y in range(len(rows[0])):
-                data_lst.append([])
-                for x in range(len(rows)):
-                    data_lst[y].append(rows[x][y])
+        data_lst = []
+        for y in range(len(rows[0])):
+            data_lst.append([])
+            for x in range(len(rows)):
+                data_lst[y].append(rows[x][y])
 
-            # Create a list of dictionaries (key -- column name)
-            data = []
-            for x in range(len(rows[0])):
-                data.append(dict())
-                for y in range(len(rows)):
-                    data[x][headers[y]] = data_lst[x][y]
-
-            return dash_table.DataTable(id='mem1', columns=([{'id': i, 'name': i} for i in headers]),
-                                        data=data,
-                                        style_header=style_memory_header,
-                                        style_cell=style_cell,
-                                        style_cell_conditional=[
-                                            {
-                                                'if': {'column_id': headers[0]},
-                                                'color': memory_font
-                                            }
-                                        ],
-                                        fixed_rows={'headers': True},
-                                        style_table={'height': '300px', 'overflowY': 'auto'},
-                                        )
+        # Create a list of dictionaries (key -- column name)
+        data = []
+        for x in range(len(rows[0])):
+            data.append(dict())
+            for y in range(len(rows)):
+                data[x][headers[y]] = data_lst[x][y]
+        return dash_table.DataTable(id='mem', columns=([{'id': i, 'name': i} for i in headers]),
+                                    data=data,
+                                    style_header=style_memory_header,
+                                    style_cell=style_cell,
+                                    style_cell_conditional=[
+                                        {
+                                            'if': {'column_id': headers[0]},
+                                            'color': memory_font
+                                        }
+                                    ],
+                                    fixed_rows={'headers': True},
+                                    style_table={'height': '300px', 'overflowY': 'auto'},
+                                    editable=True
+                                    )
     else:
-        if not value[1]:
-            headers = ["Addr   :  "]
-            for i in range(0, 32, 4):
-                headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
-                               f"{hex(i + 2)[2:].rjust(2, '0')} {hex(i + 3)[2:].rjust(2, '0')}")
+        headers = ["Addr   :  "]
+        for i in range(0, 32, 4):
+            headers.append(f"{hex(i)[2:].rjust(2, '0')} {hex(i + 1)[2:].rjust(2, '0')} "
+                           f"{hex(i + 2)[2:].rjust(2, '0')} {hex(i + 3)[2:].rjust(2, '0')}")
 
-            rows = []
-            for i in range(0, 1024, 32):
-                rows.append(hex(i)[2:].rjust(8, "0"))
+        rows = []
+        for i in range(0, 1024, 32):
+            rows.append(hex(i)[2:].rjust(8, "0"))
 
-            temp_lst1 = value[0].split('\n')
-            memory_data = []
-            for i in temp_lst1:
-                memory_data.append(i.split('\t'))
+        temp_lst1 = value[1].split('\n')
+        memory_data = []
+        for i in temp_lst1:
+            memory_data.append(i.split('\t'))
 
-            rows = [rows] + memory_data
+        rows = [rows] + memory_data
 
-            data_lst = []
-            for y in range(len(rows[0])):
-                data_lst.append([])
-                for x in range(len(rows)):
-                    data_lst[y].append(rows[x][y])
+        data_lst = []
+        for y in range(len(rows[0])):
+            data_lst.append([])
+            for x in range(len(rows)):
+                data_lst[y].append(rows[x][y])
 
-            # Create a list of dictionaries (key -- column name)
-            data = []
-            for x in range(len(rows[0])):
-                data.append(dict())
-                for y in range(len(rows)):
-                    data[x][headers[y]] = data_lst[x][y]
+        # Create a list of dictionaries (key -- column name)
+        data = []
+        for x in range(len(rows[0])):
+            data.append(dict())
+            for y in range(len(rows)):
+                data[x][headers[y]] = data_lst[x][y]
 
-            return dash_table.DataTable(id='mem2', columns=([{'id': i, 'name': i} for i in headers]),
-                                        data=data,
-                                        style_header=style_memory_header,
-                                        style_cell=style_cell,
-                                        style_cell_conditional=[
-                                            {
-                                                'if': {'column_id': headers[0]},
-                                                'color': memory_font
-                                            }
-                                        ],
-                                        fixed_rows={'headers': True},
-                                        style_table={'height': '300px', 'overflowY': 'auto'},
-                                        )
+        return dash_table.DataTable(id='mem', columns=([{'id': i, 'name': i} for i in headers]),
+                                    data=data,
+                                    style_header=style_memory_header,
+                                    style_cell=style_cell,
+                                    style_cell_conditional=[
+                                        {
+                                            'if': {'column_id': headers[0]},
+                                            'color': memory_font
+                                        }
+                                    ],
+                                    fixed_rows={'headers': True},
+                                    style_table={'height': '300px', 'overflowY': 'auto'},
+                                    editable=True
+                                    )
 
 
 # UPDATE HIDDEN INFO FOR PROCESSOR
@@ -827,19 +860,19 @@ def update_flags(value, user_id, save_manual, undo_manual, data_flags, data_regs
             else:
                 save_manual -= 1
 
-        if save_manual > user_dict[user_id]['save-manual']:
-            user_dict[user_id]['save-manual'] = save_manual
+        if save_manual > user_dict[user_id]['save-manual-flags']:
+            user_dict[user_id]['save-manual-flags'] = save_manual
             try:
                 cf, zf, of, sf = list(flags)
                 user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
-
+                user_dict[user_id]['flags-changed'] = True
                 return [cf, zf, of, sf]
             except ValueError:
                 cf, zf, of, sf = list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:])
 
                 return [cf, zf, of, sf]
-        elif undo_manual > user_dict[user_id]['undo-manual']:
-            user_dict[user_id]['undo-manual'] = undo_manual
+        elif undo_manual > user_dict[user_id]['undo-manual-flags']:
+            user_dict[user_id]['undo-manual-flags'] = undo_manual
             cf, zf, of, sf = list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:])
 
             return [cf, zf, of, sf]
@@ -866,14 +899,19 @@ def update_registers(value_not_used, user_id, save_manual, undo_manual, ip_chang
     :return: string registers
     """
     if user_id in user_dict:
-        if save_manual > user_dict[user_id]['save-manual']:
-            user_dict[user_id]['save-manual'] = save_manual
+        if save_manual > user_dict[user_id]['save-manual-registers']:
+            user_dict[user_id]['save-manual-registers'] = save_manual
             new_reg_dict = data[0]
+
+            if user_dict[user_id]['flags-changed']:
+                user_dict[user_id]['flags-changed'] = False
+                new_reg_dict['FR:'] = ba2hex(user_dict[user_id]['cpu'].registers['FR']._state)
+
             for key, value in new_reg_dict.items():
                 user_dict[user_id]['cpu'].registers[key[:-1]]._state = bitarray(hex2ba(value).to01().rjust(16, '0'))
 
-        elif undo_manual > user_dict[user_id]['undo-manual']:
-            user_dict[user_id]['undo-manual'] = undo_manual
+        elif undo_manual > user_dict[user_id]['undo-manual-registers']:
+            user_dict[user_id]['undo-manual-registers'] = undo_manual
 
         items = [(value.name, value._state.tobytes().hex()) for key, value in
                  user_dict[user_id]['cpu'].registers.items()]
@@ -909,8 +947,13 @@ def update_output(value, user_id):
 
 @app.callback(Output('memory-storage', 'children'),
               [Input('next-storage', 'children'),
-               Input('id-storage', 'children')])
-def update_memory(value, user_id):
+               Input('id-storage', 'children'),
+               Input('save-manual', 'n_clicks'),
+               Input('undo-manual', 'n_clicks'),
+               ],
+              [State('mem', 'data'),
+               State('memory-tabs', 'value')])
+def update_memory(value, user_id, save_manual, undo_manual, data, chosen_tab):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -920,6 +963,27 @@ def update_memory(value, user_id):
     :return: string memory
     """
     if user_id in user_dict:
+        if save_manual > user_dict[user_id]['save-manual-memory']:
+            user_dict[user_id]['save-manual-memory'] = save_manual
+            new_data = bitarray('')
+            try:
+                for dictionary in data:
+                    for key in dictionary:
+                        if key != 'Addr   :  ':
+                            new_data += hex2ba(dictionary[key].replace(" ", "").rjust(8, '0'))
+            except ValueError:
+                new_data = user_dict[user_id]['cpu'].data_memory.slots
+
+            if chosen_tab == 'data_memory':
+                if new_data != user_dict[user_id]['cpu'].data_memory.slots:
+                    user_dict[user_id]['cpu'].data_memory.slots = new_data
+            else:
+                if new_data != user_dict[user_id]['cpu'].program_memory.slots:
+                    user_dict[user_id]['cpu'].program_memory.slots = new_data
+
+
+        elif undo_manual > user_dict[user_id]['undo-manual-memory']:
+            user_dict[user_id]['undo-manual-memory'] = undo_manual
         memory_data = [[], [], [], [], [], [], [], []]
         for i in range(0, len(user_dict[user_id]['cpu'].data_memory.slots), 32 * 8):
             string = ba2hex(user_dict[user_id]['cpu'].data_memory.slots[i:i + 32 * 8])
@@ -928,7 +992,19 @@ def update_memory(value, user_id):
         lst = []
         for i in memory_data:
             lst.append('\t'.join(i))
-        return ['\n'.join(lst), '']
+        if user_dict[user_id]['cpu'].architecture in ["neumann", "harvardm"]:
+            return ['\n'.join(lst), '']
+        else:
+            memory_program = [[], [], [], [], [], [], [], []]
+            for i in range(0, len(user_dict[user_id]['cpu'].program_memory.slots), 32 * 8):
+                string = ba2hex(user_dict[user_id]['cpu'].program_memory.slots[i:i + 32 * 8])
+                for x in range(8):
+                    memory_program[x].append(" ".join([string[8 * x:8 * x + 8][y:y + 2] for y in range(0, 8, 2)]))
+            lst_program = []
+            for i in memory_program:
+                lst_program.append('\t'.join(i))
+            return ['\n'.join(lst), '\n'.join(lst_program)]
+
     lst1 = '\t'.join(['00 00 00 00'] * 32)
     lst2 = '\n'.join([lst1] * 8)
     return [lst2, '']
@@ -940,7 +1016,7 @@ def update_memory(value, user_id):
               [Input('id-storage', 'children')])
 def update_buttons(user_id):
     if user_id in user_dict:
-        return user_dict[user_id]['save-manual'], user_dict[user_id]['undo-manual']
+        return user_dict[user_id]['save-manual-flags'], user_dict[user_id]['undo-manual-flags']
     return 0, 0
 
 
@@ -955,6 +1031,20 @@ def update_ip(n_clicks, save_manual, undo_manual, data):
     if save_manual:
         return ba2int(hex2ba(data[0]['IP:']))
     return 512
+
+
+# Enable only Harvard architecture for stack
+@app.callback([Output('architecture-dropdown', 'options'),
+               Output('architecture-dropdown', 'value')],
+              [Input('input1', 'value')],
+              [State('info', 'children'),
+               State('architecture-dropdown', 'value')])
+def control_architecture(not_used, info, initial_arch):
+    if info.split()[0] == 'risc1':
+        return [{'label': 'VON NEUMANN', 'value': 'neumann', 'disabled': True},
+                {'label': 'HARVARD', 'value': 'harvard'}, ], 'harvard'
+    else:
+        return [{'label': 'VON NEUMANN', 'value': 'neumann'}, {'label': 'HARVARD', 'value': 'harvard'}, ], initial_arch
 
 
 # HELP PAGE
@@ -980,5 +1070,4 @@ if __name__ == '__main__':
     app.run_server(debug=True)
 # TODO:
 #  edit memory,
-#  two mems for stack,
 #  documentation
