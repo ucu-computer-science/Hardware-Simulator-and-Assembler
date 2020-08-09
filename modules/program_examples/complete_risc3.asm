@@ -61,14 +61,27 @@ lsh %R00, %R00, %R02
 # R00 contains 4
 
 call $5
-# Should transfer control straight to the call $-3
+# Should transfer control straight to the call $-3 on line 70
 nop
 call %R00
-# Should go to ret
+# Should go to ret on line 72
 nop
 jmp $3
 call $-3
-# Should transfer to call %R00
+# Should transfer to call %R00 on line 66
 ret
-# Should go to nop after call %R00
+# Should go to nop on line 68
+jmp %R00
+cmp %R00, $2
+je $6
 nop
+mov_low %R00, $2
+cmp %R00, %R02
+je $-2
+jne $-6
+# Should work roughly like this, by lines: 74 -> 78 -> 79 -> 80 -> 81 -> 75 -> 76 -> 83
+cmp %R00, $6
+jg $5
+nop
+
+# TODO: Still have two compares to check, test, and jumps: jg, jge, jl, jle + in and out

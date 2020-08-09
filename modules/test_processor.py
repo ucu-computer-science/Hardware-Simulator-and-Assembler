@@ -109,6 +109,7 @@ class TestCPU(unittest.TestCase):
 
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """
+        # TODO: Implement the checking of complete_risc3.bin instruction by instruction as a unittest
 
 
 if __name__ == '__main__':
