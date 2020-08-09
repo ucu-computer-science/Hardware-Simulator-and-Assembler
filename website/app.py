@@ -176,11 +176,18 @@ app.layout = html.Div([
             ]),
 
             html.Div([
+                html.Div([dash_table.DataTable(id='initial-ip',
+                                               columns=([{'id': '1', 'name': 'INITIAL IP'}]),
+                                               data=([{'1': '0200'}]),
+                                               style_header=style_header,
+                                               style_cell=style_cell,
+                                               editable=True), ],
+                         style={'display': 'block', 'width': 100, 'margin-left': 54}),
                 # Button to assemble
                 html.Button('ASSEMBLE', id='assemble', n_clicks=0,
-                            style={'margin-left': 54, 'margin-top': 15, "color": button['font'],
+                            style={'margin-left': 200, 'margin-top': -40, "color": button['font'],
                                    "background-color": button['background'],
-                                   'width': 160, 'display': 'inline-block', 'font-family': "Roboto Mono, monospace",
+                                   'width': 160, 'display': 'block', 'font-family': "Roboto Mono, monospace",
                                    'font-size': 13}),
 
             ]),
@@ -272,7 +279,7 @@ app.layout = html.Div([
                     placeholder="CHOOSE AN EXAMPLE PROGRAM",
                     style=dropdown_style2,
                     clearable=False
-                ), ], style={'display': 'inline-block', 'margin-right': 120}),
+                ), ], style={'display': 'inline-block', 'margin-right': 30}),
 
             html.Div([html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
                                   style={"color": button['font'],
@@ -285,7 +292,7 @@ app.layout = html.Div([
                                          "background-color": button['background'],
                                          'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
                                          'font-size': 13}), ],
-                     style={'display': 'inline-block', 'margin-right': 30}),
+                     style={'display': 'inline-block', 'margin-right': 20}),
 
             html.Div([
                 html.Div([
@@ -302,7 +309,13 @@ app.layout = html.Div([
                                        'font-size': 13}),
                 ]),
 
-            ], style={'display': 'inline-block'})
+            ], style={'display': 'inline-block'}),
+
+            html.Button('RESET', id='reset', n_clicks=0,
+                        style={"color": button['font'], 'display': 'inline-block',
+                               "background-color": button['background'],
+                               'width': 20, 'margin-bottom': 15, 'margin-top':-30,
+                               'font-family': "Roboto Mono, monospace", 'font-size': 13}),
 
         ], style={'display': 'inline-block', 'margin-left': 70}),
 
@@ -313,7 +326,8 @@ app.layout = html.Div([
                                                                     "background-color": help_color,
                                                                     'margin-bottom': 15,
                                                                     'font-family': "Roboto Mono, monospace",
-                                                                    'font-size': 13}), href='/help', refresh=True,
+                                                                    'font-size': 13}), id='link', href='/help-risc3',
+                       refresh=True,
                        style={'color': text_color, 'display': 'block',
                               'font-family': "Roboto Mono, monospace", 'width': 260}),
               html.Div("GNU General Public License v3.0", style={'color': text_color, 'display': 'block',
@@ -438,6 +452,7 @@ def assemble(n_clicks, info, user_id, assembly_code, ip):
             user_dict[user_id]['code'] = ''
             user_dict[user_id]['binhex'] = ['', '']
             user_dict[user_id]['flags-changed'] = False
+            user_dict[user_id]['intervals'] = 0
 
         if not assembly_code or assembly_code in ["input assembly code here", "loading...", '']:
             binary_program = hex_program = ''
@@ -783,6 +798,23 @@ def run_interval(n, user_id, instruction, current_state):
 
 
 @app.callback(
+    Output("run-until-finished", "style"),
+    [Input('interval', 'disabled'), ]
+)
+def change_button_color(disabled):
+    if disabled:
+        return {"color": button['font'],
+                "background-color": button['background'],
+                'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
+                'font-size': 13}
+    else:
+        return {"color": assembly['font'],
+                "background-color": assembly['background'],
+                'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
+                'font-size': 13}
+
+
+@app.callback(
     Output("interval", "interval"),
     [Input('seconds-storage', 'children'), ]
 )
@@ -1022,15 +1054,9 @@ def update_buttons(user_id):
 
 # Update IP - info
 @app.callback(Output('ip-storage', 'children'),
-              [Input('next', 'n_clicks'),
-               Input('save-manual', 'n_clicks'),
-               Input('undo-manual', 'n_clicks')
-               ],
-              [State('registers-table', 'data')])
-def update_ip(n_clicks, save_manual, undo_manual, data):
-    if save_manual:
-        return ba2int(hex2ba(data[0]['IP:']))
-    return 512
+              [Input('initial-ip', 'data')], )
+def update_ip(new_ip):
+    return ba2int(hex2ba(new_ip[0]['1']))
 
 
 # Enable only Harvard architecture for stack
@@ -1047,16 +1073,41 @@ def control_architecture(not_used, info, initial_arch):
         return [{'label': 'VON NEUMANN', 'value': 'neumann'}, {'label': 'HARVARD', 'value': 'harvard'}, ], initial_arch
 
 
-# HELP PAGE
-@app.server.route('/help')
-def template_test():
+@app.callback(Output('link', 'href'),
+              [Input('info', 'children')])
+def change_link(info):
+    return f'/help-{info.split()[0]}'
+
+
+# HELP PAGES
+def help(isa):
     with open("docs/help.json", "r") as file:
         help_dict = json.load(file)
     with open("modules/registers.json", "r") as file:
-        register_dict = json.load(file)["risc3"]
+        register_dict = json.load(file)[isa]
 
     p_style = "color: #FFFFFF; padding-left: 12%; width: 75%"
     return render_template('help.html', items=help_dict, p_style=p_style, reg_dict=register_dict)
+
+
+@app.server.route('/help-risc1')
+def help_risc1():
+    return help('risc1')
+
+
+@app.server.route('/help-risc2')
+def help_risc2():
+    return help('risc2')
+
+
+@app.server.route('/help-risc3')
+def help_risc3():
+    return help('risc3')
+
+
+@app.server.route('/help-cisc')
+def help_cisc():
+    return help('cisc')
 
 
 @app.server.route('/')
@@ -1068,6 +1119,4 @@ def index():
 # Run the program
 if __name__ == '__main__':
     app.run_server(debug=True)
-# TODO:
-#  edit memory,
-#  documentation
+# TODO: documentation
