@@ -114,3 +114,6 @@ body::-webkit-scrollbar {
 #bin_hex::-webkit-scrollbar {
     width: 0em;
 }
+
+#reset {
+box-sizing: content-box;}

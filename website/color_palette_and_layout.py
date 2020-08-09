@@ -94,7 +94,7 @@ dropdown_style1 = {'width': 200, 'backgroundColor': background_color,
                    'font-family': "Roboto Mono, monospace",
                    'color': text_color,
                    'font-size': '18px'}
-dropdown_style2 = {'width': 310, 'margin-top': -60, 'backgroundColor': background_color,
+dropdown_style2 = {'width': 295, 'margin-top': -60, 'backgroundColor': background_color,
                    'font-family': "Roboto Mono, monospace",
                    'color': text_color,
                    'font-size': '18px'}

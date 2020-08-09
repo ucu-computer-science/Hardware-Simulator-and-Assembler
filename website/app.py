@@ -182,10 +182,10 @@ app.layout = html.Div([
                                                style_header=style_header,
                                                style_cell=style_cell,
                                                editable=True), ],
-                         style={'display': 'block', 'width': 100, 'margin-left': 54}),
+                         style={'display': 'block', 'width': 100, 'margin-left': 85}),
                 # Button to assemble
                 html.Button('ASSEMBLE', id='assemble', n_clicks=0,
-                            style={'margin-left': 200, 'margin-top': -40, "color": button['font'],
+                            style={'margin-left': 278, 'margin-top': -40, "color": button['font'],
                                    "background-color": button['background'],
                                    'width': 160, 'display': 'block', 'font-family': "Roboto Mono, monospace",
                                    'font-size': 13}),
@@ -292,7 +292,7 @@ app.layout = html.Div([
                                          "background-color": button['background'],
                                          'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
                                          'font-size': 13}), ],
-                     style={'display': 'inline-block', 'margin-right': 20}),
+                     style={'display': 'inline-block', 'margin-right': 17}),
 
             html.Div([
                 html.Div([
@@ -312,9 +312,9 @@ app.layout = html.Div([
             ], style={'display': 'inline-block'}),
 
             html.Button('RESET', id='reset', n_clicks=0,
-                        style={"color": button['font'], 'display': 'inline-block',
-                               "background-color": button['background'],
-                               'width': 20, 'margin-bottom': 15, 'margin-top':-30,
+                        style={"color": button['font'], 'display': 'block',
+                               "background-color": button['background'], 'margin-left': 780,
+                               'margin-top': -70, 'height': 50, 'text-align': 'left',
                                'font-family': "Roboto Mono, monospace", 'font-size': 13}),
 
         ], style={'display': 'inline-block', 'margin-left': 70}),
@@ -377,28 +377,11 @@ app.layout = html.Div([
 
     # Instruction pointer storage (for risc3 by default)
     html.Div(id='ip-storage', children=512, style={'display': 'none'}),
+
 ], id="wrapper", )
 
 
 # APP CALLBACKS FOR INPUT/OUTPUT OF THE INFORMATION, ASSEMBLER
-# Change main info
-@app.callback(
-    Output('info', 'children'),
-    [Input('isa-dropdown', 'value'),
-     Input('architecture-dropdown', 'value'),
-     Input('io-dropdown', 'value'),
-     Input('id-storage', 'children')])
-def update_output(isa, arch, io, user_id):
-    """
-    Update main information about the cpu,
-    depending on the choice from dropdowns.
-
-    :param isa: chosen isa
-    :param arch: chosen architecture
-    :param io: chosen I/O mode
-    :return: string with information
-    """
-    return ' '.join([isa, arch, io])
 
 
 # Create user id
@@ -420,13 +403,17 @@ def get_id(value):
 
 
 # Save binary and hexadecimal code
-@app.callback(Output('code', 'children'),
-              [Input('assemble', 'n_clicks')],
+@app.callback([Output('code', 'children'),
+               Output('next', 'n_clicks')],
+              [Input('assemble', 'n_clicks'),
+               Input('id-storage', 'children'),
+               Input('reset', 'n_clicks')],
               [State('info', 'children'),
                State('id-storage', 'children'),
                State('input1', 'value'),
-               State('ip-storage', 'children')])
-def assemble(n_clicks, info, user_id, assembly_code, ip):
+               State('ip-storage', 'children'),
+               State('next', 'n_clicks')])
+def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip, next_clicks):
     """
     Translate input assembly code to binary and hexadecimal ones.
 
@@ -436,10 +423,22 @@ def assemble(n_clicks, info, user_id, assembly_code, ip):
     :param assembly_code: input assembly code
     :return: binary and hexadecimal codes or assembler error
     """
-    if n_clicks:
+    global user_dict
+
+    if not n_clicks and user_id in user_dict:
+        user_dict[user_id]['save-manual-flags'] = 0
+        user_dict[user_id]['undo-manual-flags'] = 0
+        user_dict[user_id]['save-manual-registers'] = 0
+        user_dict[user_id]['undo-manual-registers'] = 0
+        user_dict[user_id]['save-manual-memory'] = 0
+        user_dict[user_id]['undo-manual-memory'] = 0
+        user_dict[user_id]['reset'] = 0
+        user_dict[user_id]['reset-code'] = 0
+
+
+    elif n_clicks:
         isa, architecture, io = info.split()
 
-        global user_dict
         if user_id not in user_dict:
             user_dict[user_id] = dict()
             user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
@@ -453,6 +452,25 @@ def assemble(n_clicks, info, user_id, assembly_code, ip):
             user_dict[user_id]['binhex'] = ['', '']
             user_dict[user_id]['flags-changed'] = False
             user_dict[user_id]['intervals'] = 0
+            user_dict[user_id]['reset'] = 0
+            user_dict[user_id]['reset-code'] = 0
+        elif reset_clicks > user_dict[user_id]['reset']:
+            print('aaaaaaaaaa')
+            user_dict[user_id] = dict()
+            user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
+            user_dict[user_id]['save-manual-flags'] = 0
+            user_dict[user_id]['undo-manual-flags'] = 0
+            user_dict[user_id]['save-manual-registers'] = 0
+            user_dict[user_id]['undo-manual-registers'] = 0
+            user_dict[user_id]['save-manual-memory'] = 0
+            user_dict[user_id]['undo-manual-memory'] = 0
+            user_dict[user_id]['code'] = ''
+            user_dict[user_id]['binhex'] = ['', '']
+            user_dict[user_id]['flags-changed'] = False
+            user_dict[user_id]['intervals'] = 0
+            user_dict[user_id]['reset'] = reset_clicks
+            user_dict[user_id]['reset-code'] = 0
+            assembly_code = "input assembly code here"
 
         if not assembly_code or assembly_code in ["input assembly code here", "loading...", '']:
             binary_program = hex_program = ''
@@ -473,8 +491,28 @@ def assemble(n_clicks, info, user_id, assembly_code, ip):
             user_dict[user_id]['code'] = assembly_code
             user_dict[user_id]['binhex'] = [binary_program, hex_program]
 
-        return binary_program, hex_program
-    return '', ''
+        return [binary_program, hex_program], next_clicks + 1
+    return ['', ''], next_clicks + 1
+
+
+# Change main info
+@app.callback(
+    Output('info', 'children'),
+    [Input('isa-dropdown', 'value'),
+     Input('architecture-dropdown', 'value'),
+     Input('io-dropdown', 'value'),
+     Input('id-storage', 'children')])
+def update_output(isa, arch, io, user_id):
+    """
+    Update main information about the cpu,
+    depending on the choice from dropdowns.
+
+    :param isa: chosen isa
+    :param arch: chosen architecture
+    :param io: chosen I/O mode
+    :return: string with information
+    """
+    return ' '.join([isa, arch, io])
 
 
 # Create tabs content (bin and hex)
@@ -529,8 +567,13 @@ def update_examples(isa):
     Output('input-code', 'children'),
     [Input('example-dropdown', 'value'),
      Input('examples', 'children'),
-     Input('id-storage', 'children')])
-def add_example(example_name, app_examples, user_id):
+     Input('id-storage', 'children'),
+     Input('reset', 'n_clicks')])
+def add_example(example_name, app_examples, user_id, reset_clicks):
+    if user_id in user_dict:
+        if reset_clicks > user_dict[user_id]['reset-code']:
+            user_dict[user_id]['reset-code'] = reset_clicks
+            return "input assembly code here"
     if example_name == 'alphabet':
         return app_examples[0]
     elif example_name == 'hello':
@@ -747,8 +790,9 @@ def create_memory(tab, value):
 @app.callback(Output('next-storage', 'children'),
               [Input('next', 'n_clicks'),
                Input('id-storage', 'children'),
-               Input('interval', 'n_intervals')])
-def update_next(n_clicks, user_id, interval):
+               Input('interval', 'n_intervals'),
+               Input('reset', 'n_clicks')])
+def update_next(n_clicks, user_id, interval, reset):
     """
     Return n_clicks for the 'next instruction' button,
     so it changes hidden div, on which graphic elements of
@@ -799,9 +843,10 @@ def run_interval(n, user_id, instruction, current_state):
 
 @app.callback(
     Output("run-until-finished", "style"),
-    [Input('interval', 'disabled'), ]
+    [Input('interval', 'disabled'),
+     Input('reset', 'n_clicks')]
 )
-def change_button_color(disabled):
+def change_button_color(disabled, reset):
     if disabled:
         return {"color": button['font'],
                 "background-color": button['background'],
@@ -816,17 +861,19 @@ def change_button_color(disabled):
 
 @app.callback(
     Output("interval", "interval"),
-    [Input('seconds-storage', 'children'), ]
+    [Input('seconds-storage', 'children'),
+     Input('reset', 'n_clicks')]
 )
-def update_seconds_interval(instructions):
+def update_seconds_interval(instructions, reset):
     return 1000 / instructions
 
 
 @app.callback(
     Output('seconds-storage', 'children'),
-    [Input("seconds", "data")]
+    [Input("seconds", "data"),
+     Input('reset', 'n_clicks')]
 )
-def update_seconds_div(instructions):
+def update_seconds_div(instructions, reset):
     try:
         inst_per_second = int(instructions[0]['1'])
         if inst_per_second >= 8:
@@ -838,17 +885,20 @@ def update_seconds_div(instructions):
 
 @app.callback(
     Output("seconds", "data"),
-    [Input('next', 'n_clicks')],
-    [State('interval', 'interval')]
+    [Input('next', 'n_clicks'),
+     Input('reset', 'n_clicks')],
+    [State('interval', 'interval'),
+     ]
 )
-def update_seconds_table(n_clicks, interval):
+def update_seconds_table(n_clicks, reset, interval):
     return [{'1': (interval / 1000) ** (-1)}]
 
 
 @app.callback(Output('instruction-storage', 'children'),
               [Input('next-storage', 'children'),
-               Input('id-storage', 'children')])
-def update_instruction(value, user_id):
+               Input('id-storage', 'children'),
+               Input('reset', 'n_clicks')])
+def update_instruction(value, user_id, reset):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -866,11 +916,12 @@ def update_instruction(value, user_id):
               [Input('next-storage', 'children'),
                Input('id-storage', 'children'),
                Input('save-manual', 'n_clicks'),
-               Input('undo-manual', 'n_clicks')
+               Input('undo-manual', 'n_clicks'),
+               Input('reset', 'n_clicks')
                ],
               [State('flags-table', 'data'),
                State('registers-table', 'data')])
-def update_flags(value, user_id, save_manual, undo_manual, data_flags, data_regs):
+def update_flags(value, user_id, save_manual, undo_manual, reset, data_flags, data_regs):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -919,9 +970,10 @@ def update_flags(value, user_id, save_manual, undo_manual, data_flags, data_regs
                Input('save-manual', 'n_clicks'),
                Input('undo-manual', 'n_clicks'),
                Input('ip-storage', 'children'),
+               Input('reset', 'n_clicks')
                ],
               [State('registers-table', 'data')])
-def update_registers(value_not_used, user_id, save_manual, undo_manual, ip_changes, data):
+def update_registers(value_not_used, user_id, save_manual, undo_manual, ip_changes, reset, data):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -959,8 +1011,9 @@ def update_registers(value_not_used, user_id, save_manual, undo_manual, ip_chang
 
 @app.callback(Output('output-storage', 'children'),
               [Input('next-storage', 'children'),
-               Input('id-storage', 'children')])
-def update_output(value, user_id):
+               Input('id-storage', 'children'),
+               Input('reset', 'n_clicks')])
+def update_output(value, user_id, reset):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -982,10 +1035,11 @@ def update_output(value, user_id):
                Input('id-storage', 'children'),
                Input('save-manual', 'n_clicks'),
                Input('undo-manual', 'n_clicks'),
+               Input('reset', 'n_clicks')
                ],
               [State('mem', 'data'),
                State('memory-tabs', 'value')])
-def update_memory(value, user_id, save_manual, undo_manual, data, chosen_tab):
+def update_memory(value, user_id, save_manual, undo_manual, reset, data, chosen_tab):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -995,6 +1049,8 @@ def update_memory(value, user_id, save_manual, undo_manual, data, chosen_tab):
     :return: string memory
     """
     if user_id in user_dict:
+        print(user_dict[user_id]['cpu'])
+        print(save_manual, user_dict[user_id]['save-manual-memory'])
         if save_manual > user_dict[user_id]['save-manual-memory']:
             user_dict[user_id]['save-manual-memory'] = save_manual
             new_data = bitarray('')
@@ -1045,8 +1101,9 @@ def update_memory(value, user_id, save_manual, undo_manual, data, chosen_tab):
 # Update buttons
 @app.callback([Output('save-manual', 'n_clicks'),
                Output('undo-manual', 'n_clicks'), ],
-              [Input('id-storage', 'children')])
-def update_buttons(user_id):
+              [Input('id-storage', 'children'),
+               Input('reset', 'n_clicks')])
+def update_buttons(user_id, reset):
     if user_id in user_dict:
         return user_dict[user_id]['save-manual-flags'], user_dict[user_id]['undo-manual-flags']
     return 0, 0
@@ -1054,8 +1111,9 @@ def update_buttons(user_id):
 
 # Update IP - info
 @app.callback(Output('ip-storage', 'children'),
-              [Input('initial-ip', 'data')], )
-def update_ip(new_ip):
+              [Input('initial-ip', 'data'),
+               Input('reset', 'n_clicks')], )
+def update_ip(new_ip, reset):
     return ba2int(hex2ba(new_ip[0]['1']))
 
 
