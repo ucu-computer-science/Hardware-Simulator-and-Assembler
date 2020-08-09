@@ -270,7 +270,7 @@ def bit_not(operands, flag_register):
 
 def lsh(operands, flag_register):
     """
-    Performs bitwise xor on two registers, saving the result in the third one
+    Performs bitwise lsh on two registers, saving the result in the third one
 
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)
@@ -294,7 +294,7 @@ def lsh(operands, flag_register):
 
 def rsh(operands, flag_register):
     """
-    Performs bitwise xor on two registers, saving the result in the third one
+    Performs bitwise rsh on two registers, saving the result in the third one
 
     Zero operand the value of the first register
     First one is the value of the second register (first operand in the operation)

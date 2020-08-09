@@ -51,3 +51,24 @@ xor %R00, %R00, %R01
 
 not %R00, %R00
 # R00 contains 0xFFFA
+
+mov_low %R00, $5
+mov_low %R02, $1
+rsh %R00, %R00, %R02
+# R00 contains 2
+
+lsh %R00, %R00, %R02
+# R00 contains 4
+
+call $5
+# Should transfer control straight to the call $-3
+nop
+call %R00
+# Should go to ret
+nop
+jmp $3
+call $-3
+# Should transfer to call %R00
+ret
+# Should go to nop after call %R00
+nop

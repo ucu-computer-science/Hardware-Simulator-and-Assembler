@@ -107,6 +107,8 @@ class CPU:
         :param io_arch: chosen Input/Output type
         :param program_text: str - text of the binary program file
         :param program_start: location in the memory for the program code, as an offset from default
+        :param curses_mode: bool - representing whether the app should draw curses interface or not
+        :param debug_mode: bool - representing whether to log the information or not
         :return: NoneType
         """
         self.isa = isa
@@ -294,7 +296,14 @@ class CPU:
         if self.curses_mode:
             is_close = self.curses_next_instruction()
 
-        go_to_next_instruction = self.execute()
+        # Executing the instruction if it's not a 'nop' - no operation instruction
+        # TODO: Possibly get rid of 'end' instruction, substituting them with nops
+        if (instr_name := self.instructions_dict[self.opcode.to01()][0]) == "nop":
+            self.logger.debug('NOP OPERATION')
+            go_to_next_instruction = True
+        else:
+            go_to_next_instruction = self.execute()
+
         self.logger.debug("FINISH decoding and executing the instruction")
         registers_state = ', '.join([f'{name}: {ba2hex(register._state)}' for name, register in self.registers.items()])
         self.logger.debug(F"Registers state: {registers_state}")
@@ -396,8 +405,8 @@ class CPU:
         elif res_type == "ret":
 
             # TODO: Should we zero out the Link Register register after returning to it once?
-            # In RISC-Register architecture we save the caller address in the Link Register,
-            # otherwise we just push it on the stack
+            # In RISC-Register architecture we retrieve the caller address in the Link Register,
+            # otherwise we just pop it on the stack
             if self.isa == "risc3":
                 return_point = int(self.registers["LR"]._state.to01(), 2)
             else:
@@ -409,9 +418,10 @@ class CPU:
             else:
                 destination = ip_value - sum(self.instr_size_list[self.program_pointer:return_point])
 
-            self.registers["IP"].write_data(destination)
+            self.registers["IP"].write_data(bin(destination)[2:])
+            self.program_pointer = return_point
             go_to_next_instruction = False
-            self.logger.debug(f"INST INFO <ret> (Return Point {return_point})")
+            self.logger.debug(f"INST INFO <ret> (Return Point {return_point}, Program Pointer {self.program_pointer})")
 
         # If the opcode is of type jump, we look at the Flag Register and move Instruction Pointer if needed
         elif res_type == "jmp":
