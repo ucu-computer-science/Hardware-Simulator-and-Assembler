@@ -9,7 +9,7 @@ mov_low %R00, $-1
 
 mov_high %R00, $2
 mov %R01, %R00
-# R00 and R01 contain the 0x0205 value
+# R00 and R01 contain the 0x02FF value
 
 mov_low %R01, $0
 mov_high %R01, $2
@@ -83,5 +83,13 @@ jne $-6
 cmp %R00, $6
 jg $5
 nop
-
-# TODO: Still have two compares to check, test, and jumps: jg, jge, jl, jle + in and out
+jge $5
+jl $2
+nop
+jle $2
+# Seems to be a problem with jle instruction as it does not jump to compare, but 2 is indeed <= 6
+nop
+cmp %R00, $2
+je $2
+nop
+# TODO: test, jl, jle + in and out
