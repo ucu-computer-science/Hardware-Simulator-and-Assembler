@@ -87,9 +87,11 @@ jge $5
 jl $2
 nop
 jle $2
-# Seems to be a problem with jle instruction as it does not jump to compare, but 2 is indeed <= 6
 nop
 cmp %R00, $2
-je $2
+jle $2
 nop
-# TODO: test, jl, jle + in and out
+jl $2
+mov_low %R00, $64
+out $1, %R00
+# TODO: test + still have to implement 'in' :)))))))))))))))))))))))))))))

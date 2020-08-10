@@ -448,7 +448,7 @@ class CPU:
             elif jmp_spec == "jl":
                 should_jump = (sign_flag != overflow_flag)
             elif jmp_spec == "jle":
-                should_jump = (sign_flag == overflow_flag) or zero_flag
+                should_jump = (sign_flag != overflow_flag) or zero_flag
 
             # If the jump condition was satisfied, jump to the value specified with the operand
             if should_jump:

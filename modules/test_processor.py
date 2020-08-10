@@ -78,8 +78,8 @@ class TestCPU(unittest.TestCase):
 
         alphabet_check = ["              ABCDEF", "GHIJKLMNOPQRSTUVWXYZ"]
 
-        self.assertEqual(cpu_risc1.ports_dictionary["1"]._state.tobytes().decode("ascii"), alphabet_check[0])
-        self.assertEqual(cpu_risc3.ports_dictionary["1"]._state.tobytes().decode("ascii"), alphabet_check[0])
+        self.assertEqual(str(cpu_risc1.ports_dictionary["1"]), alphabet_check[0])
+        self.assertEqual(str(cpu_risc3.ports_dictionary["1"]), alphabet_check[0])
 
         # Skipping the needed amount of instructions
         for _ in range(165):
@@ -87,8 +87,8 @@ class TestCPU(unittest.TestCase):
         for _ in range(100):
             cpu_risc3.web_next_instruction()
 
-        self.assertEqual(cpu_risc1.ports_dictionary["1"]._state.tobytes().decode("ascii"), alphabet_check[1])
-        self.assertEqual(cpu_risc3.ports_dictionary["1"]._state.tobytes().decode("ascii"), alphabet_check[1])
+        self.assertEqual(str(cpu_risc1.ports_dictionary["1"]), alphabet_check[1])
+        self.assertEqual(str(cpu_risc3.ports_dictionary["1"]), alphabet_check[1])
 
     def test_risc3_hello_world(self):
         """ Tests the correct 'Hello world' workflow for RISC1 and RISC3 architecture """
@@ -104,11 +104,9 @@ class TestCPU(unittest.TestCase):
         self.assertEqual(ba2hex(cpu_risc3.program_memory.slots[-192:]),
                          "00480065006c006c006f00200077006f0072006c00640021")
 
-        self.assertEqual(cpu_risc1.ports_dictionary["1"]._state.tobytes().decode("ascii"),
-                         "        Hello world!")
+        self.assertEqual(str(cpu_risc1.ports_dictionary["1"]), "        Hello world!")
 
-        self.assertEqual(cpu_risc3.ports_dictionary["1"]._state.tobytes().decode("ascii"),
-                         "        Hello world!")
+        self.assertEqual(str(cpu_risc3.ports_dictionary["1"]), "        Hello world!")
 
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """
@@ -289,7 +287,27 @@ class TestCPU(unittest.TestCase):
 
         # Checking the jle $2 instruction
         cpu.web_next_instruction()
-        self.assertEqual(ba2hex(cpu.registers['IP']._state), '025e')
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0260')
+
+        # Checking the cmp %R00, $2 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0004')
+
+        # Checking the jle $2 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0266')
+
+        # Checking the jl $2 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0268')
+
+        # Checking the mov_low %R00, $64 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0040')
+
+        # Checking the out $1, %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(str(cpu.ports_dictionary['1']), '                   @')
 
 
 if __name__ == '__main__':

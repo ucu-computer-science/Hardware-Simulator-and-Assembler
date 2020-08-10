@@ -42,7 +42,8 @@ class Shell:
 
         :return: ascii-decoded slots of the shell
         """
-        data = self._state
+        data = bitarray(self._state.to01())
+
         # Clean the data so there would not be any null characters
         for i in range(0, len(self._state), 8):
             if data[i:i+8].to01() == "00000000":
