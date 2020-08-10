@@ -111,42 +111,42 @@
   },
   {
     "name": "je",
-    "examples": ["je %reg", "je $num"],
-    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was equal to the second"
+    "examples": ["je $num"],
+    "description": "Jumps to the location at num if the first number in the compare instruction was equal to the second"
   },
   {
     "name": "jne",
-    "examples": ["jne %reg", "jne $num"],
-    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was not equal to the second"
+    "examples": ["jne $num"],
+    "description": "Jumps to the location at num if the first number in the compare instruction was not equal to the second"
   },
   {
     "name": "jg",
-    "examples": ["jg %reg", "jg $num"],
-    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was greater than the second"
+    "examples": ["jg $num"],
+    "description": "Jumps to the location at num if the first number in the compare instruction was greater than the second"
   },
   {
     "name": "jge",
-    "examples": ["jge %reg", "jge $num"],
-    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was greater or equal than the second"
+    "examples": ["jge $num"],
+    "description": "Jumps to the location at num if the first number in the compare instruction was greater or equal than the second"
   },
   {
     "name": "jl",
-    "examples": ["jl %reg", "jl $num"],
-    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was less than the second"
+    "examples": ["jl $num"],
+    "description": "Jumps to the location at num if the first number in the compare instruction was less than the second"
   },
   {
     "name": "jle",
-    "examples": ["jle %reg", "jle $num"],
-    "description": "Jumps to the location at reg (or num) if the first number in the compare instruction was less or equal than the second"
+    "examples": ["jle $num"],
+    "description": "Jumps to the location at num if the first number in the compare instruction was less or equal than the second"
   },
   {
     "name": "in",
     "examples": ["in %reg, $port"],
-    "description": "Transfers data from device at port to the register reg"
+    "description": "Hangs the processor, waiting for the single-character user input on the device at the port specified"
   },
   {
     "name": "out",
-    "examples": ["out $port, $num", "out $port, %reg"],
+    "examples": ["out $port, %reg"],
     "description": "Transfers data from num (or reg) to the device at port"
   }
 ]
