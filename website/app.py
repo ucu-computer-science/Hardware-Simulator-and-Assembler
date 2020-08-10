@@ -15,6 +15,7 @@ import uuid
 import dash_table
 from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import json
+from datetime import datetime
 
 # Imports from the project
 from modules.processor import CPU
@@ -206,7 +207,11 @@ app.layout = html.Div([
                 # Output, registers and flags
                 html.Div([
 
-                    html.Div(id='output', style={'display': 'inline-block', 'margin-right': 10}),
+                    html.Div(id='output', children=dash_table.DataTable(id='in_out', columns=([{'id': '1', 'name': 'OUTPUT'}]),
+                                        data=([{'1': ''}]),
+                                        style_header=style_header,
+                                        style_cell=style_cell,
+                                        style_table={'width': '150px'}), style={'display': 'inline-block', 'margin-right': 10}),
 
                     # Registers
                     html.Div(html.Div(id='registers', children=dash_table.DataTable(id='registers-table',
@@ -378,6 +383,9 @@ app.layout = html.Div([
     # Instruction pointer storage (for risc3 by default)
     html.Div(id='ip-storage', children=512, style={'display': 'none'}),
 
+    # Div to enable input mode
+    html.Div(id='store-io', style={'display': 'none'})
+
 ], id="wrapper", )
 
 
@@ -455,7 +463,6 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['reset'] = 0
             user_dict[user_id]['reset-code'] = 0
         elif reset_clicks > user_dict[user_id]['reset']:
-            print('aaaaaaaaaa')
             user_dict[user_id] = dict()
             user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
             user_dict[user_id]['save-manual-flags'] = 0
@@ -480,6 +487,7 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
                 user_dict[user_id]['binhex'] = [binary_program, hex_program]
         else:
             with open('website/history.txt', 'a') as file:
+                file.write(str(datetime.now()) + '\n')
                 if assembly_code not in examples[isa]:
                     file.write(assembly_code)
                 else:
@@ -664,19 +672,42 @@ def create_flags(value):
 
 
 @app.callback(Output('output', 'children'),
-              [Input('output-storage', 'children')])
-def create_output(value):
+              [Input('output-storage', 'children'),
+               Input('next', 'n_clicks')],
+               [State('id-storage', 'children')])
+def create_output(value, n_clicks, user_id):
     """
     # TODO
     :param value:
     :return:
     """
-    return dash_table.DataTable(columns=([{'id': '1', 'name': 'OUTPUT'}]),
+    if user_id in user_dict:
+        if user_dict[user_id]['cpu'].is_input_active:
+            return dash_table.DataTable(id='in_out', columns=([{'id': '1', 'name': 'INPUT'}]),
+                                        data=([{'1': ''}]),
+                                        style_header=style_header,
+                                        style_cell=style_cell,
+                                        style_table={'width': '150px'}, editable=True)
+
+    return dash_table.DataTable(id='in_out', columns=([{'id': '1', 'name': 'OUTPUT'}]),
                                 data=([{'1': value}]),
                                 style_header=style_header,
                                 style_cell=style_cell,
-                                style_table={'width': '150px'}),
+                                style_table={'width': '150px'})
 
+
+@app.callback(Output('store-io', 'children'),
+              [Input('in_out', 'data')],
+               [State('in_out', 'editable'),
+                State('id-storage', 'children')])
+def get_io(data, editable, user_id):
+    if editable:
+        char = data[0]['1']
+        if len(char) != 0:
+            user_dict[user_id]['cpu'].input_finish(hex2ba(char).to01())
+        return char
+
+# mov_low %R00, $1 in %R00, $1 mov_low %R00, $10
 
 @app.callback(Output('memory-div', 'children'),
               [Input('next', 'n_clicks')],
@@ -801,8 +832,9 @@ def create_memory(tab, value):
               [Input('next', 'n_clicks'),
                Input('id-storage', 'children'),
                Input('interval', 'n_intervals'),
-               Input('reset', 'n_clicks')])
-def update_next(n_clicks, user_id, interval, reset):
+               Input('reset', 'n_clicks')],
+              [State('next-storage', 'children')])
+def update_next(n_clicks, user_id, interval, reset, current_situation):
     """
     Return n_clicks for the 'next instruction' button,
     so it changes hidden div, on which graphic elements of
@@ -813,14 +845,16 @@ def update_next(n_clicks, user_id, interval, reset):
     :param user_id: id of the session/user
     :return: same n_clicks
     """
-    if interval > 0:
-        if user_id in user_dict:
-            user_dict[user_id]['cpu'].web_next_instruction()
-        return interval
-    if n_clicks > 0:
-        if user_id in user_dict:
-            user_dict[user_id]['cpu'].web_next_instruction()
-        return n_clicks
+    if user_id in user_dict:
+        if not user_dict[user_id]['cpu'].is_input_active:
+            if interval > 0:
+                user_dict[user_id]['cpu'].web_next_instruction()
+                return interval
+            if n_clicks > 0:
+                user_dict[user_id]['cpu'].web_next_instruction()
+                return n_clicks
+        else:
+            return current_situation
 
 
 # Work with intervals
@@ -980,10 +1014,11 @@ def update_flags(value, user_id, save_manual, undo_manual, reset, data_flags, da
                Input('save-manual', 'n_clicks'),
                Input('undo-manual', 'n_clicks'),
                Input('ip-storage', 'children'),
-               Input('reset', 'n_clicks')
+               Input('reset', 'n_clicks'),
+               Input('store-io', 'children')
                ],
               [State('registers-table', 'data')])
-def update_registers(value_not_used, user_id, save_manual, undo_manual, ip_changes, reset, data):
+def update_registers(value_not_used, user_id, save_manual, undo_manual, ip_changes, reset, if_input, data):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -1059,8 +1094,6 @@ def update_memory(value, user_id, save_manual, undo_manual, reset, data, chosen_
     :return: string memory
     """
     if user_id in user_dict:
-        print(user_dict[user_id]['cpu'])
-        print(save_manual, user_dict[user_id]['save-manual-memory'])
         if save_manual > user_dict[user_id]['save-manual-memory']:
             user_dict[user_id]['save-manual-memory'] = save_manual
             new_data = bitarray('')
