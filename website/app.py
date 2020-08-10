@@ -479,6 +479,16 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
                 user_dict[user_id]['code'] = assembly_code
                 user_dict[user_id]['binhex'] = [binary_program, hex_program]
         else:
+            with open('website/history.txt', 'a') as file:
+                if assembly_code not in examples[isa]:
+                    file.write(assembly_code)
+                else:
+                    if assembly_code == examples[isa][0]:
+                        file.write(f'Example: Alphabet for {isa}.')
+                    else:
+                        file.write(f'Example: Hello World for {isa}.')
+                file.write('\n\n============================================\n\n')
+
             try:
                 binary_program = Assembler(isa, assembly_code).binary_code
                 user_dict[user_id]['cpu'] = CPU(isa, architecture, io, binary_program, ip)
