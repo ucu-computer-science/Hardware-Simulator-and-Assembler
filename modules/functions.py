@@ -128,7 +128,7 @@ def sub(operands, flag_register):
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
         result = bin(twos_complement(reg1 - reg2, 18))[-16:]
-    change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result, 1)
 
     return bitarray(result)
 
@@ -326,13 +326,13 @@ def cmp(operands, flag_register):
     :return: new value of the flag register
     """
     reg1, reg2 = prepare_arguments(operands[0], operands[1])
-    result = bin_clean(bin(twos_complement(reg1 - reg2, len(operands[1])))).rjust(16, "0")
+    result = bin_clean(bin(twos_complement(reg1 - reg2, len(operands[0])))).rjust(16, "0")
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
         result = bin(twos_complement(reg1 - reg2, 18))[-16:]
-    change_flag_result(flag_register, operands, result)
+    change_flag_result(flag_register, operands, result, 1)
 
     return flag_register._state
 
@@ -395,7 +395,7 @@ def twos_complement(val, bits):
     return val
 
 
-def change_flag_result(flag, operands, result):
+def change_flag_result(flag, operands, result, negative_operation=0):
     """
     Change flag register accordingly to the result of the operation
     and to operands
@@ -405,12 +405,20 @@ def change_flag_result(flag, operands, result):
     :param operands: operands, which participated in the operation
     :param registers: value of the registers, which participated in the operation (in a list)
     :param result: result of the operation
+    :param negative_operation: indicates, if that operation allows two positive operands to have a negative result
     :return: result (either changed or not)
     """
-    if operands[0].to01()[0] == operands[1].to01()[0] != result[0]:
+    if operands[0].to01()[0] == operands[1].to01()[0] != result[0] and not negative_operation:
         flag._state[14] = "1"  # Overflow flag
+    elif negative_operation:
+        if int(operands[0].to01(), 2) > int(operands[1].to01(), 2) and operands[0].to01()[0] != result[0]:
+            flag._state[14] = "1"  # Overflow flag
+        elif int(operands[0].to01(), 2) < int(operands[1].to01(), 2) and result[0] != '1':
+            flag._state[14] = "1"  # Overflow flag
+
     if result == "0" * 16:
         flag._state[13] = "1"  # Zero flag
+
     if result[0] == "1":
         flag._state[15] = "1"  # Sign flag
 
