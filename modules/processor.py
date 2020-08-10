@@ -132,7 +132,7 @@ class CPU:
             self.logger.disabled = True
 
         self.logger.debug(f"Created new CPU instance (ISA: {self.isa}, Architecture: {self.architecture}, "
-                    f"I/O: {self.io_arch}, CursesMode: {self.curses_mode})")
+                          f"I/O: {self.io_arch}, CursesMode: {self.curses_mode})")
 
         self.memory_size = 1024
         # Create data and program memory according to the specified architecture
@@ -167,6 +167,7 @@ class CPU:
         self.__load_program(program_text)
         self.read_state = "opcode"
         self.first_instruction = True
+        self.is_input_active = False
 
         self.instruction = bitarray('')
 
@@ -220,7 +221,7 @@ class CPU:
         """
         # Writing program instructions into to memory
         ip_value = int(self.registers["IP"]._state.to01(), 2)
-        self.program_memory.write_data(ip_value*self.instruction_size[2], bitarray(program_text.replace('\n', '')))
+        self.program_memory.write_data(ip_value * self.instruction_size[2], bitarray(program_text.replace('\n', '')))
 
         # Determine the number of bytes for each instruction, and start at the beginning of the program (0th index)
         self.instr_size_list = list(map(lambda x: len(x) // self.instruction_size[2], program_text.split('\n')))
@@ -237,6 +238,11 @@ class CPU:
         # If the instruction is 'end' - an empty string, terminate the execution
         if isinstance(self.instruction, bitarray) and self.instruction.to01() == ('0' * self.instruction_size[0]):
             self.logger.debug("Next instruction is 'end' instruction")
+            return
+
+        # If we are still waiting for input, we can't execute the next instruction
+        if self.is_input_active:
+            self.logger.debug("Can't execute next instruction, CPU waits for the input")
             return
 
         if self.first_instruction:
@@ -257,7 +263,7 @@ class CPU:
         Reads a long immediate encoded in the next byets if the ISA uses those
         Does not actually move the instruction pointer to the next instruction
         """
-        start_read_location = int(self.registers["IP"]._state.to01(), 2)*self.instruction_size[2]
+        start_read_location = int(self.registers["IP"]._state.to01(), 2) * self.instruction_size[2]
         self.instruction = self.program_memory.read_data(start_read_location,
                                                          start_read_location + self.instruction_size[0])
 
@@ -276,8 +282,8 @@ class CPU:
         # If we are in the state of reading the two-byte encoded immediate constant,
         # read it and add to the list of operands
         if self.read_state == "constant":
-            self.long_immediate = self.program_memory.read_data(start_read_location + 1*self.instruction_size[2],
-                                                                start_read_location + 3*self.instruction_size[2])
+            self.long_immediate = self.program_memory.read_data(start_read_location + 1 * self.instruction_size[2],
+                                                                start_read_location + 3 * self.instruction_size[2])
 
             # In order to turn 12-bit signed number into 16-bit signed number, we copy the sign bit into all high bits
             self.long_immediate = bitarray(self.long_immediate.to01().rjust(16, self.long_immediate.to01()[0]))
@@ -382,7 +388,7 @@ class CPU:
                     imm_len = int(operand[3:])
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), imm_len)
                 else:
-                    jump_num = twos_complement(int(self.long_immediate.to01(), 2), self.instruction_size[0]*2)
+                    jump_num = twos_complement(int(self.long_immediate.to01(), 2), self.instruction_size[0] * 2)
             elif operand == "reg":
                 jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
 
@@ -390,14 +396,14 @@ class CPU:
             if jump_num >= 0:
                 jump_distance = sum(self.instr_size_list[self.program_pointer:self.program_pointer + jump_num])
             else:
-                jump_distance = -1*sum(self.instr_size_list[self.program_pointer + jump_num:self.program_pointer])
+                jump_distance = -1 * sum(self.instr_size_list[self.program_pointer + jump_num:self.program_pointer])
 
             # Change the instruction pointer
             ip_value = int(self.registers["IP"]._state.to01(), 2)
             self.registers["IP"].write_data(bin(ip_value + jump_distance)[2:])
             self.program_pointer += jump_num
             self.logger.debug(f"INST INFO: <call> (Distance: {jump_num}, Bytes: {jump_distance}, "
-                              f"Bits: {jump_distance*self.instruction_size[2]})")
+                              f"Bits: {jump_distance * self.instruction_size[2]})")
 
             go_to_next_instruction = False
 
@@ -470,11 +476,11 @@ class CPU:
                 if jump_num >= 0:
                     jump_distance = sum(self.instr_size_list[self.program_pointer:self.program_pointer + jump_num])
                 else:
-                    jump_distance = -1*sum(self.instr_size_list[self.program_pointer + jump_num:self.program_pointer])
+                    jump_distance = -1 * sum(self.instr_size_list[self.program_pointer + jump_num:self.program_pointer])
 
                 # Change the instruction pointer
                 self.logger.debug(f"INST INFO <jmp> (Distance: {jump_num}, Bytes: {jump_distance}, "
-                                  f"Bits: {jump_distance*self.instruction_size[2]})")
+                                  f"Bits: {jump_distance * self.instruction_size[2]})")
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
                 self.registers["IP"].write_data(bin(ip_value + jump_distance)[2:])
                 self.program_pointer += jump_num
@@ -500,7 +506,17 @@ class CPU:
 
         # If the opcode specifies outputting to the device
         elif res_type == "out":
+            self.logger.debug(f"INST INFO outputting to the device {operands_values[-1]}")
             result_destination.out_shell(operands_values[-1])
+
+        # If we are getting input from device, we 'hang' the processor so that it waits for input
+        elif res_type == "in":
+            self.logger.debug("INST INFO CPU is waiting for the input from the device")
+            self.is_input_active = True
+            self.input_result_destination = result_destination
+            # TODO: Currently, the port: device interface is not ideal, and is not finished,
+            #  one of the places we will need to fix for it to work is input instructions, as they
+            #  currently assume just one device to receive input from, which is not great
 
         # Else, we have to execute the needed computations for this function in the virtual ALU
         else:
@@ -577,7 +593,7 @@ class CPU:
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
             elif res_type == "memtos":
                 memory_write_access = True
-                tos_val = int(self.registers["TOS"]._state.to01(), 2)*8
+                tos_val = int(self.registers["TOS"]._state.to01(), 2) * 8
                 result_destination = int(self.data_memory.read_data(tos_val, tos_val + 16).to01(), 2)
             elif res_type == "fr":
                 result_destination = self.registers["FR"]
@@ -655,7 +671,7 @@ class CPU:
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
                 register_code = self.instruction[start_point:start_point + 3].to01()
-                tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16)*8
+                tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16) * 8
                 operands_values.append(self.data_memory.read_data(tmp_register, tmp_register + 16))
                 start_point += 3
 
@@ -678,15 +694,15 @@ class CPU:
                 operands_values.append(self.__pop_tos(second=True))
 
             elif operand == "memtos":
-                tos_value = int(self.__pop_tos(pop=True).to01(), 2)*8
+                tos_value = int(self.__pop_tos(pop=True).to01(), 2) * 8
                 operands_values.append(self.data_memory.read_data(tos_value, tos_value + 16))
 
             elif operand == "memir":
-                ir_value = int(self.registers["IR"]._state.to01(), 2)*8
+                ir_value = int(self.registers["IR"]._state.to01(), 2) * 8
                 operands_values.append(self.data_memory.read_data(ir_value, ir_value + 16))
 
             elif operand == "memimm":
-                start_read = int(self.long_immediate.to01(), 2)*8
+                start_read = int(self.long_immediate.to01(), 2) * 8
                 operands_values.append(self.data_memory.read_data(start_read, start_read + 16))
 
             elif operand in ["fr", "ir", "acc"]:
@@ -702,9 +718,9 @@ class CPU:
         Pushes the value onto the memory stack, changing the position of the Stack Pointer register
         :param value: bitarray(16) - a value to be pushed into memory
         """
-        stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)*8
+        stack_pointer_value = int(self.registers["SP"]._state.to01(), 2) * 8
         self.data_memory.write_data(stack_pointer_value - 16, value)
-        self.registers["SP"]._state = bitarray(bin(stack_pointer_value//8 - 2)[2:].rjust(16, '0'))
+        self.registers["SP"]._state = bitarray(bin(stack_pointer_value // 8 - 2)[2:].rjust(16, '0'))
         self.logger.debug(f"Push to stack: {ba2hex(value)}")
 
     def __pop_stack(self):
@@ -712,10 +728,10 @@ class CPU:
         Pops the last value from the memory stack, changing the position of the Stack Pointer register
         :return: bitarray - of size 16 representing the value of the register previously pushed onto the stack
         """
-        stack_pointer_value = int(self.registers["SP"]._state.to01(), 2)*8
-        self.registers["SP"].write_data(bin(stack_pointer_value//8 + 2)[2:])
+        stack_pointer_value = int(self.registers["SP"]._state.to01(), 2) * 8
+        self.registers["SP"].write_data(bin(stack_pointer_value // 8 + 2)[2:])
         self.logger.debug(f"Pop from stack: {ba2hex(self.registers['SP']._state)}")
-        return self.data_memory.read_data(stack_pointer_value, stack_pointer_value+16)
+        return self.data_memory.read_data(stack_pointer_value, stack_pointer_value + 16)
 
     def __pop_tos(self, second=False, pop=False):
         """
@@ -723,16 +739,24 @@ class CPU:
         :param second: bool - whether to return the value of the second-to-top register
         :param pop: bool - whether to move the stack behind the popped value
         """
-        start_read = int(self.registers["TOS"]._state.to01(), 2)*8
+        start_read = int(self.registers["TOS"]._state.to01(), 2) * 8
         tos_val = start_read
         if second and start_read > self.tos_start:
             start_read -= 16
         return_data = self.data_memory.read_data(start_read - 16, start_read)
         if pop:
-            self.registers["TOS"].write_data(bin(tos_val//8 - 2)[2:])
+            self.registers["TOS"].write_data(bin(tos_val // 8 - 2)[2:])
         self.logger.debug(f"Pop from TOS stack: (newtosval: {ba2hex(self.registers['TOS']._state)}, "
                           f"second: {second}, pop: {pop})")
         return return_data
+
+    def input_finish(self, char):
+        """
+        Stops the waiting process for the CPU, putting the result of the operation in a register specified
+        :param char: bitarray of size 16, the result of the input
+        """
+        self.is_input_active = False
+        self.input_result_destination.write_data(char)
 
     # Below are the methods for curses-driven command-line interface
     def start_program(self):
