@@ -651,6 +651,13 @@ class CPU:
                     port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
                     result_destination = self.ports_dictionary[str(port_num)]
 
+            elif res_type == "in":
+                if operands_aliases[0] == "reg":
+                    # If the destination is the register
+                    register_code = self.instruction[start_point:start_point + 3].to01()
+                    result_destination = self.register_codes[register_code]
+
+
         return memory_write_access, result_destination, tos_push
 
     def __add_operands(self, start_point, operands_aliases):
