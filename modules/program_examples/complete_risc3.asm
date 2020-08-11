@@ -1,5 +1,4 @@
 # There are 41 different instructions for RISC3 ISA (counting different operand types for the same instructions)
-# Of those, only one is still not implemented completely ('in' instruction)
 # This assembly program aims to meaningfully test all of them, with edge cases considered
 #########################################################################################
 # Checking the basic move instructions (mov_low should erase the high byte)
@@ -94,4 +93,3 @@ nop
 jl $2
 mov_low %R00, $64
 out $1, %R00
-# TODO: test + still have to implement 'in' :)))))))))))))))))))))))))))))

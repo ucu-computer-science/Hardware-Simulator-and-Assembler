@@ -445,7 +445,7 @@ def bin_clean(bin_str):
 
 functions_dictionary = {"load": load_store, "loadf": load_store, "loadi": load_store,
                         "store": load_store, "storef": load_store, "storei": load_store,
-                        "swap": load_store, "dup": load_store, "dup2": load_store,
+                        "dup": load_store, "dup2": load_store,
                         "mov_low": mov_low, "mov_high": mov_high, "mov": mov,
                         "add": add, "sub": sub, "inc": add, "dec": sub,
                         "mul": mul, "div": div,

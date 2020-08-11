@@ -40,6 +40,9 @@ class TestCPU(unittest.TestCase):
         with open(os.path.join("modules", "program_examples", "complete_risc3.bin"), "r") as file:
             self.complete_risc3 = file.read()
 
+        with open(os.path.join("modules", "program_examples", "complete_risc1.bin"), "r") as file:
+            self.complete_risc1 = file.read()
+
     def test_program_loading(self):
         """ Tests the correct program loading in the memory """
         cpu_neumann = CPU("risc3", "neumann", "special", self.risc3_program_text)
@@ -107,6 +110,66 @@ class TestCPU(unittest.TestCase):
         self.assertEqual(str(cpu_risc1.ports_dictionary["1"]), "        Hello world!")
 
         self.assertEqual(str(cpu_risc3.ports_dictionary["1"]), "        Hello world!")
+
+    def test_risc1_complete(self):
+        """ Tests all of the instructions of RISC1 ISA """
+        cpu = CPU("risc1", "neumann", "special", self.complete_risc1)
+        cpu.web_next_instruction()
+
+        # Checking the mov $1022 instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(tos_val*8 - 16, tos_val*8).to01(), '0000001111111110')
+
+        # Checking the mov $5 instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8).to01(), '0000000000000101')
+
+        # Checking the push instruction
+        cpu.web_next_instruction()
+        self.assertEqual(cpu.data_memory.read_data(1024 * 8 - 16, 1024 * 8).to01(), '0000000000000101')
+
+        # Checking the load instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8).to01(), '0000000000000101')
+
+        # Checking the loadf instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8).to01(), '0000000000000000')
+
+        # Checking the load $1022 instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8).to01(), '0000000000000101')
+
+        # Checking the mov $0 instruction
+        cpu.web_next_instruction()
+
+        # Checking the store $128 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(cpu.data_memory.read_data(0, 16).to01(), '0000000010000000')
+
+        # Skipping the mov $128 instruction
+        cpu.web_next_instruction()
+
+        # Checking the storef instruction
+        cpu.web_next_instruction()
+        self.assertEqual(cpu.registers['FR']._state.to01(), '0000000010000000')
+
+        # Skipping through mov $12, mov $15 instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the swap instruction
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(tos_val*8 - 32, tos_val*8 - 16).to01(), '0000000000001100')
+        self.assertEqual(cpu.data_memory.read_data(tos_val*8 - 16, tos_val * 8).to01(), '0000000000001111')
+        cpu.web_next_instruction()
+        self.assertEqual(cpu.data_memory.read_data(tos_val*8 - 32, tos_val*8 - 16).to01(), '0000000000001111')
+        self.assertEqual(cpu.data_memory.read_data(tos_val*8 - 16, tos_val*8).to01(), '0000000000001100')
 
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """

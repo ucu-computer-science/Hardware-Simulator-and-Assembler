@@ -357,6 +357,7 @@ class CPU:
 
         # Get the values of the operands for this function
         operands_values = self.__add_operands(start_point, operands_aliases)
+        self.logger.debug(f"INST INFO Operands Values: {operands_values}")
 
         # Determine whether the memory is going to be affected as a
         # result of the operation and where to save it
@@ -518,6 +519,13 @@ class CPU:
             #  one of the places we will need to fix for it to work is input instructions, as they
             #  currently assume just one device to receive input from, which is not great
 
+        # Swapping two of the top TOS values
+        elif res_type == "swap":
+            self.logger.debug("INST INFO Swapping TOS")
+            self.data_memory.write_data(result_destination * 8, operands_values[0])
+            self.data_memory.write_data(result_destination * 8 + 16, operands_values[1])
+            self.registers["TOS"].write_data(bin(result_destination + 4)[2:])
+
         # Else, we have to execute the needed computations for this function in the virtual ALU
         else:
             # Determine the needed function for this opcode and execute it, passing the flag register
@@ -588,7 +596,7 @@ class CPU:
         if self.isa == "risc1":
 
             # Determining the result destination for RISC-Stack iSA
-            if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["tos", "in"]:
+            if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["tos", "in", "swap"]:
                 memory_write_access, tos_push = True, True
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
             elif res_type == "memtos":
