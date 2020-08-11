@@ -272,7 +272,7 @@ app.layout = html.Div([
                         ([
 
                         dash_table.DataTable(id='seconds',
-                                             columns=([{'id': '1', 'name': 'INSTRUCTION PER SECOND (Hz)'}]),
+                                             columns=([{'id': '1', 'name': 'INST/SECOND (Hz)'}]),
                                              data=([{'1': '1'}]),
                                              style_header=style_header,
                                              style_cell=style_cell,
@@ -308,22 +308,6 @@ app.layout = html.Div([
                                                            'font-size': 13})), ],
                      style={'display': 'inline-block', 'margin-right': 17}),
 
-            html.Div([
-                html.Div([
-
-                    html.Button('SAVE MANUAL CHANGES', id='save-manual', n_clicks=0,
-                                style={"color": button['font'],
-                                       "background-color": button['background'],
-                                       'width': 220, 'display': 'block', 'margin-bottom': 15,
-                                       'font-family': "Roboto Mono, monospace", 'font-size': 13}),
-                    html.Button('UNDO MANUAL CHANGES', id='undo-manual', n_clicks=0,
-                                style={"color": button['font'],
-                                       "background-color": button['background'],
-                                       'width': 220, 'display': 'block', 'font-family': "Roboto Mono, monospace",
-                                       'font-size': 13}),
-                ]),
-
-            ], style={'display': 'inline-block'}),
 
             html.Button('RESET', id='reset', n_clicks=0,
                         style={"color": button['font'], 'display': 'block',
@@ -443,12 +427,6 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
     global user_dict
 
     if not n_clicks and user_id in user_dict:
-        user_dict[user_id]['save-manual-flags'] = 0
-        user_dict[user_id]['undo-manual-flags'] = 0
-        user_dict[user_id]['save-manual-registers'] = 0
-        user_dict[user_id]['undo-manual-registers'] = 0
-        user_dict[user_id]['save-manual-memory'] = 0
-        user_dict[user_id]['undo-manual-memory'] = 0
         user_dict[user_id]['reset'] = 0
         user_dict[user_id]['reset-code'] = 0
 
@@ -459,12 +437,6 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
         if user_id not in user_dict:
             user_dict[user_id] = dict()
             user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
-            user_dict[user_id]['save-manual-flags'] = 0
-            user_dict[user_id]['undo-manual-flags'] = 0
-            user_dict[user_id]['save-manual-registers'] = 0
-            user_dict[user_id]['undo-manual-registers'] = 0
-            user_dict[user_id]['save-manual-memory'] = 0
-            user_dict[user_id]['undo-manual-memory'] = 0
             user_dict[user_id]['code'] = ''
             user_dict[user_id]['binhex'] = ['', '']
             user_dict[user_id]['flags-changed'] = False
@@ -474,12 +446,6 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
         elif reset_clicks > user_dict[user_id]['reset']:
             user_dict[user_id] = dict()
             user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
-            user_dict[user_id]['save-manual-flags'] = 0
-            user_dict[user_id]['undo-manual-flags'] = 0
-            user_dict[user_id]['save-manual-registers'] = 0
-            user_dict[user_id]['undo-manual-registers'] = 0
-            user_dict[user_id]['save-manual-memory'] = 0
-            user_dict[user_id]['undo-manual-memory'] = 0
             user_dict[user_id]['code'] = ''
             user_dict[user_id]['binhex'] = ['', '']
             user_dict[user_id]['flags-changed'] = False
@@ -624,16 +590,22 @@ def code(input_code):
 
 # APP CALLBACKS FOR CREATION OF GRAPHIC ELEMENTS OF THE PROCESSOR
 @app.callback(Output('instruction', 'children'),
-              [Input('instruction-storage', 'children')])
-def create_instruction(value):
+              [Input('instruction-storage', 'children')],
+              [State('id-storage', 'children')])
+def create_instruction(value, user_id):
     """
     # TODO
     :param value:
     :return:
     """
+    if user_id in user_dict:
+        return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
+                                data=([{'1': f'{value} ({user_dict[user_id]["cpu"].instructions_dict[user_dict[user_id]["cpu"].opcode.to01()][0]})'}]), style_header=style_header,
+                                style_cell=style_cell, style_table={'width':200})
     return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
-                                data=([{'1': value}]), style_header=style_header,
-                                style_cell=style_cell, ),
+                                data=([{'1': value}]),
+                                style_header=style_header,
+                                style_cell=style_cell, style_table={'width':200})
 
 
 @app.callback(Output('registers', 'children'),
@@ -712,8 +684,9 @@ def create_output(value, n_clicks, user_id):
 def get_io(data, editable, user_id):
     if editable:
         char = data[0]['1']
-        if len(char) != 0:
-            user_dict[user_id]['cpu'].input_finish(int2ba(ord(char[0])).to01())
+        if char:
+            if len(char) != 0:
+                user_dict[user_id]['cpu'].input_finish(bin(ord(char[0]))[2:])
         return char
 
 
@@ -972,13 +945,11 @@ def update_instruction(value, user_id, reset):
 @app.callback(Output('flags-storage', 'children'),
               [Input('next-storage', 'children'),
                Input('id-storage', 'children'),
-               Input('save-manual', 'n_clicks'),
-               Input('undo-manual', 'n_clicks'),
                Input('reset', 'n_clicks')
                ],
               [State('flags-table', 'data'),
                State('registers-table', 'data')])
-def update_flags(value, user_id, save_manual, undo_manual, reset, data_flags, data_regs):
+def update_flags(value, user_id, reset, data_flags, data_regs):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -998,10 +969,9 @@ def update_flags(value, user_id, save_manual, undo_manual, reset, data_flags, da
                     4, '0')[12:]:
                 flags = hex2ba(data_regs[0]['FR:']).to01()[-4:]
             else:
-                save_manual -= 1
+               ?
 
-        if save_manual > user_dict[user_id]['save-manual-flags']:
-            user_dict[user_id]['save-manual-flags'] = save_manual
+        ?
             try:
                 cf, zf, of, sf = list(flags)
                 user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
@@ -1012,7 +982,6 @@ def update_flags(value, user_id, save_manual, undo_manual, reset, data_flags, da
 
                 return [cf, zf, of, sf]
         elif undo_manual > user_dict[user_id]['undo-manual-flags']:
-            user_dict[user_id]['undo-manual-flags'] = undo_manual
             cf, zf, of, sf = list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:])
 
             return [cf, zf, of, sf]
@@ -1024,14 +993,12 @@ def update_flags(value, user_id, save_manual, undo_manual, reset, data_flags, da
 @app.callback(Output('registers-storage', 'children'),
               [Input('next-storage', 'children'),
                Input('id-storage', 'children'),
-               Input('save-manual', 'n_clicks'),
-               Input('undo-manual', 'n_clicks'),
                Input('ip-storage', 'children'),
                Input('reset', 'n_clicks'),
                Input('store-io', 'children')
                ],
               [State('registers-table', 'data')])
-def update_registers(value_not_used, user_id, save_manual, undo_manual, ip_changes, reset, if_input, data):
+def update_registers(value_not_used, user_id, ip_changes, reset, if_input, data):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -1041,8 +1008,7 @@ def update_registers(value_not_used, user_id, save_manual, undo_manual, ip_chang
     :return: string registers
     """
     if user_id in user_dict:
-        if save_manual > user_dict[user_id]['save-manual-registers']:
-            user_dict[user_id]['save-manual-registers'] = save_manual
+        ?
             new_reg_dict = data[0]
 
             if user_dict[user_id]['flags-changed']:
@@ -1052,8 +1018,6 @@ def update_registers(value_not_used, user_id, save_manual, undo_manual, ip_chang
             for key, value in new_reg_dict.items():
                 user_dict[user_id]['cpu'].registers[key[:-1]]._state = bitarray(hex2ba(value).to01().rjust(16, '0'))
 
-        elif undo_manual > user_dict[user_id]['undo-manual-registers']:
-            user_dict[user_id]['undo-manual-registers'] = undo_manual
 
         items = [(value.name, value._state.tobytes().hex()) for key, value in
                  user_dict[user_id]['cpu'].registers.items()]
@@ -1091,13 +1055,11 @@ def update_output(value, user_id, reset):
 @app.callback(Output('memory-storage', 'children'),
               [Input('next-storage', 'children'),
                Input('id-storage', 'children'),
-               Input('save-manual', 'n_clicks'),
-               Input('undo-manual', 'n_clicks'),
                Input('reset', 'n_clicks')
                ],
               [State('mem', 'data'),
                State('memory-tabs', 'value')])
-def update_memory(value, user_id, save_manual, undo_manual, reset, data, chosen_tab):
+def update_memory(value, user_id, reset, data, chosen_tab):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -1107,8 +1069,7 @@ def update_memory(value, user_id, save_manual, undo_manual, reset, data, chosen_
     :return: string memory
     """
     if user_id in user_dict:
-        if save_manual > user_dict[user_id]['save-manual-memory']:
-            user_dict[user_id]['save-manual-memory'] = save_manual
+        ?
             new_data = bitarray('')
             try:
                 for dictionary in data:
@@ -1126,8 +1087,6 @@ def update_memory(value, user_id, save_manual, undo_manual, reset, data, chosen_
                     user_dict[user_id]['cpu'].program_memory.slots = new_data
 
 
-        elif undo_manual > user_dict[user_id]['undo-manual-memory']:
-            user_dict[user_id]['undo-manual-memory'] = undo_manual
         memory_data = [[], [], [], [], [], [], [], []]
         for i in range(0, len(user_dict[user_id]['cpu'].data_memory.slots), 32 * 8):
             string = ba2hex(user_dict[user_id]['cpu'].data_memory.slots[i:i + 32 * 8])
@@ -1153,16 +1112,6 @@ def update_memory(value, user_id, save_manual, undo_manual, reset, data, chosen_
     lst2 = '\n'.join([lst1] * 8)
     return [lst2, '']
 
-
-# Update buttons
-@app.callback([Output('save-manual', 'n_clicks'),
-               Output('undo-manual', 'n_clicks'), ],
-              [Input('id-storage', 'children'),
-               Input('reset', 'n_clicks')])
-def update_buttons(user_id, reset):
-    if user_id in user_dict:
-        return user_dict[user_id]['save-manual-flags'], user_dict[user_id]['undo-manual-flags']
-    return 0, 0
 
 
 # Update IP - info
