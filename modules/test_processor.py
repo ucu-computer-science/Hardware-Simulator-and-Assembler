@@ -274,6 +274,54 @@ class TestCPU(unittest.TestCase):
         tos_val = int(cpu.registers['TOS']._state.to01(), 2)
         self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), '0003')
 
+        # Skipping through two mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the and instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val*8 - 16, tos_val*8)), '0002')
+
+        # Skipping through two mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the or instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), '0007')
+
+        # Skipping through two mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the xor instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), '0005')
+
+        # Skipping through mov $15 instruction
+        cpu.web_next_instruction()
+
+        # Checking the not instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), 'fff0')
+
+        # Skipping through mov $2 instruction
+        cpu.web_next_instruction()
+
+        # Checking the lsh instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), '0004')
+
+        # Checking the rsh instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), '0002')
+
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """
         cpu = CPU("risc3", "neumann", "special", self.complete_risc3)
@@ -474,6 +522,11 @@ class TestCPU(unittest.TestCase):
         # Checking the out $1, %R00 instruction
         cpu.web_next_instruction()
         self.assertEqual(str(cpu.ports_dictionary['1']), '                   @')
+
+        # Checking the in %R00, $1 instruction
+        cpu.web_next_instruction()
+        cpu.input_finish(bin(ord("a"))[2:])
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0061')
 
 
 if __name__ == '__main__':

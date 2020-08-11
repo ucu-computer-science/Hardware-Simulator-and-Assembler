@@ -93,3 +93,4 @@ nop
 jl $2
 mov_low %R00, $64
 out $1, %R00
+in %R00, $1

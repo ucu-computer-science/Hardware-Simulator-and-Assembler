@@ -35,12 +35,20 @@ mul
 mov $2
 mov $6
 div
-# and
-# or
-# xor
-# not
-# lsh
-# rsh
+mov $6
+mov $3
+and
+mov $6
+mov $1
+or
+mov $6
+mov $3
+xor
+mov $15
+not
+mov $2
+lsh $1
+rsh $1
 # call $
 # call
 # ret
