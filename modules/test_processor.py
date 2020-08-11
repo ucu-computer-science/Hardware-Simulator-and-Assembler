@@ -8,6 +8,7 @@ import unittest
 from bitarray.util import ba2hex
 
 from modules.processor import CPU
+from modules.assembler import Assembler
 
 # This module tests the basic functionality of the processor module, including
 # its initialization (registers, program text, memory etc.)
@@ -19,29 +20,51 @@ from modules.processor import CPU
 class TestCPU(unittest.TestCase):
     def setUp(self):
         """ Loads the common programs for testing """
-        with open(os.path.join("modules", "demos", "risc1", "alphabet_printout.bin"), "r") as file:
-            self.risc1_program_text = file.read()
+        test_programs = [('risc1', os.path.join("modules", "demos", "risc1", 'alphabet_printout.asm')),
+                         ('risc1', os.path.join("modules", "demos", "risc1", "helloworld.asm")),
+                         ('risc3', os.path.join("modules", "demos", "risc3", "helloworld.asm")),
+                         ('risc3', os.path.join("modules", "demos", "risc3", "alphabet_printout.asm")),
+                         ('risc3', os.path.join("modules", "program_examples", "assembly_test6.asm")),
+                         ('risc3', os.path.join("modules", "program_examples", "complete_risc3.asm")),
+                         ('risc1', os.path.join("modules", "program_examples", "complete_risc1.asm"))]
 
-        with open(os.path.join("modules", "demos", "risc1", "helloworld.bin"), "r") as file:
+        output_files = self.reassemble(test_programs)
+
+        with open(output_files[0], "r") as file:
+            self.risc1_program_text = file.read()
+            self.risc1_alphabet = self.risc1_program_text
+
+        with open(output_files[1], "r") as file:
             self.risc1_hello_world = file.read()
 
-        with open(os.path.join("modules", "demos", "risc3", "helloworld.bin"), "r") as file:
+        with open(output_files[2], "r") as file:
             self.risc3_hello_world = file.read()
 
-        with open(os.path.join("modules", "demos", "risc1", "alphabet_printout.bin"), "r") as file:
-            self.risc1_alphabet = file.read()
-
-        with open(os.path.join("modules", "demos", "risc3", "alphabet_printout.bin"), "r") as file:
+        with open(output_files[3], "r") as file:
             self.risc3_alphabet = file.read()
 
-        with open(os.path.join("modules", "program_examples", "assembly_test6.bin"), "r") as file:
+        with open(output_files[4], "r") as file:
             self.risc3_program_text = file.read()
 
-        with open(os.path.join("modules", "program_examples", "complete_risc3.bin"), "r") as file:
+        with open(output_files[5], "r") as file:
             self.complete_risc3 = file.read()
 
-        with open(os.path.join("modules", "program_examples", "complete_risc1.bin"), "r") as file:
+        with open(output_files[6], "r") as file:
             self.complete_risc1 = file.read()
+
+    def reassemble(self, programs):
+        """ Reassembles all the test programs """
+        output_files = []
+        for program in programs:
+            with open(program[1], 'r') as file:
+                program_text = file.read()
+            binary_program = Assembler(program[0], program_text).binary_code
+            output_path = os.path.join(os.path.dirname(program[1]),
+                                       os.path.splitext(os.path.basename(program[1]))[0] + ".bin")
+            output_files.append(output_path)
+            with open(output_path, "w") as file:
+                file.write(binary_program)
+        return output_files
 
     def test_program_loading(self):
         """ Tests the correct program loading in the memory """
@@ -214,6 +237,42 @@ class TestCPU(unittest.TestCase):
         stack_frame = int(cpu.registers['SP']._state.to01(), 2)
         self.assertEqual(cpu.registers['FR']._state.to01(),
                          cpu.data_memory.read_data(stack_frame * 8 - 16, stack_frame*8).to01())
+
+        # Skipping through mov $1 and mov $2 instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the add instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(tos_val*8 - 16, tos_val*8).to01(), '0000000000000011')
+
+        # Skipping through mov $3, mov $2 instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the sub instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val*8-16, tos_val*8)), 'ffff')
+
+        # Skipping through two mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the mul instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val*8-16, tos_val*8)), 'fffd')
+
+        # Skipping through two mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the div instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), '0003')
 
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """

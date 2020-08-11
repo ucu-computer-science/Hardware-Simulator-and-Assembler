@@ -23,10 +23,18 @@ mov $1
 pop
 push
 popf
-# add
-# sub
-# mul
-# div
+mov $1
+mov $2
+add
+mov $3
+mov $2
+sub
+mov $3
+mov $-1
+mul
+mov $2
+mov $6
+div
 # and
 # or
 # xor
