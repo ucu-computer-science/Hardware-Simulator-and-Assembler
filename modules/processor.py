@@ -619,7 +619,7 @@ class CPU:
         elif self.isa in ["risc3", "cisc"]:
 
             # If the result is to be saved into the first operand
-            if (res_type := self.instructions_dict[self.opcode.to01()][1]) == "firstop":
+            if (res_type := self.instructions_dict[self.opcode.to01()][1]) in ["firstop", "in"]:
 
                 if operands_aliases[0] == "reg":
                     # If the destination is the register
@@ -650,13 +650,6 @@ class CPU:
                     imm_len = int(operands_aliases[0][3:])
                     port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
                     result_destination = self.ports_dictionary[str(port_num)]
-
-            elif res_type == "in":
-                if operands_aliases[0] == "reg":
-                    # If the destination is the register
-                    register_code = self.instruction[start_point:start_point + 3].to01()
-                    result_destination = self.register_codes[register_code]
-
 
         return memory_write_access, result_destination, tos_push
 
