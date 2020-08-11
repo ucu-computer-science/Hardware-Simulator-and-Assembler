@@ -12,16 +12,17 @@ mov $0
 store $128
 mov $128
 storef
+pushf
 mov $12
 mov $15
 swap
-
-# dup
-# dup2
-# push
-# pushf
-# pop
-# popf
+dup2
+dup
+push
+mov $1
+pop
+push
+popf
 # add
 # sub
 # mul

@@ -498,7 +498,7 @@ class CPU:
         elif res_type in ["stackpop", "stackpopf"]:
             popped_val = self.__pop_stack()
             if memory_write_access:
-                self.data_memory.write_data(result_destination // 8, popped_val)
+                self.data_memory.write_data(result_destination * 8, popped_val)
                 if tos_push:
                     self.registers["TOS"].write_data(bin(result_destination + 2)[2:])
             else:

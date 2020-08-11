@@ -159,6 +159,12 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         self.assertEqual(cpu.registers['FR']._state.to01(), '0000000010000000')
 
+        # Checking the pushf instruction
+        cpu.web_next_instruction()
+        stack_frame = int(cpu.registers['SP']._state.to01(), 2)
+        self.assertEqual(cpu.registers['FR']._state.to01(),
+                         cpu.data_memory.read_data(stack_frame*8, stack_frame*8+16).to01())
+
         # Skipping through mov $12, mov $15 instructions
         cpu.web_next_instruction()
         cpu.web_next_instruction()
@@ -170,6 +176,44 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         self.assertEqual(cpu.data_memory.read_data(tos_val*8 - 32, tos_val*8 - 16).to01(), '0000000000001111')
         self.assertEqual(cpu.data_memory.read_data(tos_val*8 - 16, tos_val*8).to01(), '0000000000001100')
+
+        # Checking the dup2 instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(tos_val*8 - 48, tos_val*8 - 32).to01(),
+                         cpu.data_memory.read_data(tos_val*8 - 16, tos_val*8).to01())
+
+        # Checking the dup instruction
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(tos_val * 8 - 32, tos_val * 8 - 16).to01(),
+                         cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8).to01())
+
+        # Checking the push instruction
+        cpu.web_next_instruction()
+        stack_frame = int(cpu.registers['SP']._state.to01(), 2)
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(stack_frame * 8, stack_frame * 8 + 16).to01(),
+                         cpu.data_memory.read_data(tos_val * 8, tos_val * 8 + 16).to01())
+
+        # Skipping through mov $1 instruction
+        cpu.web_next_instruction()
+
+        # Checking the pop instruction
+        cpu.web_next_instruction()
+        stack_frame = int(cpu.registers['SP']._state.to01(), 2)
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(cpu.data_memory.read_data(stack_frame * 8 - 16, stack_frame * 8).to01(),
+                         cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8).to01())
+
+        # Skipping through the push instruction
+        cpu.web_next_instruction()
+
+        # Checking the popf instruction
+        cpu.web_next_instruction()
+        stack_frame = int(cpu.registers['SP']._state.to01(), 2)
+        self.assertEqual(cpu.registers['FR']._state.to01(),
+                         cpu.data_memory.read_data(stack_frame * 8 - 16, stack_frame*8).to01())
 
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """
