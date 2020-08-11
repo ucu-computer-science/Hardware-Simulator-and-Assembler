@@ -322,6 +322,19 @@ class TestCPU(unittest.TestCase):
         tos_val = int(cpu.registers['TOS']._state.to01(), 2)
         self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), '0002')
 
+        # Checking the call $2 instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0265')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0269')
+
+        # Checking the call instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '026d')
+
+        # Checking the ret instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '026a')
+
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """
         cpu = CPU("risc3", "neumann", "special", self.complete_risc3)

@@ -49,9 +49,11 @@ not
 mov $2
 lsh $1
 rsh $1
-# call $
-# call
-# ret
+call $2
+add
+call
+call $2
+ret
 # cmpe
 # cmpe  $
 # cmpb

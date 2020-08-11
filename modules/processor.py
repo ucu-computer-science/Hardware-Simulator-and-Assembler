@@ -390,7 +390,7 @@ class CPU:
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), imm_len)
                 else:
                     jump_num = twos_complement(int(self.long_immediate.to01(), 2), self.instruction_size[0] * 2)
-            elif operand == "reg":
+            elif operand in ["reg", "tos"]:
                 jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
 
             # Calculate the new program_start in instructions
@@ -417,7 +417,7 @@ class CPU:
             if self.isa == "risc3":
                 return_point = int(self.registers["LR"]._state.to01(), 2)
             else:
-                return_point = self.__pop_stack()
+                return_point = int(self.__pop_stack().to01(), 2)
 
             ip_value = int(self.registers["IP"]._state.to01(), 2)
             if self.program_pointer >= return_point:
