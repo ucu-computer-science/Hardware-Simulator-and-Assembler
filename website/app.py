@@ -78,9 +78,12 @@ app.layout = html.Div([
                      style={'color': title_color, 'font-family': "Roboto Mono, monospace",
                             'font-size': '25px', 'display': 'inline-block', 'margin-left': 100, 'margin-top': 5}),
 
+        dcc.Markdown("CHOOSE AN EXAMPLE PROGRAM:",
+                     style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                            'font-size': '18px', 'display': 'inline-block', 'margin-left': 155}),
         dcc.Markdown("CHOOSE ISA:",
                      style={'color': text_color, 'font-family': "Roboto Mono, monospace",
-                            'font-size': '18px', 'display': 'inline-block', 'margin-left': 510}),
+                            'font-size': '18px', 'display': 'inline-block', 'margin-left': 85}),
 
         dcc.Markdown("ARCHITECTURE:",
                      style={'color': text_color, 'font-family': "Roboto Mono, monospace",
@@ -90,8 +93,22 @@ app.layout = html.Div([
                      style={'color': text_color, 'font-family': "Roboto Mono, monospace",
                             'font-size': '18px', 'display': 'inline-block', 'margin-left': 100}),
 
-        # Dropdowns for isa, architecture and i/o mode
+        # Dropdowns for examples, isa, architecture and i/o mode
         html.Div([
+            html.Div([
+                dcc.Dropdown(
+                    id='example-dropdown',
+                    options=[
+                        {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
+                        {'label': 'HELLO WORLD', 'value': 'hello'},
+                        {'label': 'NONE', 'value': 'none'},
+                    ],
+                    placeholder="NONE",
+                    style=dropdown_style2,
+                    clearable=False
+                ),
+
+            ], style={'display': 'inline-block'}),
 
             html.Div([
 
@@ -139,7 +156,7 @@ app.layout = html.Div([
 
             ], style={'display': 'inline-block'}),
 
-        ], style={'display': 'inline-block', 'margin-left': 800}),
+        ], style={'display': 'inline-block', 'margin-left': 520}),
     ], style={'margin-bottom': 5}),
 
     # ASSEMBLER AND PROCESSOR
@@ -207,11 +224,13 @@ app.layout = html.Div([
                 # Output, registers and flags
                 html.Div([
 
-                    html.Div(id='output', children=dash_table.DataTable(id='in_out', columns=([{'id': '1', 'name': 'OUTPUT'}]),
-                                        data=([{'1': ''}]),
-                                        style_header=style_header,
-                                        style_cell=style_cell,
-                                        style_table={'width': '150px'}), style={'display': 'inline-block', 'margin-right': 10}),
+                    html.Div(id='output',
+                             children=dash_table.DataTable(id='in_out', columns=([{'id': '1', 'name': 'OUTPUT'}]),
+                                                           data=([{'1': ''}]),
+                                                           style_header=style_header,
+                                                           style_cell=style_cell,
+                                                           style_table={'width': '150px'}),
+                             style={'display': 'inline-block', 'margin-right': 10}),
 
                     # Registers
                     html.Div(html.Div(id='registers', children=dash_table.DataTable(id='registers-table',
@@ -274,29 +293,19 @@ app.layout = html.Div([
             ], style={'height': 25}), html.Div(id='memory', children=empty_memory)],
                      style={'margin-bottom': 20, 'margin-top': 20}),
 
-            html.Div([
-                dcc.Dropdown(
-                    id='example-dropdown',
-                    options=[
-                        {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
-                        {'label': 'HELLO WORLD', 'value': 'hello'},
-                    ],
-                    placeholder="CHOOSE AN EXAMPLE PROGRAM",
-                    style=dropdown_style2,
-                    clearable=False
-                ), ], style={'display': 'inline-block', 'margin-right': 30}),
-
             html.Div([html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
                                   style={"color": button['font'],
                                          "background-color": button['background'],
                                          'width': 200, 'display': 'block', 'margin-bottom': 15,
                                          'font-family': "Roboto Mono, monospace", 'font-size': 13}),
 
-                      html.Button('RUN | STOP', id='run-until-finished', n_clicks=0,
-                                  style={"color": button['font'],
-                                         "background-color": button['background'],
-                                         'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
-                                         'font-size': 13}), ],
+                      html.Div(id='run-until-finished-button',
+                               children=html.Button('RUN', id='run-until-finished', n_clicks=0,
+                                                    style={"color": button['font'],
+                                                           "background-color": button['background'],
+                                                           'width': 200, 'display': 'block',
+                                                           'font-family': "Roboto Mono, monospace",
+                                                           'font-size': 13})), ],
                      style={'display': 'inline-block', 'margin-right': 17}),
 
             html.Div([
@@ -674,7 +683,7 @@ def create_flags(value):
 @app.callback(Output('output', 'children'),
               [Input('output-storage', 'children'),
                Input('next', 'n_clicks')],
-               [State('id-storage', 'children')])
+              [State('id-storage', 'children')])
 def create_output(value, n_clicks, user_id):
     """
     # TODO
@@ -698,14 +707,15 @@ def create_output(value, n_clicks, user_id):
 
 @app.callback(Output('store-io', 'children'),
               [Input('in_out', 'data')],
-               [State('in_out', 'editable'),
-                State('id-storage', 'children')])
+              [State('in_out', 'editable'),
+               State('id-storage', 'children')])
 def get_io(data, editable, user_id):
     if editable:
         char = data[0]['1']
         if len(char) != 0:
-            user_dict[user_id]['cpu'].input_finish(hex2ba(char).to01())
+            user_dict[user_id]['cpu'].input_finish(int2ba(ord(char[0])).to01())
         return char
+
 
 # mov_low %R00, $1 in %R00, $1 mov_low %R00, $10
 
@@ -886,21 +896,24 @@ def run_interval(n, user_id, instruction, current_state):
 
 
 @app.callback(
-    Output("run-until-finished", "style"),
+    Output("run-until-finished-button", "children"),
     [Input('interval', 'disabled'),
-     Input('reset', 'n_clicks')]
+     Input('reset', 'n_clicks')],
+    [State('run-until-finished', 'n_clicks')]
 )
-def change_button_color(disabled, reset):
+def change_button_color(disabled, reset, n_clicks):
     if disabled:
-        return {"color": button['font'],
-                "background-color": button['background'],
-                'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
-                'font-size': 13}
+        return html.Button('RUN', id='run-until-finished', n_clicks=n_clicks,
+                           style={"color": button['font'],
+                                  "background-color": button['background'],
+                                  'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
+                                  'font-size': 13})
     else:
-        return {"color": assembly['font'],
-                "background-color": assembly['background'],
-                'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
-                'font-size': 13}
+        return html.Button('STOP', id='run-until-finished', n_clicks=n_clicks,
+                           style={"color": assembly['font'],
+                                  "background-color": assembly['background'],
+                                  'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
+                                  'font-size': 13})
 
 
 @app.callback(

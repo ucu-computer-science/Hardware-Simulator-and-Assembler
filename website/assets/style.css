@@ -28,7 +28,7 @@
 }
 
 #example-dropdown > div > div {
-    width: 200px;
+    width: 285px;
     background-color: rgb(38, 39, 61);
     font-family: "Roboto Mono", monospace;
     color: #9090AC;
@@ -37,6 +37,12 @@
 
 
 #react-select-2--value-item {
+    background-color: rgb(38, 39, 61);
+    font-family: "Roboto Mono", monospace;
+    color: #9090AC;
+    font-size: 17px;
+}
+#react-select-2--value > div.Select-placeholder {
     background-color: rgb(38, 39, 61);
     font-family: "Roboto Mono", monospace;
     color: #9090AC;
@@ -72,6 +78,7 @@
     color: #9090AC;
     font-size: 17px;
 }
+
 
 #wrapper .dash-spreadsheet-container .dash-spreadsheet-inner table {
     border-collapse: collapse;
@@ -117,3 +124,4 @@ body::-webkit-scrollbar {
 
 #reset {
 box-sizing: content-box;}
+
