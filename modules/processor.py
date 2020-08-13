@@ -243,9 +243,9 @@ class CPU:
         Only starts executing AFTER the first call, only reads the instruction on the first time
         """
         self.logger.debug("Next instruction is executing")
-        # If the instruction is 'end' - an empty string, terminate the execution
+        # If the instruction is 'halt' - an empty string, terminate the execution
         if isinstance(self.instruction, bitarray) and self.instruction.to01() == ('0' * self.instruction_size[0]):
-            self.logger.debug("Next instruction is 'end' instruction")
+            self.logger.debug("Next instruction is 'halt' instruction")
             return
 
         # If we are still waiting for input, we can't execute the next instruction
@@ -311,7 +311,6 @@ class CPU:
             is_close = self.curses_next_instruction()
 
         # Executing the instruction if it's not a 'nop' - no operation instruction
-        # TODO: Possibly get rid of 'end' instruction, substituting them with nops
         if (instr_name := self.instructions_dict[self.opcode.to01()][0]) == "nop":
             self.logger.debug('NOP OPERATION')
             go_to_next_instruction = True

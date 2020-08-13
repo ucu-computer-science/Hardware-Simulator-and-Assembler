@@ -2,8 +2,8 @@
     "comments": "Each architecture contains a dict of instructions: encoding, name, result destination and list of operands",
     "risc1": {
         "000000": [
-            "end",
-            "end"
+            "halt",
+            "halt"
         ],
         "000001": [
             "load",
@@ -198,8 +198,8 @@
     },
     "risc2": {
         "00000000": [
-            "end",
-            "end"
+            "halt",
+            "halt"
         ],
         "00000001": [
             "load",
@@ -454,8 +454,8 @@
     },
     "risc3": {
         "000000": [
-            "end",
-            "end",
+            "halt",
+            "halt",
             []
         ],
         "000001": [
