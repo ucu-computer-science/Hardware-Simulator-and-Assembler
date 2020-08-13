@@ -83,7 +83,7 @@ class TestCPU(unittest.TestCase):
         """ Tests the correct byte program_start for each architecture """
         cpu_risc1 = CPU("risc1", "neumann", "special", self.risc1_program_text, program_start=512)
         self.assertEqual(ba2hex(cpu_risc1.program_memory.slots[512*6:512*6 + 22*6]),
-                         "8810479816eb0061ec00188004ea7fe40")
+                         "8810479816e90061eb00188004ea3fe40")
 
         # cpu_risc2 = CPU("risc2", "neumann", "special", self.riscprogram_text, program_start=512)
         # self.assertEqual(ba2hex(cpu_risc2.program_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
@@ -334,6 +334,75 @@ class TestCPU(unittest.TestCase):
         # Checking the ret instruction
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.registers['IP']._state), '026a')
+
+        # Checking the call $2 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '026e')
+
+        # Skipping through two mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking a cmpe instruction, should have pushed ffff on to the tos
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), 'ffff')
+
+        # Skipping through two more mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking a cmpe instruction, should have pushed 0000 on tos
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), '0000')
+
+        # Checking two cmpe instructions
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), 'ffff')
+
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), '0000')
+
+        # Skipping through two more mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking two cmpb instructions, should have pushed ffff and 0000 on tos (2 > 1) (5 < ffff)
+        cpu.web_next_instruction()
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val * 8 - 16, tos_val * 8)), 'ffff')
+
+        # Checking a conditional jump
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '028e')
+
+        # Skipping a mov $0 instruction
+        cpu.web_next_instruction()
+
+        # Checking that the conditional jump does not occur
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0294')
+
+        # Checking that an unconditional jump occurs
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0298')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the out $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(str(cpu.ports_dictionary['1']), '                   E')
+
+        # Checking the in $1 instruction
+        cpu.web_next_instruction()
+        cpu.input_finish(bin(69)[2:])
+        tos_val = int(cpu.registers['TOS']._state.to01(), 2)
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val*8 - 16, tos_val*8)), '0045')
 
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """

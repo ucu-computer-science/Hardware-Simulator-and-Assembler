@@ -79,6 +79,14 @@
 
 # TODO: Implement 'add carry' and similar operations for RISC2, RISC3 architectures
 
+# TODO: Rename END to HALT, check everything still works
+
+# TODO: Implement interrupts, create a special place in memory for an interrupt vector,
+#  which is going to be divided into three types of interrupts:
+#  * CPU Interrupts
+#  * Hardware interrupts
+#  * and Program interrupts
+
 import os
 import json
 import curses
@@ -357,7 +365,7 @@ class CPU:
 
         # Get the values of the operands for this function
         operands_values = self.__add_operands(start_point, operands_aliases)
-        self.logger.debug(f"INST INFO Operands Values: {operands_values}")
+        self.logger.debug(f"INST INFO Operands Values: {', '.join([op.to01() for op in operands_values])}")
 
         # Determine whether the memory is going to be affected as a
         # result of the operation and where to save it
@@ -471,7 +479,11 @@ class CPU:
                 if self.isa in ["risc3", "cisc"]:
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), num_len)
                 else:
-                    jump_num = twos_complement(int(self.long_immediate.to01(), 2), num_len)
+                    # Figure out if the value we should jump for was pushed on to the stack, or is in the instruction
+                    if operands_aliases[-1].startswith("tos"):
+                        jump_num = twos_complement(int(operands_values[-1].to01(), 2), num_len)
+                    else:
+                        jump_num = twos_complement(int(self.long_immediate.to01(), 2), num_len)
 
                 # Calculate the number of bits to jump
                 if jump_num >= 0:
@@ -515,9 +527,13 @@ class CPU:
             self.logger.debug("INST INFO CPU is waiting for the input from the device")
             self.is_input_active = True
             self.input_result_destination = result_destination
+            self.memory_write_access = memory_write_access
+            self.tos_push = tos_push
             # TODO: Currently, the port: device interface is not ideal, and is not finished,
             #  one of the places we will need to fix for it to work is input instructions, as they
             #  currently assume just one device to receive input from, which is not great
+            # TODO: Implement interrupts and update the input functionality, with a buffer created which
+            #  populates itself up to a certain point on interrupts, and feeds the values from its queue into 'in'
 
         # Swapping two of the top TOS values
         elif res_type == "swap":
@@ -543,6 +559,8 @@ class CPU:
             # Write into the result destination
             else:
                 result_destination.write_data(result_value)
+
+            self.logger.debug(f"INST INFO mwa: {memory_write_access}, tos_push: {tos_push}, result: {result_value.to01()}")
 
         return go_to_next_instruction
 
@@ -763,8 +781,19 @@ class CPU:
         Stops the waiting process for the CPU, putting the result of the operation in a register specified
         :param char: bitarray of size 16, the result of the input
         """
+        char = bitarray(char.rjust(16, '0'))
         self.is_input_active = False
-        self.input_result_destination.write_data(char)
+        # Write the result of the operation into the memory
+        if self.memory_write_access:
+            self.data_memory.write_data(self.input_result_destination * 8, char)
+
+            # Move the TOS pointer if the instruction pushed into the virtual register stack
+            if self.tos_push:
+                self.registers["TOS"].write_data(bin(self.input_result_destination + 2)[2:])
+
+        # Write into the result destination
+        else:
+            self.input_result_destination.write_data(char)
 
     # Below are the methods for curses-driven command-line interface
     def start_program(self):

@@ -54,15 +54,24 @@ add
 call
 call $2
 ret
-# cmpe
-# cmpe  $
-# cmpb
-# cmpb $
-# test
-# test $
-# jmp
-# jmp $
-# jc
-# jc $
-# in $
-# out $
+mov $2
+mov $2
+cmpe
+mov $2
+mov $3
+cmpe
+cmpe $0
+cmpe $5
+mov $2
+mov $1
+mov $2
+cmpb
+jc
+nop
+mov $0
+jc $2
+jmp $2
+nop
+mov $69
+out $1
+in $1
