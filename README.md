@@ -7,7 +7,7 @@
 A Hardware Simulator and an Assembler, with several 
 Instruction Set, Memory, I/O Architectures supported.
 
-![](images/demoscreeen.png)
+![](images/demoscreen.png)
 
 ## Architectures:
 
