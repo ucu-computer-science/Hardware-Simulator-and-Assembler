@@ -357,8 +357,10 @@ class CPU:
         # Reading the list of operands encoded in the binary instruction
         if self.isa in ["risc3", "cisc"]:
             operands_aliases = self.instructions_dict[self.opcode.to01()][-1]
-        else:
+        elif self.isa == "risc1":
             operands_aliases = self.instructions_dict[self.opcode.to01()][1][1:]
+        else:
+            operands_aliases = self.instructions_dict[self.opcode.to01()][1]
         self.logger.debug(f"INST INFO, <{self.instructions_dict[self.opcode.to01()][0]}> "
                           f"Operands Aliases: {operands_aliases}")
 
@@ -518,7 +520,7 @@ class CPU:
 
         # If the opcode specifies outputting to the device
         elif res_type == "out":
-            self.logger.debug(f"INST INFO outputting to the device {operands_values[-1]}")
+            self.logger.debug(f"INST INFO outputting to the device, value: {operands_values[-1]}")
             result_destination.out_shell(operands_values[-1])
 
         # If we are getting input from device, we 'hang' the processor so that it waits for input
@@ -639,6 +641,8 @@ class CPU:
             elif res_type == "memir":
                 memory_write_access = True
                 result_destination = int(self.registers["IR"]._state.to01(), 2)
+            elif res_type == "out":
+                result_destination = self.ports_dictionary[str(int(self.long_immediate.to01(), 2))]
 
         # Register-RISC and CISC architectures
         elif self.isa in ["risc3", "cisc"]:
@@ -919,9 +923,10 @@ class CPU:
         self.register_box.clear()
         self.register_box.addstr(" Registers:\n")
         items = [(value.name, value._state.tobytes().hex()) for key, value in self.registers.items()]
-        for i in range(1, len(items), 2):
-            self.register_box.addstr(f" {(items[i - 1][0] + ':').ljust(4, ' ')} {items[i - 1][1]}  "
-                                     f"{(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}\n")
+        for i in range(len(items)):
+            self.register_box.addstr(f" {(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}")
+            if (i % 2) == 1:
+                self.register_box.addstr("\n")
 
         # Refresh the data memory on screen
         self.data_memory_box.clear()
