@@ -1,10 +1,18 @@
 # Alphabet PrintOut | Accumulator-RISC example Assembly program
 # Load the starting ASCII value into TOS
 mov $65
-push
+
+# Check if we have already finished printing the alphabet
 cmp $91
-je $6
-pop
+
+# Jump to the end of the program if we are finished with printing
+je $4
+
+# Output TOS value to the device at port 1
 out $1
+
+# Increment the value of the ASCII code by 1
 inc
-jmp $-6
+
+# Jump back to the start of the loop
+jmp $-4

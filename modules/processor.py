@@ -643,6 +643,8 @@ class CPU:
                 result_destination = int(self.registers["IR"]._state.to01(), 2)
             elif res_type == "out":
                 result_destination = self.ports_dictionary[str(int(self.long_immediate.to01(), 2))]
+            elif res_type == "cmp":
+                result_destination = self.registers["FR"]
 
         # Register-RISC and CISC architectures
         elif self.isa in ["risc3", "cisc"]:

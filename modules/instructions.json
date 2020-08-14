@@ -353,22 +353,22 @@
         ],
         "00011001": [
             "cmp",
-            ["acc", "memir"],
+            ["cmp", "acc", "memir"],
             []
         ],
         "10000110": [
             "cmp",
-            ["acc", "imm"],
+            ["cmp", "acc", "imm"],
             ["imm"]
         ],
         "00011010": [
             "test",
-            ["acc", "memir"],
+            ["cmp", "acc", "memir"],
             []
         ],
         "10000111": [
             "test",
-            ["acc", "imm"],
+            ["cmp", "acc", "imm"],
             ["imm"]
         ],
         "10001000": [
