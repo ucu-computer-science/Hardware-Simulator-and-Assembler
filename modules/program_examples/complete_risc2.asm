@@ -18,18 +18,25 @@ pushi
 popf
 pop
 popi
-# add
-# sub
-# inc
-# dec
-# mul
-# div
-# and
-# or
-# xor
-# not
-# lsh
-# rsh
+mov $512
+storei
+add
+sub
+store
+mov $2
+mul
+div
+mov $3
+store
+mov $5
+and
+mov $5
+or
+mov $5
+xor
+not
+rsh $1
+lsh $1
 # call
 # call $
 # ret

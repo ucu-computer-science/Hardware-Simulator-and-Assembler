@@ -273,47 +273,47 @@
         ],
         "00001101": [
             "add",
-            ["acc", "acc", "memir"],
+            ["acc", "memir"],
             []
         ],
         "00001110": [
             "sub",
-            ["acc", "acc", "memir"],
+            ["acc", "memir"],
             []
         ],
         "00001111": [
             "inc",
-            ["acc", "acc", "one"],
+            ["acc", "one"],
             []
         ],
         "00010000": [
             "dec",
-            ["acc", "acc", "one"],
+            ["acc", "one"],
             []
         ],
         "00010001": [
             "mul",
-            ["acc", "acc", "memir"],
+            ["acc", "memir"],
             []
         ],
         "00010010": [
             "div",
-            ["acc", "acc", "memir"],
+            ["acc", "memir"],
             []
         ],
         "00010011": [
             "and",
-            ["acc", "acc", "memir"],
+            ["acc", "memir"],
             []
         ],
         "00010100": [
             "or",
-            ["acc", "acc", "memir"],
+            ["acc", "memir"],
             []
         ],
         "00010101": [
             "xor",
-            ["acc", "acc", "memir"],
+            ["acc", "memir"],
             []
         ],
         "00010110": [
@@ -323,12 +323,12 @@
         ],
         "10000010": [
             "lsh",
-            ["acc", "acc", "imm"],
+            ["acc", "imm"],
             ["imm"]
         ],
         "10000011": [
             "rsh",
-            ["acc", "acc", "imm"],
+            ["acc", "imm"],
             ["imm"]
         ],
         "00010111": [

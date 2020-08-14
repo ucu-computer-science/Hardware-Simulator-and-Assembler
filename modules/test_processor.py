@@ -495,6 +495,66 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-16, 1024*8)), ba2hex(cpu.registers['IR']._state))
 
+        # Skipping through two preparation instructions...
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the add instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '02e4')
+
+        # Checking the sub instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '0200')
+
+        # Skipping the store and mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the mul instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '0400')
+
+        # Checking the div instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '0002')
+
+        # Skipping three preparation instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the bitwise and instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '0001')
+
+        # Skipping the mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the bitwise or instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '0007')
+
+        # Skipping the mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the bitwise xor instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '0006')
+
+        # Checking the bitwise not instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), 'fff9')
+
+        # Checking the bitwise rsh instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), 'fff9')
+        # TODO: Work something out with the shifts, they do not work as I expected them to
+        
+        # Checking the bitwise lsh instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), 'fff9')
+
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """
         cpu = CPU("risc3", "neumann", "special", self.complete_risc3)
