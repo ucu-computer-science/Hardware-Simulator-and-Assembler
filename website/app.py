@@ -16,6 +16,7 @@ import dash_table
 from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import json
 from datetime import datetime
+import random
 
 # Imports from the project
 from modules.processor import CPU
@@ -296,14 +297,14 @@ app.layout = html.Div([
             html.Div([html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
                                   style={"color": button['font'],
                                          "background-color": button['background'],
-                                         'width': 200, 'display': 'inline-block', 'margin-bottom': 15,
+                                         'width': 200, 'display': 'block', 'margin-bottom': 15,
                                          'font-family': "Roboto Mono, monospace", 'font-size': 13}),
 
                       html.Div(id='run-until-finished-button',
                                children=html.Button('RUN', id='run-until-finished', n_clicks=0,
                                                     style={"color": button['font'],
                                                            "background-color": button['background'],
-                                                           'width': 200, 'display': 'inline-block',
+                                                           'width': 200, 'display': 'block',
                                                            'font-family': "Roboto Mono, monospace",
                                                            'font-size': 13})), ],
                      style={'display': 'inline-block', 'margin-right': 17}),
@@ -376,13 +377,15 @@ app.layout = html.Div([
     html.Div(id='ip-storage', children=512, style={'display': 'none'}),
 
     # Div to enable input mode
-    html.Div(id='store-io', style={'display': 'none'})
+    html.Div(id='store-io', style={'display': 'none'}),
+
+    # Placeholder to enable manual changes in the registers
+    html.Div(id='placeholder', style={'display': 'none'})
 
 ], id="wrapper", )
 
 
 # APP CALLBACKS FOR INPUT/OUTPUT OF THE INFORMATION, ASSEMBLER
-
 
 # Create user id
 @app.callback(Output('id-storage', 'children'),
@@ -390,6 +393,7 @@ app.layout = html.Div([
 def get_id(value):
     """
     Return randomly generated id each time new session starts
+
     :param value: is not used (is here by default)
     :return: random id
     """
@@ -415,6 +419,7 @@ def get_id(value):
 def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip, next_clicks):
     """
     Translate input assembly code to binary and hexadecimal ones.
+
     :param n_clicks: is not used (is here by default)
     :param info: isa, architecture and I/O mode
     :param user_id: id of the session/user
@@ -424,11 +429,11 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
     global user_dict
 
     if not n_clicks and user_id in user_dict:
-        user_dict[user_id]['next-flags'] = 0
-        user_dict[user_id]['next-registers'] = 0
-        user_dict[user_id]['next-memory'] = 0
         user_dict[user_id]['reset'] = 0
         user_dict[user_id]['reset-code'] = 0
+
+        user_dict[user_id]['next-registers'] = 0
+
 
 
     elif n_clicks:
@@ -437,21 +442,18 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
         if user_id not in user_dict:
             user_dict[user_id] = dict()
             user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
-            user_dict[user_id]['next-flags'] = 0
-            user_dict[user_id]['next-registers'] = 0
-            user_dict[user_id]['next-memory'] = 0
             user_dict[user_id]['code'] = ''
             user_dict[user_id]['binhex'] = ['', '']
             user_dict[user_id]['flags-changed'] = False
             user_dict[user_id]['intervals'] = 0
             user_dict[user_id]['reset'] = 0
             user_dict[user_id]['reset-code'] = 0
+
+            user_dict[user_id]['next-registers'] = 0
+
         elif reset_clicks > user_dict[user_id]['reset']:
             user_dict[user_id] = dict()
             user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
-            user_dict[user_id]['next-flags'] = 0
-            user_dict[user_id]['next-registers'] = 0
-            user_dict[user_id]['next-memory'] = 0
             user_dict[user_id]['code'] = ''
             user_dict[user_id]['binhex'] = ['', '']
             user_dict[user_id]['flags-changed'] = False
@@ -459,6 +461,9 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['reset'] = reset_clicks
             user_dict[user_id]['reset-code'] = 0
             assembly_code = "input assembly code here"
+
+            user_dict[user_id]['next-registers'] = 0
+
 
         if not assembly_code or assembly_code in ["input assembly code here", "loading...", '']:
             binary_program = hex_program = ''
@@ -505,6 +510,7 @@ def update_output(isa, arch, io, user_id):
     """
     Update main information about the cpu,
     depending on the choice from dropdowns.
+
     :param isa: chosen isa
     :param arch: chosen architecture
     :param io: chosen I/O mode
@@ -521,6 +527,7 @@ def update_output(isa, arch, io, user_id):
 def render_content_hex_bin(tab, code_lst, user_id):
     """
     Render two tabs: with binary and with hexadecimal code translations
+
     :param tab: one of two: binary or hexadecimal
     :param code_lst: list with binary and with hexadecimal code translations
     :return: tabs
@@ -594,16 +601,22 @@ def code(input_code):
 
 # APP CALLBACKS FOR CREATION OF GRAPHIC ELEMENTS OF THE PROCESSOR
 @app.callback(Output('instruction', 'children'),
-              [Input('instruction-storage', 'children')])
-def create_instruction(value):
+              [Input('instruction-storage', 'children')],
+              [State('id-storage', 'children')])
+def create_instruction(value, user_id):
     """
     # TODO
     :param value:
     :return:
     """
+    if user_id in user_dict:
+        return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
+                                data=([{'1': f'{value} ({user_dict[user_id]["cpu"].instructions_dict[user_dict[user_id]["cpu"].opcode.to01()][0]})'}]), style_header=style_header,
+                                style_cell=style_cell, style_table={'width':200})
     return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
-                                data=([{'1': value}]), style_header=style_header,
-                                style_cell=style_cell, ),
+                                data=([{'1': value}]),
+                                style_header=style_header,
+                                style_cell=style_cell, style_table={'width':200})
 
 
 @app.callback(Output('registers', 'children'),
@@ -682,8 +695,9 @@ def create_output(value, n_clicks, user_id):
 def get_io(data, editable, user_id):
     if editable:
         char = data[0]['1']
-        if len(char) != 0:
-            user_dict[user_id]['cpu'].input_finish(int2ba(ord(char[0])).to01())
+        if char:
+            if len(char) != 0:
+                user_dict[user_id]['cpu'].input_finish(bin(ord(char[0]))[2:])
         return char
 
 
@@ -820,6 +834,7 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
     so it changes hidden div, on which graphic elements of
     the processor will react.
     Executes next instruction in the cpu.
+
     :param n_clicks: n_clicks for the 'next instruction' button
     :param user_id: id of the session/user
     :return: same n_clicks
@@ -928,6 +943,7 @@ def update_instruction(value, user_id, reset):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
+
     :param value: is not used
     :param user_id: id of the session/user
     :return: string instruction
@@ -940,112 +956,45 @@ def update_instruction(value, user_id, reset):
 @app.callback(Output('flags-storage', 'children'),
               [Input('next-storage', 'children'),
                Input('id-storage', 'children'),
-               Input('reset', 'n_clicks'),
-               Input('flags-table', 'data')],
-              [State('registers-table', 'data')])
-def update_flags(n_clicks, user_id, reset, data_flags, data_regs):
+               Input('reset', 'n_clicks')
+               ],
+              [State('flags-table', 'data'),
+               State('registers-table', 'data')])
+def update_flags(value, user_id, reset, data_flags, data_regs):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
+    # TODO: about manual
+
     :param value: is not used
     :param user_id: id of the session/user
     :return: string flags
     """
     if user_id in user_dict:
-        flags = ''.join([data_flags[0]['CF'], data_flags[0]['ZF'], data_flags[0]['OF'], data_flags[0]['SF']])
-
-        # Check if flags table did not change...
-        if list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:]) == [data_flags[0]['CF'],
-                                                                                  data_flags[0]['ZF'],
-                                                                                  data_flags[0]['OF'],
-                                                                                  data_flags[0]['SF']]:
-
-            # ... but registers table did
-            if user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:] != hex2ba(data_regs[0]['FR:']).to01().rjust(
-                    4, '0')[12:]:
-                flags = hex2ba(data_regs[0]['FR:']).to01()[-4:]
-                cf, zf, of, sf = list(flags)
-                return [cf, zf, of, sf]
-
-            # ... and registers table did not
-            else:
-                return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
-
-        # Registers table did change...
-        else:
-
-            # ... but it should have after pressing 'next' button
-            if n_clicks > user_dict[user_id]['next-flags']:
-                user_dict[user_id]['next-flags'] = n_clicks
-                return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
-
-            # ... there were manual changes by the user
-            else:
-                try:
-                    cf, zf, of, sf = list(flags)
-                    user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
-                    user_dict[user_id]['flags-changed'] = True
-                    return [cf, zf, of, sf]
-                except ValueError:
-                    cf, zf, of, sf = list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:])
-
-                    return [cf, zf, of, sf]
-
+        return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
     return ['0', '0', '0', '0']
 
 
 @app.callback(Output('registers-storage', 'children'),
               [Input('next-storage', 'children'),
                Input('id-storage', 'children'),
-
                Input('ip-storage', 'children'),
                Input('reset', 'n_clicks'),
-               Input('store-io', 'children'),
-               Input('registers-table', 'data')])
-def update_registers(n_clicks, user_id, ip_changes, reset, if_input, data):
+               Input('store-io', 'children')
+               ],
+              [State('registers-table', 'data'),
+               State('next', 'n_clicks')])
+def update_registers(value_not_used, user_id, ip_changes, reset, if_input, data, n_clicks):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
+
     :param value_not_used: is not used
     :param user_id: id of the session/user
     :return: string registers
     """
     if user_id in user_dict:
-        items = [(value.name, value._state.tobytes().hex()) for key, value in
-                 user_dict[user_id]['cpu'].registers.items()]
-        cpu_registers = []
-        for i in range(len(items)):
-            cpu_registers.append(f"{(items[i][0] + ':')} {items[i][1]}")
-
-        current_table = []
-        for key in data[0]:
-            current_table.append(f'{key} {data[0][key]}')
-
-        # Some changes in the table occurred...
-        if current_table != cpu_registers:
-
-            # ... but they should have, because 'next' button was pressed and table is not reloaded yet
-            if n_clicks > user_dict[user_id]['next-registers']:
-                user_dict[user_id]['next-registers'] = n_clicks
-
-            # ... there are manual changes by the user...
-            else:
-                new_reg_dict = data[0]
-
-                # ... and flags changed, too (at that point we count that changes as a more important one)
-                if user_dict[user_id]['flags-changed']:
-                    user_dict[user_id]['flags-changed'] = False
-                    new_reg_dict['FR:'] = ba2hex(user_dict[user_id]['cpu'].registers['FR']._state)
-
-                # Apply changes to the cpu
-                for key, value in new_reg_dict.items():
-                    user_dict[user_id]['cpu'].registers[key[:-1]]._state = bitarray(
-                        hex2ba(value).to01().rjust(16, '0'))
-
-        # There were no changes in registers, but flags have changed
-        elif user_dict[user_id]['flags-changed']:
-            user_dict[user_id]['flags-changed'] = False
-            user_dict[user_id]['cpu'].registers[key[:-1]]._state
+        user_dict[user_id]['next-registers'] = n_clicks
 
         items = [(value.name, value._state.tobytes().hex()) for key, value in
                  user_dict[user_id]['cpu'].registers.items()]
@@ -1053,11 +1002,9 @@ def update_registers(n_clicks, user_id, ip_changes, reset, if_input, data):
         for i in range(len(items)):
             values.append(f"{(items[i][0] + ':')} {items[i][1]}")
         return values
-
     elif ip_changes != 512:
         return ['SP: 0400', f'IP: {ba2hex(int2ba(int(ip_changes), 16))}', 'LR: 0000', 'FR: 0000', 'R00: 0000',
                 'R01: 0000', 'R02: 0000', 'R03: 0000']
-
     return ['SP: 0400', 'IP: 0200', 'LR: 0000', 'FR: 0000', 'R00: 0000', 'R01: 0000', 'R02: 0000', 'R03: 0000']
 
 
@@ -1069,6 +1016,7 @@ def update_output(value, user_id, reset):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
+
     :param value: is not used
     :param user_id: id of the session/user
     :return: string output
@@ -1082,55 +1030,27 @@ def update_output(value, user_id, reset):
 
 
 @app.callback(Output('memory-storage', 'children'),
-              [Input('next', 'n_clicks'),
+              [Input('next-storage', 'children'),
                Input('id-storage', 'children'),
-               Input('reset', 'n_clicks'),
-               Input('mem', 'data')],
-               [State('memory-tabs', 'value')])
-def update_memory(n_clicks, user_id, reset, data, chosen_tab):
+               Input('reset', 'n_clicks')
+               ],
+              [State('mem', 'data'),
+               State('memory-tabs', 'value')])
+def update_memory(value, user_id, reset, data, chosen_tab):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
+
     :param value: is not used
     :param user_id: id of the session/user
     :return: string memory
     """
     if user_id in user_dict:
-
-        # Callback was provoked, but 'next' ('run') button was not pressed...
-        if n_clicks == user_dict[user_id]['next-memory']:
-            print('Callback was provoked, but next button was not pressed...')
-            program_data = user_dict[user_id]['cpu'].program_memory.slots.to01()
-            # ... and reset was not pressed, too
-            if program_data != '0' * len(program_data):
-                print('and reset was not pressed, too')
-                new_data = bitarray('')
-                try:
-                    for dictionary in data:
-                        for key in dictionary:
-                            if key != 'Addr   :  ':
-                                new_data += hex2ba(dictionary[key].replace(" ", "").rjust(8, '0'))
-                except ValueError:
-                    new_data = user_dict[user_id]['cpu'].data_memory.slots
-
-                if chosen_tab == 'data_memory':
-                    if new_data != user_dict[user_id]['cpu'].data_memory.slots:
-                        user_dict[user_id]['cpu'].data_memory.slots = new_data
-                else:
-                    if new_data != user_dict[user_id]['cpu'].program_memory.slots:
-                        user_dict[user_id]['cpu'].program_memory.slots = new_data
-
-        # It was, indeed, pressed
-        else:
-            print('It was, indeed, pressed')
-            user_dict[user_id]['next-memory'] = n_clicks
-
         memory_data = [[], [], [], [], [], [], [], []]
         for i in range(0, len(user_dict[user_id]['cpu'].data_memory.slots), 32 * 8):
             string = ba2hex(user_dict[user_id]['cpu'].data_memory.slots[i:i + 32 * 8])
             for x in range(8):
                 memory_data[x].append(" ".join([string[8 * x:8 * x + 8][y:y + 2] for y in range(0, 8, 2)]))
-
         lst = []
         for i in memory_data:
             lst.append('\t'.join(i))
@@ -1215,6 +1135,40 @@ def help_cisc():
 def index():
     resp = make_response(app)
     return resp
+
+
+@app.callback(Output('placeholder', 'children'),
+              [Input('registers-table', 'data')],
+              [State('id-storage', 'children'),
+               State('next', 'n_clicks')])
+def manually_change_registers(data, user_id, n_clicks):
+    if user_id in user_dict:
+        items = [(value.name, value._state.tobytes().hex()) for key, value in
+                 user_dict[user_id]['cpu'].registers.items()]
+        cpu_registers = []
+        for i in range(len(items)):
+            cpu_registers.append(f"{(items[i][0] + ':')} {items[i][1]}")
+
+        current_table = []
+        for key in data[0]:
+            current_table.append(f'{key} {data[0][key]}')
+
+        # Some changes in the table occurred...
+        if current_table != cpu_registers:
+
+            # ... but they should have, because 'next' button was pressed and table is not reloaded yet
+            if n_clicks > user_dict[user_id]['next-registers']:
+                return 0
+
+            new_reg_dict = data[0]
+
+            if user_dict[user_id]['flags-changed']:
+                user_dict[user_id]['flags-changed'] = False
+                new_reg_dict['FR:'] = ba2hex(user_dict[user_id]['cpu'].registers['FR']._state)
+
+            for key, value in new_reg_dict.items():
+                user_dict[user_id]['cpu'].registers[key[:-1]]._state = bitarray(hex2ba(value).to01().rjust(16, '0'))
+    return 0
 
 
 # Run the program
