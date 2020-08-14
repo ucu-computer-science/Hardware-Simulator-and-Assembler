@@ -28,7 +28,8 @@ class TestCPU(unittest.TestCase):
                          ('risc3', os.path.join("modules", "program_examples", "complete_risc3.asm")),
                          ('risc1', os.path.join("modules", "program_examples", "complete_risc1.asm")),
                          ('risc2', os.path.join("modules", "demos", "risc2", "helloworld.asm")),
-                         ('risc2', os.path.join("modules", "demos", "risc2", "alphabet_printout.asm"))]
+                         ('risc2', os.path.join("modules", "demos", "risc2", "alphabet_printout.asm")),
+                         ('risc2', os.path.join("modules", "program_examples", "complete_risc2.asm"))]
 
         output_files = self.reassemble(test_programs)
 
@@ -58,6 +59,9 @@ class TestCPU(unittest.TestCase):
 
         with open(output_files[8], "r") as file:
             self.risc2_alphabet = file.read()
+
+        with open(output_files[9], "r") as file:
+            self.complete_risc2 = file.read()
 
     def reassemble(self, programs):
         """ Reassembles all the test programs """
@@ -93,7 +97,7 @@ class TestCPU(unittest.TestCase):
                          "8810479816e90061eb00188004ea3fe40")
 
         cpu_risc2 = CPU("risc2", "neumann", "special", self.risc2_alphabet, program_start=512)
-        self.assertEqual(ba2hex(cpu_risc2.program_memory.slots[512*8:512*8 + 16*8]), "82004186005b8900049100010f88fffc")
+        self.assertEqual(ba2hex(cpu_risc2.program_memory.slots[512*8:512*8 + 16*8]), "81004185005b8800048f00010f87fffc")
 
         cpu_risc3 = CPU("risc3", "neumann", "special", self.risc3_program_text, program_start=512)
         self.assertEqual(ba2hex(cpu_risc3.program_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
@@ -420,6 +424,76 @@ class TestCPU(unittest.TestCase):
         cpu.input_finish(bin(69)[2:])
         tos_val = int(cpu.registers['TOS']._state.to01(), 2)
         self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val*8 - 16, tos_val*8)), '0045')
+
+    def test_risc2_complete(self):
+        """ Tests all of the instructions of RISC2 ISA """
+        cpu = CPU("risc2", "neumann", "special", self.complete_risc2)
+        cpu.web_next_instruction()
+
+        # Testing the mov $512 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '0200')
+
+        # Testing the storei instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers["IR"]._state), ba2hex(cpu.registers['ACC']._state))
+
+        # Testing the load instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512*8, 512*8+16)), ba2hex(cpu.registers['ACC']._state))
+
+        # Testing the inc and dec instructions
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '8103')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '8102')
+
+        # Testing the loadf instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), ba2hex(cpu.registers['FR']._state))
+
+        # Testing the loadi instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), ba2hex(cpu.registers['IR']._state))
+
+        # Testing the store instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512*8, 512*8+16)), ba2hex(cpu.registers['ACC']._state))
+
+        # Testing the store $228 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512 * 8, 512 * 8 + 16)), '00e4')
+
+        # Testing the storef instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), ba2hex(cpu.registers['ACC']._state))
+
+        # Skipping through the mov instruction
+        cpu.web_next_instruction()
+
+        # Testing the push instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-16, 1024*8)), ba2hex(cpu.registers['ACC']._state))
+
+        # Testing the pushf instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-32, 1024*8-16)), ba2hex(cpu.registers['FR']._state))
+
+        # Testing the pushi instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-48, 1024*8-32)), ba2hex(cpu.registers['IR']._state))
+
+        # Testing the popf instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-48, 1024*8-32)), ba2hex(cpu.registers['FR']._state))
+
+        # Testing the pop instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-32, 1024*8-16)), ba2hex(cpu.registers['ACC']._state))
+
+        # Testing the popi instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-16, 1024*8)), ba2hex(cpu.registers['IR']._state))
 
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """

@@ -1,20 +1,23 @@
 # There are 48 different instructions for RISC1 ISA (counting different operand types for the same instructions)
 # This assembly program aims to meaningfully test all of them, with edge cases considered
 #########################################################################################
-# load
-# loadf
-# loadi
-# store
-# store $
-# storef
-# storei
-# mov $
-# push
-# pushf
-# pushi
-# pop
-# popf
-# popi
+mov $512
+storei
+load
+inc
+dec
+loadf
+loadi
+store
+store $228
+storef
+mov $277
+push
+pushf
+pushi
+popf
+pop
+popi
 # add
 # sub
 # inc

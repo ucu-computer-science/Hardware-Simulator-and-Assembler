@@ -636,15 +636,20 @@ class CPU:
         elif self.isa == "risc2":
 
             # Determining the result destination for RISC-Accumulator ISA
-            if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["acc", "in", "stackpop"]:
+            if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["acc", "in"]:
                 result_destination = self.registers["ACC"]
+            elif res_type == "stackpop":
+                dest_type = self.instructions_dict[self.opcode.to01()][1][1]
+                result_destination = self.registers[dest_type.upper()]
             elif res_type == "memir":
                 memory_write_access = True
                 result_destination = int(self.registers["IR"]._state.to01(), 2)
             elif res_type == "out":
                 result_destination = self.ports_dictionary[str(int(self.long_immediate.to01(), 2))]
-            elif res_type == "cmp":
+            elif res_type in ["cmp", "fr"]:
                 result_destination = self.registers["FR"]
+            elif res_type == "ir":
+                result_destination = self.registers["IR"]
 
         # Register-RISC and CISC architectures
         elif self.isa in ["risc3", "cisc"]:
