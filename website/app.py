@@ -16,7 +16,7 @@ import dash_table
 from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import json
 from datetime import datetime
-import random
+import time
 
 # Imports from the project
 from modules.processor import CPU
@@ -379,8 +379,13 @@ app.layout = html.Div([
     # Div to enable input mode
     html.Div(id='store-io', style={'display': 'none'}),
 
-    # Placeholder to enable manual changes in the registers
-    html.Div(id='placeholder', style={'display': 'none'})
+    # Div for storing changes in reset
+    html.Div(id='reset-storage', children=0, style={'display': 'none'}),
+
+    # Placeholders to enable manual changes
+    html.Div(id='registers-placeholder', style={'display': 'none'}),
+    html.Div(id='flags-placeholder', style={'display': 'none'}),
+    html.Div(id='memory-placeholder', style={'display': 'none'}),
 
 ], id="wrapper", )
 
@@ -407,7 +412,8 @@ def get_id(value):
 
 # Save binary and hexadecimal code
 @app.callback([Output('code', 'children'),
-               Output('next', 'n_clicks')],
+               Output('next', 'n_clicks'),
+               Output('reset-storage', 'n_clicks')],
               [Input('assemble', 'n_clicks'),
                Input('id-storage', 'children'),
                Input('reset', 'n_clicks')],
@@ -433,6 +439,8 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
         user_dict[user_id]['reset-code'] = 0
 
         user_dict[user_id]['next-registers'] = 0
+        user_dict[user_id]['next-flags'] = 0
+        user_dict[user_id]['next-memory'] = 0
 
 
 
@@ -450,6 +458,8 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['reset-code'] = 0
 
             user_dict[user_id]['next-registers'] = 0
+            user_dict[user_id]['next-flags'] = 0
+            user_dict[user_id]['next-memory'] = 0
 
         elif reset_clicks > user_dict[user_id]['reset']:
             user_dict[user_id] = dict()
@@ -463,7 +473,10 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             assembly_code = "input assembly code here"
 
             user_dict[user_id]['next-registers'] = 0
+            user_dict[user_id]['next-flags'] = 0
+            user_dict[user_id]['next-memory'] = 0
 
+            next_clicks = 0
 
         if not assembly_code or assembly_code in ["input assembly code here", "loading...", '']:
             binary_program = hex_program = ''
@@ -495,8 +508,8 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['code'] = assembly_code
             user_dict[user_id]['binhex'] = [binary_program, hex_program]
 
-        return [binary_program, hex_program], next_clicks + 1
-    return ['', ''], next_clicks + 1
+        return [binary_program, hex_program], next_clicks + 1, reset_clicks
+    return ['', ''], next_clicks + 1, reset_clicks
 
 
 # Change main info
@@ -566,14 +579,24 @@ def update_examples(isa):
     return examples[isa]
 
 
+
+
+
+# Add current code to the textarea
+@app.callback(
+    Output('input1', 'value'),
+    [Input('input-code', 'children')])
+def code(input_code):
+    return input_code
+
 # Add a chosen example to the textarea
 @app.callback(
     Output('input-code', 'children'),
     [Input('example-dropdown', 'value'),
      Input('examples', 'children'),
-     Input('id-storage', 'children'),
-     Input('reset', 'n_clicks')])
-def add_example(example_name, app_examples, user_id, reset_clicks):
+     Input('reset-storage', 'children')],
+    [State('id-storage', 'children')])
+def add_example(example_name, app_examples, reset_clicks, user_id):
     if user_id in user_dict:
         if reset_clicks > user_dict[user_id]['reset-code']:
             user_dict[user_id]['reset-code'] = reset_clicks
@@ -589,16 +612,6 @@ def add_example(example_name, app_examples, user_id, reset_clicks):
             return "input assembly code here"
     else:
         return "input assembly code here"
-
-
-# Add current code to the textarea
-@app.callback(
-    Output('input1', 'value'),
-    [Input('input-code', 'children')])
-def code(input_code):
-    return input_code
-
-
 # APP CALLBACKS FOR CREATION OF GRAPHIC ELEMENTS OF THE PROCESSOR
 @app.callback(Output('instruction', 'children'),
               [Input('instruction-storage', 'children')],
@@ -611,12 +624,14 @@ def create_instruction(value, user_id):
     """
     if user_id in user_dict:
         return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
-                                data=([{'1': f'{value} ({user_dict[user_id]["cpu"].instructions_dict[user_dict[user_id]["cpu"].opcode.to01()][0]})'}]), style_header=style_header,
-                                style_cell=style_cell, style_table={'width':200})
+                                    data=([{
+                                        '1': f'{value} ({user_dict[user_id]["cpu"].instructions_dict[user_dict[user_id]["cpu"].opcode.to01()][0]})'}]),
+                                    style_header=style_header,
+                                    style_cell=style_cell, style_table={'width': 200})
     return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
                                 data=([{'1': value}]),
                                 style_header=style_header,
-                                style_cell=style_cell, style_table={'width':200})
+                                style_cell=style_cell, style_table={'width': 200})
 
 
 @app.callback(Output('registers', 'children'),
@@ -846,6 +861,7 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
                 return interval
             if n_clicks > 0:
                 user_dict[user_id]['cpu'].web_next_instruction()
+                time.sleep(1)
                 return n_clicks
         else:
             return current_situation
@@ -959,8 +975,9 @@ def update_instruction(value, user_id, reset):
                Input('reset', 'n_clicks')
                ],
               [State('flags-table', 'data'),
-               State('registers-table', 'data')])
-def update_flags(value, user_id, reset, data_flags, data_regs):
+               State('registers-table', 'data'),
+               State('next', 'n_clicks')])
+def update_flags(value, user_id, reset, data_flags, data_regs, n_clicks):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -971,6 +988,7 @@ def update_flags(value, user_id, reset, data_flags, data_regs):
     :return: string flags
     """
     if user_id in user_dict:
+        user_dict[user_id]['next-flags'] = n_clicks
         return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
     return ['0', '0', '0', '0']
 
@@ -1035,8 +1053,9 @@ def update_output(value, user_id, reset):
                Input('reset', 'n_clicks')
                ],
               [State('mem', 'data'),
-               State('memory-tabs', 'value')])
-def update_memory(value, user_id, reset, data, chosen_tab):
+               State('memory-tabs', 'value'),
+               State('next', 'n_clicks')])
+def update_memory(value, user_id, reset, data, chosen_tab, n_clicks):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
@@ -1046,6 +1065,7 @@ def update_memory(value, user_id, reset, data, chosen_tab):
     :return: string memory
     """
     if user_id in user_dict:
+        user_dict[user_id]['next-memory'] = n_clicks
         memory_data = [[], [], [], [], [], [], [], []]
         for i in range(0, len(user_dict[user_id]['cpu'].data_memory.slots), 32 * 8):
             string = ba2hex(user_dict[user_id]['cpu'].data_memory.slots[i:i + 32 * 8])
@@ -1137,7 +1157,31 @@ def index():
     return resp
 
 
-@app.callback(Output('placeholder', 'children'),
+@app.callback(Output('flags-placeholder', 'children'),
+              [Input('flags-table', 'data')],
+              [State('id-storage', 'children'),
+               State('next', 'n_clicks')])
+def manually_change_flags(data_flags, user_id, n_clicks):
+    if user_id in user_dict:
+        flags = ''.join([data_flags[0]['CF'], data_flags[0]['ZF'], data_flags[0]['OF'], data_flags[0]['SF']])
+        # Check if flags table did changed (not due to pressing 'next' button)
+        if list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:]) != [data_flags[0]['CF'],
+                                                                                  data_flags[0]['ZF'],
+                                                                                  data_flags[0]['OF'],
+                                                                                  data_flags[0]['SF']] and n_clicks == \
+                user_dict[user_id]['next-flags']:
+
+            try:
+                cf, zf, of, sf = list(flags)
+                user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
+                user_dict[user_id]['flags-changed'] = True
+                return 0
+            except ValueError:
+                return 0
+    return 0
+
+
+@app.callback(Output('registers-placeholder', 'children'),
               [Input('registers-table', 'data')],
               [State('id-storage', 'children'),
                State('next', 'n_clicks')])
@@ -1153,12 +1197,8 @@ def manually_change_registers(data, user_id, n_clicks):
         for key in data[0]:
             current_table.append(f'{key} {data[0][key]}')
 
-        # Some changes in the table occurred...
-        if current_table != cpu_registers:
-
-            # ... but they should have, because 'next' button was pressed and table is not reloaded yet
-            if n_clicks > user_dict[user_id]['next-registers']:
-                return 0
+        # Some changes in the table occurred (not due to pressing 'next' button)
+        if current_table != cpu_registers and n_clicks == user_dict[user_id]['next-registers']:
 
             new_reg_dict = data[0]
 
@@ -1168,6 +1208,33 @@ def manually_change_registers(data, user_id, n_clicks):
 
             for key, value in new_reg_dict.items():
                 user_dict[user_id]['cpu'].registers[key[:-1]]._state = bitarray(hex2ba(value).to01().rjust(16, '0'))
+    return 0
+
+
+@app.callback(Output('memory-placeholder', 'children'),
+              [Input('mem', 'data')],
+              [State('id-storage', 'children'),
+               State('next', 'n_clicks'),
+               State('memory-tabs', 'value')])
+def manually_change_memory(data, user_id, n_clicks, chosen_tab):
+    if user_id in user_dict:
+        # Callback was provoked, but 'next' ('run') button was not pressed...
+        if n_clicks == user_dict[user_id]['next-memory']:
+            new_data = bitarray('')
+            try:
+                for dictionary in data:
+                    for key in dictionary:
+                        if key != 'Addr   :  ':
+                            new_data += hex2ba(dictionary[key].replace(" ", "").rjust(8, '0'))
+            except ValueError:
+                new_data = user_dict[user_id]['cpu'].data_memory.slots
+
+            if chosen_tab == 'data_memory':
+                if new_data != user_dict[user_id]['cpu'].data_memory.slots:
+                    user_dict[user_id]['cpu'].data_memory.slots = new_data
+            else:
+                if new_data != user_dict[user_id]['cpu'].program_memory.slots:
+                    user_dict[user_id]['cpu'].program_memory.slots = new_data
     return 0
 
 
