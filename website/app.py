@@ -147,7 +147,7 @@ app.layout = html.Div([
                 dcc.Dropdown(
                     id='io-dropdown',
                     options=[
-                        {'label': 'MEMORY-MAPPED', 'value': 'mmio', 'disabled': True},
+                        {'label': 'MEMORY-MAPPED', 'value': 'mmio'},
                         {'label': 'SPECIAL COMMANDS', 'value': 'special'},
                     ],
                     value='special',
@@ -294,26 +294,27 @@ app.layout = html.Div([
             ], style={'height': 25}), html.Div(id='memory', children=empty_memory)],
                      style={'margin-bottom': 20, 'margin-top': 20}),
 
+            # Buttons
             html.Div([html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
                                   style={"color": button['font'],
                                          "background-color": button['background'],
-                                         'width': 200, 'display': 'block', 'margin-bottom': 15,
-                                         'font-family': "Roboto Mono, monospace", 'font-size': 13}),
+                                         'width': 200, 'display': 'inline-block',
+                                         'font-family': "Roboto Mono, monospace", 'font-size': 13, 'margin-right': 17}),
 
                       html.Div(id='run-until-finished-button',
                                children=html.Button('RUN', id='run-until-finished', n_clicks=0,
                                                     style={"color": button['font'],
                                                            "background-color": button['background'],
-                                                           'width': 200, 'display': 'block',
+                                                           'width': 200,
                                                            'font-family': "Roboto Mono, monospace",
-                                                           'font-size': 13})), ],
-                     style={'display': 'inline-block', 'margin-right': 17}),
-
-            html.Button('RESET', id='reset', n_clicks=0,
-                        style={"color": button['font'], 'display': 'block',
-                               "background-color": button['background'], 'margin-left': 780,
-                               'margin-top': -70, 'height': 50, 'text-align': 'left',
-                               'font-family': "Roboto Mono, monospace", 'font-size': 13}),
+                                                           'font-size': 13}), style={'display': 'inline-block'}),
+                      html.Button('RESET COMPUTER', id='reset', n_clicks=0,
+                                  style={"color": button['font'], 'width': 150,
+                                         "background-color": button['background'], 'display': 'inline-block',
+                                         'font-family': "Roboto Mono, monospace", 'font-size': 13,
+                                         'margin-left': 255}),
+                      ],
+                     style={'display': 'block'}),
 
         ], style={'display': 'inline-block', 'margin-left': 70}),
 
@@ -328,9 +329,10 @@ app.layout = html.Div([
                        refresh=True,
                        style={'color': text_color, 'display': 'block',
                               'font-family': "Roboto Mono, monospace", 'width': 260}),
-              html.Div("GNU General Public License v3.0", style={'color': text_color, 'display': 'block',
-                                                                 'font-family': "Roboto Mono, monospace",
-                                                                 'margin-left': 1100, 'margin-top': -35})],
+              dcc.Link("GitHub (private currently)", href='https://github.com/dariaomelkina/poc_project', refresh=True,
+                       style={'color': text_color, 'display': 'block',
+                              'font-family': "Roboto Mono, monospace",
+                              'margin-left': 1150, 'margin-top': -35})],
              style={'margin-left': 14, 'margin-top': 40, 'display': 'block'}),
 
     # HIDDEN DIVS
@@ -413,7 +415,7 @@ def get_id(value):
 # Save binary and hexadecimal code
 @app.callback([Output('code', 'children'),
                Output('next', 'n_clicks'),
-               Output('reset-storage', 'n_clicks')],
+               Output('reset-storage', 'children')],
               [Input('assemble', 'n_clicks'),
                Input('id-storage', 'children'),
                Input('reset', 'n_clicks')],
@@ -512,6 +514,34 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
     return ['', ''], next_clicks + 1, reset_clicks
 
 
+# Make sure, that after refreshing the page, dropdowns values stay the same and
+# enable only Harvard architecture for stack
+@app.callback([Output('architecture-dropdown', 'options'),
+               Output('architecture-dropdown', 'value'),
+               Output('io-dropdown', 'value')],
+              [Input('input1', 'value')],
+              [State('id-storage', 'children'),
+               State('info', 'children'),
+               State('architecture-dropdown', 'value')])
+def control_architecture(not_used, user_id, info, initial_arch):
+    isa, arch, io = info.split()
+    if user_id in user_dict:
+        isa, arch, io = user_dict[user_id]['cpu'].isa, user_dict[user_id]['cpu'].architecture, user_dict[user_id]['cpu'].io_arch
+    if isa == 'risc1':
+        return [{'label': 'VON NEUMANN', 'value': 'neumann', 'disabled': True},
+                {'label': 'HARVARD', 'value': 'harvard'}, ], 'harvard', io
+    else:
+        return [{'label': 'VON NEUMANN', 'value': 'neumann'}, {'label': 'HARVARD', 'value': 'harvard'}, ], arch, io
+
+
+@app.callback(Output('isa-dropdown', 'value'),
+              [Input('id-storage', 'children')],
+              [State('info', 'children')])
+def control_isa(user_id, current_info):
+    if user_id in user_dict:
+        return user_dict[user_id]['cpu'].isa
+    return current_info.split()[0]
+
 # Change main info
 @app.callback(
     Output('info', 'children'),
@@ -579,15 +609,13 @@ def update_examples(isa):
     return examples[isa]
 
 
-
-
-
 # Add current code to the textarea
 @app.callback(
     Output('input1', 'value'),
     [Input('input-code', 'children')])
 def code(input_code):
     return input_code
+
 
 # Add a chosen example to the textarea
 @app.callback(
@@ -596,7 +624,7 @@ def code(input_code):
      Input('examples', 'children'),
      Input('reset-storage', 'children')],
     [State('id-storage', 'children')])
-def add_example(example_name, app_examples, reset_clicks, user_id):
+def add_example_code(example_name, app_examples, reset_clicks, user_id):
     if user_id in user_dict:
         if reset_clicks > user_dict[user_id]['reset-code']:
             user_dict[user_id]['reset-code'] = reset_clicks
@@ -612,6 +640,8 @@ def add_example(example_name, app_examples, reset_clicks, user_id):
             return "input assembly code here"
     else:
         return "input assembly code here"
+
+
 # APP CALLBACKS FOR CREATION OF GRAPHIC ELEMENTS OF THE PROCESSOR
 @app.callback(Output('instruction', 'children'),
               [Input('instruction-storage', 'children')],
@@ -1100,61 +1130,10 @@ def update_ip(new_ip, reset):
     return ba2int(hex2ba(new_ip[0]['1']))
 
 
-# Enable only Harvard architecture for stack
-@app.callback([Output('architecture-dropdown', 'options'),
-               Output('architecture-dropdown', 'value')],
-              [Input('input1', 'value')],
-              [State('info', 'children'),
-               State('architecture-dropdown', 'value')])
-def control_architecture(not_used, info, initial_arch):
-    if info.split()[0] == 'risc1':
-        return [{'label': 'VON NEUMANN', 'value': 'neumann', 'disabled': True},
-                {'label': 'HARVARD', 'value': 'harvard'}, ], 'harvard'
-    else:
-        return [{'label': 'VON NEUMANN', 'value': 'neumann'}, {'label': 'HARVARD', 'value': 'harvard'}, ], initial_arch
-
-
 @app.callback(Output('link', 'href'),
               [Input('info', 'children')])
 def change_link(info):
     return f'/help-{info.split()[0]}'
-
-
-# HELP PAGES
-def help(isa):
-    with open("docs/help.json", "r") as file:
-        help_dict = json.load(file)
-    with open("modules/registers.json", "r") as file:
-        register_dict = json.load(file)[isa]
-
-    p_style = "color: #FFFFFF; padding-left: 12%; width: 75%"
-    return render_template('help.html', items=help_dict, p_style=p_style, reg_dict=register_dict)
-
-
-@app.server.route('/help-risc1')
-def help_risc1():
-    return help('risc1')
-
-
-@app.server.route('/help-risc2')
-def help_risc2():
-    return help('risc2')
-
-
-@app.server.route('/help-risc3')
-def help_risc3():
-    return help('risc3')
-
-
-@app.server.route('/help-cisc')
-def help_cisc():
-    return help('cisc')
-
-
-@app.server.route('/')
-def index():
-    resp = make_response(app)
-    return resp
 
 
 @app.callback(Output('flags-placeholder', 'children'),
@@ -1236,6 +1215,43 @@ def manually_change_memory(data, user_id, n_clicks, chosen_tab):
                 if new_data != user_dict[user_id]['cpu'].program_memory.slots:
                     user_dict[user_id]['cpu'].program_memory.slots = new_data
     return 0
+
+
+# HELP PAGES
+def help(isa):
+    with open("docs/help.json", "r") as file:
+        help_dict = json.load(file)
+    with open("modules/registers.json", "r") as file:
+        register_dict = json.load(file)[isa]
+
+    p_style = "color: #FFFFFF; padding-left: 12%; width: 75%"
+    return render_template('help.html', items=help_dict, p_style=p_style, reg_dict=register_dict)
+
+
+@app.server.route('/help-risc1')
+def help_risc1():
+    return help('risc1')
+
+
+@app.server.route('/help-risc2')
+def help_risc2():
+    return help('risc2')
+
+
+@app.server.route('/help-risc3')
+def help_risc3():
+    return help('risc3')
+
+
+@app.server.route('/help-cisc')
+def help_cisc():
+    return help('cisc')
+
+
+@app.server.route('/')
+def index():
+    resp = make_response(app)
+    return resp
 
 
 # Run the program
