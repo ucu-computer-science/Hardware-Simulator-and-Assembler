@@ -381,8 +381,9 @@ app.layout = html.Div([
     # Div to enable input mode
     html.Div(id='store-io', style={'display': 'none'}),
 
-    # Div for storing changes in reset
+    # Divs for storing changes in reset
     html.Div(id='reset-storage', children=0, style={'display': 'none'}),
+    html.Div(id='reset-storage-code', children=0, style={'display': 'none'}),
 
     # Placeholders to enable manual changes
     html.Div(id='registers-placeholder', style={'display': 'none'}),
@@ -414,11 +415,10 @@ def get_id(value):
 
 # Save binary and hexadecimal code
 @app.callback([Output('code', 'children'),
-               Output('next', 'n_clicks'),
-               Output('reset-storage', 'children')],
+               Output('next', 'n_clicks')],
               [Input('assemble', 'n_clicks'),
                Input('id-storage', 'children'),
-               Input('reset', 'n_clicks')],
+               Input('reset-storage', 'children')],
               [State('info', 'children'),
                State('id-storage', 'children'),
                State('input1', 'value'),
@@ -434,20 +434,38 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
     :param assembly_code: input assembly code
     :return: binary and hexadecimal codes or assembler error
     """
+    isa, architecture, io = info.split()
     global user_dict
 
     if not n_clicks and user_id in user_dict:
-        user_dict[user_id]['reset'] = 0
-        user_dict[user_id]['reset-code'] = 0
 
-        user_dict[user_id]['next-registers'] = 0
-        user_dict[user_id]['next-flags'] = 0
-        user_dict[user_id]['next-memory'] = 0
+        if reset_clicks > user_dict[user_id]['reset']:
+            user_dict[user_id] = dict()
+            user_dict[user_id]['cpu'] = CPU(isa, architecture, io, '')
+            user_dict[user_id]['code'] = ''
+            user_dict[user_id]['binhex'] = ['', '']
+            user_dict[user_id]['flags-changed'] = False
+            user_dict[user_id]['intervals'] = 0
+            user_dict[user_id]['reset'] = reset_clicks
+            user_dict[user_id]['reset-code'] = 0
+            assembly_code = "input assembly code here"
+
+            user_dict[user_id]['next-registers'] = 0
+            user_dict[user_id]['next-flags'] = 0
+            user_dict[user_id]['next-memory'] = 0
+
+            next_clicks = 0
+        else:
+            user_dict[user_id]['reset'] = 0
+            user_dict[user_id]['reset-code'] = 0
+
+            user_dict[user_id]['next-registers'] = 0
+            user_dict[user_id]['next-flags'] = 0
+            user_dict[user_id]['next-memory'] = 0
 
 
 
     elif n_clicks:
-        isa, architecture, io = info.split()
 
         if user_id not in user_dict:
             user_dict[user_id] = dict()
@@ -456,8 +474,8 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['binhex'] = ['', '']
             user_dict[user_id]['flags-changed'] = False
             user_dict[user_id]['intervals'] = 0
-            user_dict[user_id]['reset'] = 0
-            user_dict[user_id]['reset-code'] = 0
+            user_dict[user_id]['reset'] = n_clicks
+            user_dict[user_id]['reset-code'] = n_clicks
 
             user_dict[user_id]['next-registers'] = 0
             user_dict[user_id]['next-flags'] = 0
@@ -510,8 +528,8 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['code'] = assembly_code
             user_dict[user_id]['binhex'] = [binary_program, hex_program]
 
-        return [binary_program, hex_program], next_clicks + 1, reset_clicks
-    return ['', ''], next_clicks + 1, reset_clicks
+        return [binary_program, hex_program], next_clicks + 1
+    return ['', ''], next_clicks + 1
 
 
 # Make sure, that after refreshing the page, dropdowns values stay the same and
@@ -519,14 +537,13 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
 @app.callback([Output('architecture-dropdown', 'options'),
                Output('architecture-dropdown', 'value'),
                Output('io-dropdown', 'value')],
-              [Input('input1', 'value')],
+              [Input('isa-dropdown', 'value')],
               [State('id-storage', 'children'),
                State('info', 'children'),
                State('architecture-dropdown', 'value')])
-def control_architecture(not_used, user_id, info, initial_arch):
+def control_architecture(chosen_isa, user_id, info, initial_arch):
     isa, arch, io = info.split()
-    if user_id in user_dict:
-        isa, arch, io = user_dict[user_id]['cpu'].isa, user_dict[user_id]['cpu'].architecture, user_dict[user_id]['cpu'].io_arch
+    isa = chosen_isa
     if isa == 'risc1':
         return [{'label': 'VON NEUMANN', 'value': 'neumann', 'disabled': True},
                 {'label': 'HARVARD', 'value': 'harvard'}, ], 'harvard', io
@@ -541,6 +558,7 @@ def control_isa(user_id, current_info):
     if user_id in user_dict:
         return user_dict[user_id]['cpu'].isa
     return current_info.split()[0]
+
 
 # Change main info
 @app.callback(
@@ -560,6 +578,15 @@ def update_output(isa, arch, io, user_id):
     :return: string with information
     """
     return ' '.join([isa, arch, io])
+
+
+# Reset the computer if info changes
+@app.callback(
+    Output('reset', 'n_clicks'),
+    [Input('info', 'children')],
+    [State('reset', 'n_clicks')])
+def reset_computer(info, n_clicks):
+    return n_clicks + 1
 
 
 # Create tabs content (bin and hex)
@@ -622,7 +649,7 @@ def code(input_code):
     Output('input-code', 'children'),
     [Input('example-dropdown', 'value'),
      Input('examples', 'children'),
-     Input('reset-storage', 'children')],
+     Input('reset-storage-code', 'children')],
     [State('id-storage', 'children')])
 def add_example_code(example_name, app_examples, reset_clicks, user_id):
     if user_id in user_dict:
@@ -891,7 +918,7 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
                 return interval
             if n_clicks > 0:
                 user_dict[user_id]['cpu'].web_next_instruction()
-                time.sleep(1)
+                time.sleep(0.5)
                 return n_clicks
         else:
             return current_situation
@@ -1121,6 +1148,18 @@ def update_memory(value, user_id, reset, data, chosen_tab, n_clicks):
     lst2 = '\n'.join([lst1] * 8)
     return [lst2, '']
 
+
+# Update reset-storage
+@app.callback(Output('reset-storage', 'children'),
+              [Input('reset', 'n_clicks')])
+def update_reset(n_clicks):
+    return n_clicks
+
+
+@app.callback(Output('reset-storage-code', 'children'),
+              [Input('reset-storage', 'children')])
+def update_reset(children):
+    return children
 
 # Update IP - info
 @app.callback(Output('ip-storage', 'children'),
