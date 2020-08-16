@@ -452,6 +452,7 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-registers'] = 0
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
+            user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
 
             next_clicks = 0
         else:
@@ -461,6 +462,7 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-registers'] = 0
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
+            user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
 
 
 
@@ -479,6 +481,7 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-registers'] = 0
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
+            user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
 
         elif reset_clicks > user_dict[user_id]['reset']:
             user_dict[user_id] = dict()
@@ -494,6 +497,7 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-registers'] = 0
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
+            user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
 
             next_clicks = 0
 
@@ -679,6 +683,7 @@ def create_instruction(value, user_id):
     :return:
     """
     if user_id in user_dict:
+        user_dict[user_id]['completed-changes'][0] = '1'
         return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
                                     data=([{
                                         '1': f'{value} ({user_dict[user_id]["cpu"].instructions_dict[user_dict[user_id]["cpu"].opcode.to01()][0]})'}]),
@@ -691,8 +696,9 @@ def create_instruction(value, user_id):
 
 
 @app.callback(Output('registers', 'children'),
-              [Input('registers-storage', 'children')])
-def create_registers(value):
+              [Input('registers-storage', 'children')],
+              [State('id-storage', 'children')])
+def create_registers(value, user_id):
     """
     # TODO
     :param value:
@@ -703,7 +709,8 @@ def create_registers(value):
     for i in value:
         regs.append(i.split(' ')[0])
         values.append(i.split(' ')[1])
-
+    if user_id in user_dict:
+        user_dict[user_id]['completed-changes'][1] = '1'
     return html.Div(dash_table.DataTable(id='registers-table',
                                          columns=([{'id': regs[i], 'name': regs[i]} for i in range(len(regs))]),
                                          data=([{regs[i]: values[i] for i in range(len(regs))}]),
@@ -718,14 +725,17 @@ def create_registers(value):
 
 
 @app.callback(Output('flags', 'children'),
-              [Input('flags-storage', 'children')])
-def create_flags(value):
+              [Input('flags-storage', 'children')],
+              [State('id-storage', 'children')])
+def create_flags(value, user_id):
     """
     # TODO
     :param value:
     :return:
     """
     flags = ['CF', 'ZF', 'OF', 'SF']
+    if user_id in user_dict:
+        user_dict[user_id]['completed-changes'][2] = '1'
     return dash_table.DataTable(id='flags-table',
                                 columns=([{'id': flags[i], 'name': flags[i] + ': '} for i in range(len(flags))]),
                                 data=([{flags[i]: value[i] for i in range(len(flags))}]),
@@ -746,11 +756,14 @@ def create_output(value, n_clicks, user_id):
     """
     if user_id in user_dict:
         if user_dict[user_id]['cpu'].is_input_active:
+            user_dict[user_id]['completed-changes'][3] = '1'
             return dash_table.DataTable(id='in_out', columns=([{'id': '1', 'name': 'INPUT'}]),
                                         data=([{'1': ''}]),
                                         style_header=style_header,
                                         style_cell=style_cell,
                                         style_table={'width': '150px'}, editable=True)
+        else:
+            user_dict[user_id]['completed-changes'][3] = '1'
 
     return dash_table.DataTable(id='in_out', columns=([{'id': '1', 'name': 'OUTPUT'}]),
                                 data=([{'1': value}]),
@@ -796,8 +809,9 @@ def change_memory_tabs(n_clicks, info):
 
 @app.callback(Output('memory', 'children'),
               [Input('memory-tabs', 'value'),
-               Input('memory-storage', 'children')])
-def create_memory(tab, value):
+               Input('memory-storage', 'children')],
+              [State('id-storage', 'children')])
+def create_memory(tab, value, user_id):
     """
     # TODO
     :param value:
@@ -832,6 +846,8 @@ def create_memory(tab, value):
             data.append(dict())
             for y in range(len(rows)):
                 data[x][headers[y]] = data_lst[x][y]
+        if user_id in user_dict:
+            user_dict[user_id]['completed-changes'][4] = '1'
         return dash_table.DataTable(id='mem', columns=([{'id': i, 'name': i} for i in headers]),
                                     data=data,
                                     style_header=style_memory_header,
@@ -875,7 +891,8 @@ def create_memory(tab, value):
             data.append(dict())
             for y in range(len(rows)):
                 data[x][headers[y]] = data_lst[x][y]
-
+        if user_id in user_dict:
+            user_dict[user_id]['completed-changes'][4] = '1'
         return dash_table.DataTable(id='mem', columns=([{'id': i, 'name': i} for i in headers]),
                                     data=data,
                                     style_header=style_memory_header,
@@ -912,11 +929,13 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
     """
     if user_id in user_dict:
         if not user_dict[user_id]['cpu'].is_input_active:
-            if interval > 0:
+            if interval > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id]['completed-changes']==['1', '1', '1', '1', '1']:
                 user_dict[user_id]['cpu'].web_next_instruction()
                 return interval
-            if n_clicks > 0 and user_dict[user_id]['cpu'].instruction_completed:
+            if n_clicks > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id]['completed-changes']==['1', '1', '1', '1', '1']:
                 user_dict[user_id]['cpu'].web_next_instruction()
+                if user_dict[user_id]['cpu'].instruction.to01() != '0'*len(user_dict[user_id]['cpu'].instruction.to01()):
+                    user_dict[user_id]['completed-changes'] = ['0', '0', '0', '0', '0']
                 return n_clicks
         else:
             return current_situation
@@ -1020,6 +1039,7 @@ def update_instruction(value, user_id, reset):
     :return: string instruction
     """
     if user_id in user_dict:
+
         return f"{user_dict[user_id]['cpu'].instruction.to01()}"
     return '0' * 16
 
@@ -1044,6 +1064,7 @@ def update_flags(value, user_id, reset, data_flags, data_regs, n_clicks):
     """
     if user_id in user_dict:
         user_dict[user_id]['next-flags'] = n_clicks
+
         return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
     return ['0', '0', '0', '0']
 
@@ -1074,6 +1095,7 @@ def update_registers(value_not_used, user_id, ip_changes, reset, if_input, data,
         values = []
         for i in range(len(items)):
             values.append(f"{(items[i][0] + ':')} {items[i][1]}")
+
         return values
     elif ip_changes != 512:
         return ['SP: 0400', f'IP: {ba2hex(int2ba(int(ip_changes), 16))}', 'LR: 0000', 'FR: 0000', 'R00: 0000',
@@ -1098,6 +1120,7 @@ def update_output(value, user_id, reset):
         shell_slots = []
         for port, device in user_dict[user_id]['cpu'].ports_dictionary.items():
             shell_slots.append(str(device))
+
         return " ".join(shell_slots)
     return ""
 
@@ -1130,6 +1153,7 @@ def update_memory(value, user_id, reset, data, chosen_tab, n_clicks):
         for i in memory_data:
             lst.append('\t'.join(i))
         if user_dict[user_id]['cpu'].architecture in ["neumann", "harvardm"]:
+
             return ['\n'.join(lst), '']
         else:
             memory_program = [[], [], [], [], [], [], [], []]
@@ -1140,6 +1164,7 @@ def update_memory(value, user_id, reset, data, chosen_tab, n_clicks):
             lst_program = []
             for i in memory_program:
                 lst_program.append('\t'.join(i))
+
             return ['\n'.join(lst), '\n'.join(lst_program)]
 
     lst1 = '\t'.join(['00 00 00 00'] * 32)
