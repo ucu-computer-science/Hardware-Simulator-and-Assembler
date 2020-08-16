@@ -16,7 +16,6 @@ import dash_table
 from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import json
 from datetime import datetime
-import time
 
 # Imports from the project
 from modules.processor import CPU
@@ -916,9 +915,8 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
             if interval > 0:
                 user_dict[user_id]['cpu'].web_next_instruction()
                 return interval
-            if n_clicks > 0:
+            if n_clicks > 0 and user_dict[user_id]['cpu'].instruction_completed:
                 user_dict[user_id]['cpu'].web_next_instruction()
-                time.sleep(0.5)
                 return n_clicks
         else:
             return current_situation
