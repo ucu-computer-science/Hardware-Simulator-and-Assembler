@@ -178,6 +178,7 @@ class CPU:
         self.is_input_active = False
 
         self.instruction = bitarray('')
+        self.instruction_completed = True
 
         # Draw the main interface
         if self.curses_mode:
@@ -242,6 +243,7 @@ class CPU:
         Executes the next instruction after button click on the webpage
         Only starts executing AFTER the first call, only reads the instruction on the first time
         """
+        self.instruction_completed = False
         self.logger.debug("Next instruction is executing")
         # If the instruction is 'halt' - an empty string, terminate the execution
         if isinstance(self.instruction, bitarray) and self.instruction.to01() == ('0' * self.instruction_size[0]):
@@ -264,6 +266,7 @@ class CPU:
 
         # Read first instruction of the program from the memory
         self.__read_instruction()
+        self.instruction_completed = True
 
     def __read_instruction(self):
         """
