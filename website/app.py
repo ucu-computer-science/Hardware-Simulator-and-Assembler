@@ -929,12 +929,15 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
     """
     if user_id in user_dict:
         if not user_dict[user_id]['cpu'].is_input_active:
-            if interval > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id]['completed-changes']==['1', '1', '1', '1', '1']:
+            if interval > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id][
+                'completed-changes'] == ['1', '1', '1', '1', '1']:
                 user_dict[user_id]['cpu'].web_next_instruction()
                 return interval
-            if n_clicks > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id]['completed-changes']==['1', '1', '1', '1', '1']:
+            if n_clicks > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id][
+                'completed-changes'] == ['1', '1', '1', '1', '1']:
                 user_dict[user_id]['cpu'].web_next_instruction()
-                if user_dict[user_id]['cpu'].instruction.to01() != '0'*len(user_dict[user_id]['cpu'].instruction.to01()):
+                if user_dict[user_id]['cpu'].instruction.to01() != '0' * len(
+                        user_dict[user_id]['cpu'].instruction.to01()):
                     user_dict[user_id]['completed-changes'] = ['0', '0', '0', '0', '0']
                 return n_clicks
         else:
@@ -1039,7 +1042,6 @@ def update_instruction(value, user_id, reset):
     :return: string instruction
     """
     if user_id in user_dict:
-
         return f"{user_dict[user_id]['cpu'].instruction.to01()}"
     return '0' * 16
 
@@ -1183,6 +1185,7 @@ def update_reset(n_clicks):
               [Input('reset-storage', 'children')])
 def update_reset(children):
     return children
+
 
 # Update IP - info
 @app.callback(Output('ip-storage', 'children'),
