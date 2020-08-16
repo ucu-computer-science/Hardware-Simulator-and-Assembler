@@ -235,17 +235,17 @@ being saved into the first operand:
 | | | | ```jmp [%reg+$off]```|
 | | | | *Jumps to the ```reg + off``` address in memory* |
 |||||
-| | ```je [$off]``` | ```je [$off]``` | ```je [$off]``` |
+| | ```je $off``` | ```je $off``` | ```je $off``` |
 | | | | |
-| | ```jne [$off]``` | ```jne [$off]``` | ```jne [$off]``` |
+| | ```jne $off``` | ```jne $off``` | ```jne $off``` |
 | | | | |
-| | ```jg [$off]``` | ```jg [$off]``` | ```jg [$off]``` |
+| | ```jg $off``` | ```jg $off``` | ```jg $off``` |
 | | | | |
-| | ```jge [$off]``` | ```jge [$off]``` | ```jge [$off]``` |
+| | ```jge $off``` | ```jge $off``` | ```jge $off``` |
 | | | | |
-| | ```jl [$off]``` | ```jl [$off]``` | ```jl [$off]``` |
+| | ```jl $off``` | ```jl $off``` | ```jl $off``` |
 | | | | |
-| | ```jle [$off]``` | ```jle [$off]``` | ```jle [$off]``` |
+| | ```jle $off``` | ```jle $off``` | ```jle $off``` |
 | | | | |
 | **I/O Separate Space** |   |   |   |
 | ```in $port``` | ```in $port``` | ```in %reg, $port``` | ```in $reg, $port``` |
