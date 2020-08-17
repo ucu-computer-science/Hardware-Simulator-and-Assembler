@@ -75,22 +75,22 @@ app.layout = html.Div([
     html.Div([
         # Title
         dcc.Markdown("ASSEMBLY SIMULATOR",
-                     style={'color': title_color, 'font-family': "Roboto Mono, monospace",
+                     style={'color': title_color,
                             'font-size': '25px', 'display': 'inline-block', 'margin-left': 100, 'margin-top': 5}),
 
         dcc.Markdown("CHOOSE AN EXAMPLE PROGRAM:",
-                     style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                     style={'color': text_color,
                             'font-size': '18px', 'display': 'inline-block', 'margin-left': 155}),
         dcc.Markdown("CHOOSE ISA:",
-                     style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                     style={'color': text_color,
                             'font-size': '18px', 'display': 'inline-block', 'margin-left': 85}),
 
         dcc.Markdown("ARCHITECTURE:",
-                     style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                     style={'color': text_color,
                             'font-size': '18px', 'display': 'inline-block', 'margin-left': 60}),
 
         dcc.Markdown("I/O MODE:",
-                     style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                     style={'color': text_color,
                             'font-size': '18px', 'display': 'inline-block', 'margin-left': 100}),
 
         # Dropdowns for examples, isa, architecture and i/o mode
@@ -170,14 +170,13 @@ app.layout = html.Div([
                 # Textarea for input of assembly code
                 html.Div([
                     dcc.Markdown("ASSEMBLY CODE:",
-                                 style={'color': text_color, 'font-family': "Roboto Mono, monospace",
+                                 style={'color': text_color,
                                         'font-size': '18px', 'margin-left': 60}),
                     dcc.Textarea(id="input1", spellCheck='false',
                                  value="loading...",
                                  style={'width': 235, 'height': 400,
                                         "color": assembly['font'], 'font-size': '15px',
-                                        "background-color": assembly['background'],
-                                        'font-family': "Roboto Mono, monospace", 'margin-left': 20},
+                                        "background-color": assembly['background'], 'margin-left': 20},
                                  autoFocus='true'),
 
                 ], style={'display': 'inline-block', }),
@@ -203,9 +202,9 @@ app.layout = html.Div([
                          style={'display': 'block', 'width': 100, 'margin-left': 85}),
                 # Button to assemble
                 html.Button('ASSEMBLE', id='assemble', n_clicks=0,
-                            style={'margin-left': 278, 'margin-top': -40, "color": button['font'],
+                            style={'margin-left': 278, 'margin-top': -40, "color": button['font'], 'font-family':'custom',
                                    "background-color": button['background'],
-                                   'width': 160, 'display': 'block', 'font-family': "Roboto Mono, monospace",
+                                   'width': 160, 'display': 'block',
                                    'font-size': 13}),
 
             ]),
@@ -295,22 +294,19 @@ app.layout = html.Div([
 
             # Buttons
             html.Div([html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
-                                  style={"color": button['font'],
+                                  style={"color": button['font'], 'font-family':'custom',
                                          "background-color": button['background'],
-                                         'width': 200, 'display': 'inline-block',
-                                         'font-family': "Roboto Mono, monospace", 'font-size': 13, 'margin-right': 17}),
+                                         'width': 200, 'display': 'inline-block', 'font-size': 13, 'margin-right': 17}),
 
                       html.Div(id='run-until-finished-button',
                                children=html.Button('RUN', id='run-until-finished', n_clicks=0,
-                                                    style={"color": button['font'],
+                                                    style={"color": button['font'], 'font-family':'custom',
                                                            "background-color": button['background'],
                                                            'width': 200,
-                                                           'font-family': "Roboto Mono, monospace",
                                                            'font-size': 13}), style={'display': 'inline-block'}),
                       html.Button('RESET COMPUTER', id='reset', n_clicks=0,
-                                  style={"color": button['font'], 'width': 150,
-                                         "background-color": button['background'], 'display': 'inline-block',
-                                         'font-family': "Roboto Mono, monospace", 'font-size': 13,
+                                  style={"color": button['font'], 'font-family':'custom', 'width': 150,
+                                         "background-color": button['background'], 'display': 'inline-block', 'font-size': 13,
                                          'margin-left': 255}),
                       ],
                      style={'display': 'block'}),
@@ -320,17 +316,14 @@ app.layout = html.Div([
     ]),
 
     # Link to a help page and license name (someday github link)
-    html.Div([dcc.Link(html.Button('INSTRUCTION SET (HELP)', style={"color": help_font_color,
+    html.Div([dcc.Link(html.Button('INSTRUCTION SET (HELP)', style={"color": help_font_color, 'font-family':'custom',
                                                                     "background-color": help_color,
                                                                     'margin-bottom': 15,
-                                                                    'font-family': "Roboto Mono, monospace",
                                                                     'font-size': 13}), id='link', href='/help-risc3',
                        refresh=True,
-                       style={'color': text_color, 'display': 'block',
-                              'font-family': "Roboto Mono, monospace", 'width': 260}),
+                       style={'color': text_color, 'display': 'block', 'width': 260}),
               dcc.Link("GitHub (private currently)", href='https://github.com/dariaomelkina/poc_project', refresh=True,
                        style={'color': text_color, 'display': 'block',
-                              'font-family': "Roboto Mono, monospace",
                               'margin-left': 1150, 'margin-top': -35})],
              style={'margin-left': 14, 'margin-top': 40, 'display': 'block'}),
 
@@ -400,7 +393,6 @@ app.layout = html.Div([
 def get_id(value):
     """
     Return randomly generated id each time new session starts
-
     :param value: is not used (is here by default)
     :return: random id
     """
@@ -426,7 +418,6 @@ def get_id(value):
 def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip, next_clicks):
     """
     Translate input assembly code to binary and hexadecimal ones.
-
     :param n_clicks: is not used (is here by default)
     :param info: isa, architecture and I/O mode
     :param user_id: id of the session/user
@@ -574,7 +565,6 @@ def update_output(isa, arch, io, user_id):
     """
     Update main information about the cpu,
     depending on the choice from dropdowns.
-
     :param isa: chosen isa
     :param arch: chosen architecture
     :param io: chosen I/O mode
@@ -600,7 +590,6 @@ def reset_computer(info, n_clicks):
 def render_content_hex_bin(tab, code_lst, user_id):
     """
     Render two tabs: with binary and with hexadecimal code translations
-
     :param tab: one of two: binary or hexadecimal
     :param code_lst: list with binary and with hexadecimal code translations
     :return: tabs
@@ -611,7 +600,7 @@ def render_content_hex_bin(tab, code_lst, user_id):
         return html.Div([
             dcc.Textarea(id='bin_hex', value=code_lst[0],
                          style={'width': 185, 'height': 400, "color": table['font'], 'font-size': '15px',
-                                "background-color": table['background'], 'font-family': "Roboto Mono, monospace"},
+                                "background-color": table['background']},
                          disabled=True)
         ])
     elif tab == 'hexadecimal':
@@ -619,14 +608,14 @@ def render_content_hex_bin(tab, code_lst, user_id):
             dcc.Textarea(id='bin_hex', value=code_lst[1],
                          style={'text-align': 'right', 'width': 185, 'height': 400, "color": table['font'],
                                 'font-size': '15px',
-                                "background-color": table['background'], 'font-family': "Roboto Mono, monospace"},
+                                "background-color": table['background']},
                          disabled=True)
         ])
     else:
         return html.Div([
             dcc.Textarea(id='bin_hex', value=code_lst[0],
                          style={'width': 185, 'height': 400, "color": table['font'], 'font-size': '15px',
-                                "background-color": table['background'], 'font-family': "Roboto Mono, monospace"},
+                                "background-color": table['background']},
                          disabled=True)
         ])
 
@@ -717,8 +706,7 @@ def create_registers(value, user_id):
                                          style_header=style_header,
                                          style_cell={'backgroundColor': table_main_color,
                                                      'color': table_main_font_color, 'textAlign': 'center',
-                                                     'border': f'1px {table_header_color}',
-                                                     'font-family': "Roboto Mono, monospace", 'font-size': 12,
+                                                     'border': f'1px {table_header_color}', 'font-size': 12,
                                                      'minWidth': 33.5},
                                          editable=True
                                          ))
@@ -922,7 +910,6 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
     so it changes hidden div, on which graphic elements of
     the processor will react.
     Executes next instruction in the cpu.
-
     :param n_clicks: n_clicks for the 'next instruction' button
     :param user_id: id of the session/user
     :return: same n_clicks
@@ -983,13 +970,13 @@ def change_button_color(disabled, reset, n_clicks):
         return html.Button('RUN', id='run-until-finished', n_clicks=n_clicks,
                            style={"color": button['font'],
                                   "background-color": button['background'],
-                                  'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
+                                  'width': 200, 'display': 'block',
                                   'font-size': 13})
     else:
         return html.Button('STOP', id='run-until-finished', n_clicks=n_clicks,
                            style={"color": assembly['font'],
                                   "background-color": assembly['background'],
-                                  'width': 200, 'display': 'block', 'font-family': "Roboto Mono, monospace",
+                                  'width': 200, 'display': 'block',
                                   'font-size': 13})
 
 
@@ -1036,7 +1023,6 @@ def update_instruction(value, user_id, reset):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
-
     :param value: is not used
     :param user_id: id of the session/user
     :return: string instruction
@@ -1059,7 +1045,6 @@ def update_flags(value, user_id, reset, data_flags, data_regs, n_clicks):
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
     # TODO: about manual
-
     :param value: is not used
     :param user_id: id of the session/user
     :return: string flags
@@ -1084,7 +1069,6 @@ def update_registers(value_not_used, user_id, ip_changes, reset, if_input, data,
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
-
     :param value_not_used: is not used
     :param user_id: id of the session/user
     :return: string registers
@@ -1113,7 +1097,6 @@ def update_output(value, user_id, reset):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
-
     :param value: is not used
     :param user_id: id of the session/user
     :return: string output
@@ -1139,7 +1122,6 @@ def update_memory(value, user_id, reset, data, chosen_tab, n_clicks):
     """
     Reacts on changes in the div, which is
     affected by the 'next instruction' button
-
     :param value: is not used
     :param user_id: id of the session/user
     :return: string memory
