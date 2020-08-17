@@ -5,9 +5,9 @@
       "name": "load",
       "examples": [
         "load",
-        "load $imm"
+        "load $num"
       ],
-      "description": "Loads a word from memory at location TOS (or imm) and pushes it onto the register stack"
+      "description": "Loads a word from memory at location TOS (or num) and pushes it onto the register stack"
     },
     {
       "name": "loadf",
@@ -20,9 +20,9 @@
       "name": "store",
       "examples": [
         "store",
-        "store $imm"
+        "store $num"
       ],
-      "description": "Stores the word from TOS (or imm) into memory to the location at TOS"
+      "description": "Stores the word from TOS (or num) into memory to the location at TOS"
     },
     {
       "name": "storef",
@@ -55,9 +55,9 @@
     {
       "name": "mov",
       "examples": [
-        "mov $imm"
+        "mov $num"
       ],
-      "description": "Pushes the value of imm to the register stack"
+      "description": "Pushes the value of num to the register stack"
     },
     {
       "name": "push",
@@ -146,16 +146,16 @@
     {
       "name": "lsh",
       "examples": [
-        "lsh $imm"
+        "lsh $num"
       ],
-      "description": "Performs a bitwise left shift operation on TOS value, moving it imm bits to the left, and pushing the value onto TOS"
+      "description": "Performs a bitwise left shift operation on TOS value, moving it num bits to the left, and pushing the value onto TOS"
     },
     {
       "name": "rsh",
       "examples": [
-        "rsh $imm"
+        "rsh $num"
       ],
-      "description": "Performs a bitwise right shift operation on TOS value, moving it imm bits to the right, and pushing the value onto TOS"
+      "description": "Performs a bitwise right shift operation on TOS value, moving it num bits to the right, and pushing the value onto TOS"
     },
     {
       "name": "call",
@@ -510,7 +510,8 @@
       "examples": [
         "nop"
       ],
-      "description": "Does not do anything",
+      "description": "Does not do anything"
+    }
   ],
   "risc3": [
     "Instruction Set for RISC-Register ISA",

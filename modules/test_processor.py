@@ -14,8 +14,6 @@ from modules.assembler import Assembler
 # its initialization (registers, program text, memory etc.)
 # and the correct behaviour of all assembly instructions
 
-# TODO: Add more tests for each architecture
-
 
 class TestCPU(unittest.TestCase):
     def setUp(self):

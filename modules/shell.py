@@ -25,6 +25,7 @@ class Shell:
 
     def in_shell(self):
         # TODO: implement input
+        #  UPD: I think we have?!
         pass
 
     def out_shell(self, value):

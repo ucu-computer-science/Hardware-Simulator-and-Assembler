@@ -1,3 +1,5 @@
+# !!THIS INSTRUCTION SET IS DEPRECATED AND REPRESENTS AN OLD CONCEPT OF THE PROGRAM WORKFLOW!!
+
 # Instruction Set:
 
 * % –– register (```%reg```)

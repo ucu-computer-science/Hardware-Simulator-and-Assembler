@@ -1,11 +1,11 @@
-# POC Project: Hardware simulator and assembler
+# Hardware Simulator and Assembler
 [Website](http://assemblysimulator.pythonanywhere.com)
 ---
 
 ## Description:
 
-A Hardware Simulator and an Assembler, with several 
-Instruction Set, Memory, I/O Architectures supported.
+A Hardware Simulator and an Assembler with its own assembly language, 
+with several Instruction Set, Memory, I/O Architectures supported.
 
 ![](images/demoscreen.png)
 
@@ -59,9 +59,21 @@ python3 modules/simulator.py --file modules/program_examples/assembly_test6.bin 
 
 ---
 
+## General project layout
+
+~~You should not, under any circumstances try to understand what's going on there~~
+* `./docs` contains the specs and docs we started this project with,
+and a 'help' document representing the current state of things with,
+supposedly, human-readable documentation
+* `./modules` contains the general 'backend' modules of the project, 
+an assembler and a hardware simulator
+* `./website` contains the general 'frontend' modules of the project, 
+the things running the simulator web page and help pages
+
+---
 ## Prerequisites:
 
-Admittedly, there are a lot of those, but we plan to rewrite the front-end without using Dash.
+Admittedly, there are a lot of those, but we plan _(do we really?)_ to rewrite the front-end without using Dash.
 
 ```bash
 pip install -r requirements.txt
@@ -78,6 +90,9 @@ python3 modules/test_processor.py
 ---
 
 ## Credits:
+* Oleg Farenyuk
+* Daria Omelkina
+* Andriy Sultanov
 
 ---
 

@@ -79,8 +79,6 @@
 
 # TODO: Implement 'add carry' and similar operations for RISC2, RISC3 architectures
 
-# TODO: Rename END to HALT, check everything still works
-
 # TODO: Implement interrupts, create a special place in memory for an interrupt vector,
 #  which is going to be divided into three types of interrupts:
 #  * CPU Interrupts
