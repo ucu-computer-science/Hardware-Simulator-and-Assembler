@@ -548,12 +548,11 @@ class TestCPU(unittest.TestCase):
 
         # Checking the bitwise rsh instruction
         cpu.web_next_instruction()
-        self.assertEqual(ba2hex(cpu.registers['ACC']._state), 'fff9')
-        # TODO: Work something out with the shifts, they do not work as I expected them to
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '7ffc')
         
         # Checking the bitwise lsh instruction
         cpu.web_next_instruction()
-        self.assertEqual(ba2hex(cpu.registers['ACC']._state), 'fff9')
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), 'fff8')
 
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """
