@@ -262,8 +262,16 @@ def bit_not(operands, flag_register):
     result = operands[-1].to01()
     result = result.replace("1", "2").replace("0", "1").replace("2", "0")
 
-    # flag_register._state = bitarray("0" * 16)
-    # change_flag_result(flag_register, operands, result)
+    flag_register._state = bitarray("0" * 16)
+
+    if operands[-1].to01()[0] != result[0]:
+        flag_register._state[14] = "1"  # Overflow flag
+
+    if result == "0" * 16:
+        flag_register._state[13] = "1"  # Zero flag
+
+    if result[0] == "1":
+        flag_register._state[15] = "1"  # Sign flag
 
     return bitarray(result)
 
@@ -280,13 +288,13 @@ def lsh(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin_clean(bin(twos_complement(reg1 << reg2, len(operands[-2])))).rjust(16, "0")
+    coefficient = twos_complement(int(operands[-1].to01(), 2), len(operands[-1]))
+    result = operands[-2].to01() + '0'*coefficient
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
-        result = bin(twos_complement(reg1 << reg2, 18))[-16:]
+        result = result[-16:]
     change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
@@ -304,13 +312,13 @@ def rsh(operands, flag_register):
     :param flag_register: Flag register
     :return: new value of the first register
     """
-    reg1, reg2 = prepare_arguments(operands[-2], operands[-1])
-    result = bin_clean(bin(twos_complement(reg1 >> reg2, len(operands[-2])))).rjust(16, "0")
+    coefficient = twos_complement(int(operands[-1].to01(), 2), len(operands[-1]))
+    result = '0' * coefficient + operands[-2].to01()
 
     flag_register._state = bitarray("0" * 16)
     if len(result) > 16:
         flag_register._state[12] = "1"  # Carry flag
-        result = bin(twos_complement(reg1 >> reg2, 18))[-16:]
+        result = result[:16]
     change_flag_result(flag_register, operands, result)
 
     return bitarray(result)
