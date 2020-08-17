@@ -37,6 +37,8 @@ xor
 not
 rsh $1
 lsh $1
+nop
+nop
 # call
 # call $
 # ret
