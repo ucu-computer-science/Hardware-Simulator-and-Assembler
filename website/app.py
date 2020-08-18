@@ -16,6 +16,7 @@ import dash_table
 from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import json
 from datetime import datetime
+import time
 
 # Imports from the project
 from modules.processor import CPU
@@ -202,7 +203,8 @@ app.layout = html.Div([
                          style={'display': 'block', 'width': 100, 'margin-left': 85}),
                 # Button to assemble
                 html.Button('ASSEMBLE', id='assemble', n_clicks=0,
-                            style={'margin-left': 278, 'margin-top': -40, "color": button['font'], 'font-family':'custom',
+                            style={'margin-left': 278, 'margin-top': -40, "color": button['font'],
+                                   'font-family': 'custom',
                                    "background-color": button['background'],
                                    'width': 160, 'display': 'block',
                                    'font-size': 13}),
@@ -294,19 +296,20 @@ app.layout = html.Div([
 
             # Buttons
             html.Div([html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
-                                  style={"color": button['font'], 'font-family':'custom',
+                                  style={"color": button['font'], 'font-family': 'custom',
                                          "background-color": button['background'],
                                          'width': 200, 'display': 'inline-block', 'font-size': 13, 'margin-right': 17}),
 
                       html.Div(id='run-until-finished-button',
                                children=html.Button('RUN', id='run-until-finished', n_clicks=0,
-                                                    style={"color": button['font'], 'font-family':'custom',
+                                                    style={"color": button['font'], 'font-family': 'custom',
                                                            "background-color": button['background'],
                                                            'width': 200,
                                                            'font-size': 13}), style={'display': 'inline-block'}),
                       html.Button('RESET COMPUTER', id='reset', n_clicks=0,
-                                  style={"color": button['font'], 'font-family':'custom', 'width': 150,
-                                         "background-color": button['background'], 'display': 'inline-block', 'font-size': 13,
+                                  style={"color": button['font'], 'font-family': 'custom', 'width': 150,
+                                         "background-color": button['background'], 'display': 'inline-block',
+                                         'font-size': 13,
                                          'margin-left': 255}),
                       ],
                      style={'display': 'block'}),
@@ -316,7 +319,7 @@ app.layout = html.Div([
     ]),
 
     # Link to a help page and license name (someday github link)
-    html.Div([dcc.Link(html.Button('INSTRUCTION SET (HELP)', style={"color": help_font_color, 'font-family':'custom',
+    html.Div([dcc.Link(html.Button('INSTRUCTION SET (HELP)', style={"color": help_font_color, 'font-family': 'custom',
                                                                     "background-color": help_color,
                                                                     'margin-bottom': 15,
                                                                     'font-size': 13}), id='link', href='/help-risc3',
@@ -357,6 +360,7 @@ app.layout = html.Div([
 
     # Storage for reaction on 'next instruction' button
     html.Div(id='next-storage', children='0', style={'display': 'none'}),
+    html.Div(id='provoke-changes', children='0', style={'display': 'none'}),
     # Storage for reaction on 'run until finished' button
     html.Div(id='run-storage', children=dcc.Interval(id='interval', interval=1 * 1000, n_intervals=0, disabled=True),
              style={'display': 'none'}),
@@ -382,6 +386,9 @@ app.layout = html.Div([
     html.Div(id='flags-placeholder', style={'display': 'none'}),
     html.Div(id='memory-placeholder', style={'display': 'none'}),
 
+    # So called 'calls stack'
+    dcc.Interval(id='call-stack', interval=1 * 500, n_intervals=0, max_intervals=0),
+
 ], id="wrapper", )
 
 
@@ -402,6 +409,20 @@ def get_id(value):
         user_id = str(uuid.uuid4())
         session['user_id'] = user_id
     return user_id
+
+
+# Each 'next' button pressing add a position to a so-called stack of calls
+# Actually it is an interval, which will execute instructions one by one
+@app.callback(Output('call-stack', 'max_intervals'),
+              [Input('next', 'n_clicks')],
+              [State('id-storage', 'children'),
+               State('call-stack', 'max_intervals')])
+def add_to_stack(n_clicks, user_id, current_max_intervals):
+    if n_clicks and user_id in user_dict:
+        if n_clicks > user_dict[user_id]['next']:
+            user_dict[user_id]['next'] = n_clicks
+            return current_max_intervals + 1
+    return 0
 
 
 # Save binary and hexadecimal code
@@ -444,7 +465,8 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
             user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
-
+            user_dict[user_id]['time'] = time.time()
+            user_dict[user_id]['next'] = next_clicks
             next_clicks = 0
         else:
             user_dict[user_id]['reset'] = 0
@@ -454,7 +476,8 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
             user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
-
+            user_dict[user_id]['time'] = time.time()
+            user_dict[user_id]['next'] = next_clicks
 
 
     elif n_clicks:
@@ -473,6 +496,8 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
             user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
+            user_dict[user_id]['time'] = time.time()
+            user_dict[user_id]['next'] = next_clicks
 
         elif reset_clicks > user_dict[user_id]['reset']:
             user_dict[user_id] = dict()
@@ -489,6 +514,8 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
             user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
+            user_dict[user_id]['time'] = time.time()
+            user_dict[user_id]['next'] = next_clicks
 
             next_clicks = 0
 
@@ -498,6 +525,7 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
                 user_dict[user_id]['cpu'] = CPU(isa, architecture, io, binary_program, ip)
                 user_dict[user_id]['code'] = assembly_code
                 user_dict[user_id]['binhex'] = [binary_program, hex_program]
+                user_dict[user_id]['time'] = time.time()
         else:
             with open('website/history.txt', 'a') as file:
                 file.write(str(datetime.now()) + '\n')
@@ -675,7 +703,7 @@ def create_instruction(value, user_id):
         user_dict[user_id]['completed-changes'][0] = '1'
         return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
                                     data=([{
-                                        '1': f'{value} ({user_dict[user_id]["cpu"].instructions_dict[user_dict[user_id]["cpu"].opcode.to01()][0]})'}]),
+                                        '1': value}]),
                                     style_header=style_header,
                                     style_cell=style_cell, style_table={'width': 200})
     return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
@@ -734,7 +762,7 @@ def create_flags(value, user_id):
 
 @app.callback(Output('output', 'children'),
               [Input('output-storage', 'children'),
-               Input('next', 'n_clicks')],
+               Input('call-stack', 'n_intervals')],
               [State('id-storage', 'children')])
 def create_output(value, n_clicks, user_id):
     """
@@ -742,6 +770,7 @@ def create_output(value, n_clicks, user_id):
     :param value:
     :return:
     """
+    print('create output')
     if user_id in user_dict:
         if user_dict[user_id]['cpu'].is_input_active:
             user_dict[user_id]['completed-changes'][3] = '1'
@@ -776,9 +805,10 @@ def get_io(data, editable, user_id):
 # mov_low %R00, $1 in %R00, $1 mov_low %R00, $10
 
 @app.callback(Output('memory-div', 'children'),
-              [Input('next', 'n_clicks')],
+              [Input('call-stack', 'n_intervals')],
               [State('info', 'children')])
 def change_memory_tabs(n_clicks, info):
+    print(change_memory_tabs)
     arch = info.split()[1]
     if arch == 'neumann':
         return [dcc.Tabs(id='memory-tabs', value='data_memory', children=[
@@ -805,6 +835,7 @@ def create_memory(tab, value, user_id):
     :param value:
     :return:
     """
+    print('create memory')
     if tab == 'data_memory':
         headers = ["Addr   :  "]
         for i in range(0, 32, 4):
@@ -899,7 +930,7 @@ def create_memory(tab, value, user_id):
 
 # UPDATE HIDDEN INFO FOR PROCESSOR
 @app.callback(Output('next-storage', 'children'),
-              [Input('next', 'n_clicks'),
+              [Input('call-stack', 'n_intervals'),
                Input('id-storage', 'children'),
                Input('interval', 'n_intervals'),
                Input('reset', 'n_clicks')],
@@ -914,18 +945,28 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
     :param user_id: id of the session/user
     :return: same n_clicks
     """
+    print('update_next')
     if user_id in user_dict:
         if not user_dict[user_id]['cpu'].is_input_active:
-            if interval > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id][
-                'completed-changes'] == ['1', '1', '1', '1', '1']:
+            print(f'INTERVAL {interval}    NEXT {n_clicks}')
+            if (interval > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id][
+                'completed-changes'] == ['1', '1', '1', '1', '1'] and (time.time() - user_dict[user_id]['time']) > 1) \
+                    or (interval == 1):
                 user_dict[user_id]['cpu'].web_next_instruction()
+                print('NEXT WAS PROVOKED')
+                user_dict[user_id]['time'] = time.time()
                 return interval
-            if n_clicks > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id][
-                'completed-changes'] == ['1', '1', '1', '1', '1']:
+            if (n_clicks > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id][
+                'completed-changes'] == ['1', '1', '1', '1', '1'] and (
+                        time.time() - user_dict[user_id]['time']) > 1) or (
+                    n_clicks == 1):
                 user_dict[user_id]['cpu'].web_next_instruction()
-                if user_dict[user_id]['cpu'].instruction.to01() != '0' * len(
+                print('NEXT WAS PROVOKED')
+                user_dict[user_id]['time'] = time.time()
+                user_dict[user_id]['completed-changes'] = ['0', '0', '0', '0', '0']
+                if user_dict[user_id]['cpu'].instruction.to01() == '0' * len(
                         user_dict[user_id]['cpu'].instruction.to01()):
-                    user_dict[user_id]['completed-changes'] = ['0', '0', '0', '0', '0']
+                    user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
                 return n_clicks
         else:
             return current_situation
@@ -1006,17 +1047,18 @@ def update_seconds_div(instructions, reset):
 
 @app.callback(
     Output("seconds", "data"),
-    [Input('next', 'n_clicks'),
+    [Input('call-stack', 'n_intervals'),
      Input('reset', 'n_clicks')],
     [State('interval', 'interval'),
      ]
 )
 def update_seconds_table(n_clicks, reset, interval):
+    print('seconds updated')
     return [{'1': (interval / 1000) ** (-1)}]
 
 
 @app.callback(Output('instruction-storage', 'children'),
-              [Input('next-storage', 'children'),
+              [Input('provoke-changes', 'children'),
                Input('id-storage', 'children'),
                Input('reset', 'n_clicks')])
 def update_instruction(value, user_id, reset):
@@ -1028,12 +1070,14 @@ def update_instruction(value, user_id, reset):
     :return: string instruction
     """
     if user_id in user_dict:
+        if 'opcode' in dir(user_dict[user_id]["cpu"]):
+            return f'{user_dict[user_id]["cpu"].instruction.to01()} ({user_dict[user_id]["cpu"].instructions_dict[user_dict[user_id]["cpu"].opcode.to01()][0]})'
         return f"{user_dict[user_id]['cpu'].instruction.to01()}"
     return '0' * 16
 
 
 @app.callback(Output('flags-storage', 'children'),
-              [Input('next-storage', 'children'),
+              [Input('provoke-changes', 'children'),
                Input('id-storage', 'children'),
                Input('reset', 'n_clicks')
                ],
@@ -1049,6 +1093,7 @@ def update_flags(value, user_id, reset, data_flags, data_regs, n_clicks):
     :param user_id: id of the session/user
     :return: string flags
     """
+    print('flags-updated')
     if user_id in user_dict:
         user_dict[user_id]['next-flags'] = n_clicks
 
@@ -1057,7 +1102,7 @@ def update_flags(value, user_id, reset, data_flags, data_regs, n_clicks):
 
 
 @app.callback(Output('registers-storage', 'children'),
-              [Input('next-storage', 'children'),
+              [Input('provoke-changes', 'children'),
                Input('id-storage', 'children'),
                Input('ip-storage', 'children'),
                Input('reset', 'n_clicks'),
@@ -1073,6 +1118,7 @@ def update_registers(value_not_used, user_id, ip_changes, reset, if_input, data,
     :param user_id: id of the session/user
     :return: string registers
     """
+    print('registers updated')
     if user_id in user_dict:
         user_dict[user_id]['next-registers'] = n_clicks
 
@@ -1090,7 +1136,7 @@ def update_registers(value_not_used, user_id, ip_changes, reset, if_input, data,
 
 
 @app.callback(Output('output-storage', 'children'),
-              [Input('next-storage', 'children'),
+              [Input('provoke-changes', 'children'),
                Input('id-storage', 'children'),
                Input('reset', 'n_clicks')])
 def update_output(value, user_id, reset):
@@ -1101,6 +1147,7 @@ def update_output(value, user_id, reset):
     :param user_id: id of the session/user
     :return: string output
     """
+    print('update_output')
     if user_id in user_dict:
         shell_slots = []
         for port, device in user_dict[user_id]['cpu'].ports_dictionary.items():
@@ -1111,7 +1158,7 @@ def update_output(value, user_id, reset):
 
 
 @app.callback(Output('memory-storage', 'children'),
-              [Input('next-storage', 'children'),
+              [Input('provoke-changes', 'children'),
                Input('id-storage', 'children'),
                Input('reset', 'n_clicks')
                ],
@@ -1126,6 +1173,7 @@ def update_memory(value, user_id, reset, data, chosen_tab, n_clicks):
     :param user_id: id of the session/user
     :return: string memory
     """
+    print('update_memory')
     if user_id in user_dict:
         user_dict[user_id]['next-memory'] = n_clicks
         memory_data = [[], [], [], [], [], [], [], []]
@@ -1188,22 +1236,28 @@ def change_link(info):
               [State('id-storage', 'children'),
                State('next', 'n_clicks')])
 def manually_change_flags(data_flags, user_id, n_clicks):
+    print('manually_change_flags')
     if user_id in user_dict:
-        flags = ''.join([data_flags[0]['CF'], data_flags[0]['ZF'], data_flags[0]['OF'], data_flags[0]['SF']])
-        # Check if flags table did changed (not due to pressing 'next' button)
-        if list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:]) != [data_flags[0]['CF'],
-                                                                                  data_flags[0]['ZF'],
-                                                                                  data_flags[0]['OF'],
-                                                                                  data_flags[0]['SF']] and n_clicks == \
-                user_dict[user_id]['next-flags']:
+        if user_dict[user_id]['completed-changes'] == ['1', '1', '1', '1', '1'] and (
+                time.time() - user_dict[user_id]['time']) > 2:
+            user_dict[user_id]['time'] = time.time()
 
-            try:
-                cf, zf, of, sf = list(flags)
-                user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
-                user_dict[user_id]['flags-changed'] = True
-                return 0
-            except ValueError:
-                return 0
+            flags = ''.join([data_flags[0]['CF'], data_flags[0]['ZF'], data_flags[0]['OF'], data_flags[0]['SF']])
+            # Check if flags table did changed (not due to pressing 'next' button)
+            if list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:]) != [data_flags[0]['CF'],
+                                                                                      data_flags[0]['ZF'],
+                                                                                      data_flags[0]['OF'],
+                                                                                      data_flags[0][
+                                                                                          'SF']] and n_clicks == \
+                    user_dict[user_id]['next-flags']:
+                print('actually change flags')
+                try:
+                    cf, zf, of, sf = list(flags)
+                    user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
+                    user_dict[user_id]['flags-changed'] = True
+                    return 0
+                except ValueError:
+                    return 0
     return 0
 
 
@@ -1212,28 +1266,35 @@ def manually_change_flags(data_flags, user_id, n_clicks):
               [State('id-storage', 'children'),
                State('next', 'n_clicks')])
 def manually_change_registers(data, user_id, n_clicks):
+    print('manually_change_registers')
     if user_id in user_dict:
-        items = [(value.name, value._state.tobytes().hex()) for key, value in
-                 user_dict[user_id]['cpu'].registers.items()]
-        cpu_registers = []
-        for i in range(len(items)):
-            cpu_registers.append(f"{(items[i][0] + ':')} {items[i][1]}")
+        print('aaaaaaaaaaa        ' + str((time.time() - user_dict[user_id]['time']) > 3))
+        if user_dict[user_id]['completed-changes'] == ['1', '1', '1', '1', '1'] and (
+                time.time() - user_dict[user_id]['time']) > 4:
+            user_dict[user_id]['time'] = time.time()
 
-        current_table = []
-        for key in data[0]:
-            current_table.append(f'{key} {data[0][key]}')
+            items = [(value.name, value._state.tobytes().hex()) for key, value in
+                     user_dict[user_id]['cpu'].registers.items()]
+            cpu_registers = []
+            for i in range(len(items)):
+                cpu_registers.append(f"{(items[i][0] + ':')} {items[i][1]}")
 
-        # Some changes in the table occurred (not due to pressing 'next' button)
-        if current_table != cpu_registers and n_clicks == user_dict[user_id]['next-registers']:
+            current_table = []
+            for key in data[0]:
+                current_table.append(f'{key} {data[0][key]}')
 
-            new_reg_dict = data[0]
+            # Some changes in the table occurred (not due to pressing 'next' button)
+            if current_table != cpu_registers and n_clicks == user_dict[user_id]['next-registers']:
+                print('actually change registers')
 
-            if user_dict[user_id]['flags-changed']:
-                user_dict[user_id]['flags-changed'] = False
-                new_reg_dict['FR:'] = ba2hex(user_dict[user_id]['cpu'].registers['FR']._state)
+                new_reg_dict = data[0]
 
-            for key, value in new_reg_dict.items():
-                user_dict[user_id]['cpu'].registers[key[:-1]]._state = bitarray(hex2ba(value).to01().rjust(16, '0'))
+                if user_dict[user_id]['flags-changed']:
+                    user_dict[user_id]['flags-changed'] = False
+                    new_reg_dict['FR:'] = ba2hex(user_dict[user_id]['cpu'].registers['FR']._state)
+
+                for key, value in new_reg_dict.items():
+                    user_dict[user_id]['cpu'].registers[key[:-1]]._state = bitarray(hex2ba(value).to01().rjust(16, '0'))
     return 0
 
 
@@ -1243,25 +1304,39 @@ def manually_change_registers(data, user_id, n_clicks):
                State('next', 'n_clicks'),
                State('memory-tabs', 'value')])
 def manually_change_memory(data, user_id, n_clicks, chosen_tab):
+    print('manually_change_memory')
     if user_id in user_dict:
-        # Callback was provoked, but 'next' ('run') button was not pressed...
-        if n_clicks == user_dict[user_id]['next-memory']:
-            new_data = bitarray('')
-            try:
-                for dictionary in data:
-                    for key in dictionary:
-                        if key != 'Addr   :  ':
-                            new_data += hex2ba(dictionary[key].replace(" ", "").rjust(8, '0'))
-            except ValueError:
-                new_data = user_dict[user_id]['cpu'].data_memory.slots
+        if user_dict[user_id]['completed-changes'] == ['1', '1', '1', '1', '1'] and (
+                time.time() - user_dict[user_id]['time']) > 2:
+            user_dict[user_id]['time'] = time.time()
 
-            if chosen_tab == 'data_memory':
-                if new_data != user_dict[user_id]['cpu'].data_memory.slots:
-                    user_dict[user_id]['cpu'].data_memory.slots = new_data
-            else:
-                if new_data != user_dict[user_id]['cpu'].program_memory.slots:
-                    user_dict[user_id]['cpu'].program_memory.slots = new_data
+            # Callback was provoked, but 'next' ('run') button was not pressed...
+            if n_clicks == user_dict[user_id]['next-memory']:
+
+                new_data = bitarray('')
+                try:
+                    for dictionary in data:
+                        for key in dictionary:
+                            if key != 'Addr   :  ':
+                                new_data += hex2ba(dictionary[key].replace(" ", "").rjust(8, '0'))
+                except ValueError:
+                    new_data = user_dict[user_id]['cpu'].data_memory.slots
+
+                if chosen_tab == 'data_memory':
+                    if new_data != user_dict[user_id]['cpu'].data_memory.slots:
+                        print('actually change memory')
+                        user_dict[user_id]['cpu'].data_memory.slots = new_data
+                else:
+                    if new_data != user_dict[user_id]['cpu'].program_memory.slots:
+                        print('actually change memory')
+                        user_dict[user_id]['cpu'].program_memory.slots = new_data
     return 0
+
+
+@app.callback(Output('provoke-changes', 'children'),
+              [Input('next-storage', 'children')])
+def provoke_changes(value):
+    return value
 
 
 # HELP PAGES
