@@ -16,7 +16,6 @@ import dash_table
 from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import json
 from datetime import datetime
-import time
 
 # Imports from the project
 from modules.processor import CPU
@@ -187,7 +186,7 @@ app.layout = html.Div([
                     dcc.Tabs(id='TABS', value='binary', children=[
                         dcc.Tab(label='BIN:', value='binary', style=tab_style, selected_style=tab_selected_style),
                         dcc.Tab(label='HEX:', value='hexadecimal', style=tab_style, selected_style=tab_selected_style),
-                    ], style={'width': 190, 'height': 58}),
+                    ], style={'width': 185, 'height': 58}),
                     html.Div(id='tabs-content')
                 ], style={'display': 'inline-block', 'margin-left': 10}),
 
@@ -203,8 +202,7 @@ app.layout = html.Div([
                          style={'display': 'block', 'width': 100, 'margin-left': 85}),
                 # Button to assemble
                 html.Button('ASSEMBLE', id='assemble', n_clicks=0,
-                            style={'margin-left': 280, 'margin-top': -40, "color": button['font'],
-                                   'font-family': 'custom',
+                            style={'margin-left': 278, 'margin-top': -40, "color": button['font'], 'font-family':'custom',
                                    "background-color": button['background'],
                                    'width': 160, 'display': 'block',
                                    'font-size': 13}),
@@ -295,21 +293,20 @@ app.layout = html.Div([
                      style={'margin-bottom': 20, 'margin-top': 20}),
 
             # Buttons
-            html.Div([html.Button('NEXT INSTRUCTION', id='next', n_clicks=0, disabled=False,
-                                  style={"color": button['font'], 'font-family': 'custom',
+            html.Div([html.Button('NEXT INSTRUCTION', id='next', n_clicks=0,
+                                  style={"color": button['font'], 'font-family':'custom',
                                          "background-color": button['background'],
                                          'width': 200, 'display': 'inline-block', 'font-size': 13, 'margin-right': 17}),
 
                       html.Div(id='run-until-finished-button',
                                children=html.Button('RUN', id='run-until-finished', n_clicks=0,
-                                                    style={"color": button['font'], 'font-family': 'custom',
+                                                    style={"color": button['font'], 'font-family':'custom',
                                                            "background-color": button['background'],
                                                            'width': 200,
                                                            'font-size': 13}), style={'display': 'inline-block'}),
                       html.Button('RESET COMPUTER', id='reset', n_clicks=0,
-                                  style={"color": button['font'], 'font-family': 'custom', 'width': 150,
-                                         "background-color": button['background'], 'display': 'inline-block',
-                                         'font-size': 13,
+                                  style={"color": button['font'], 'font-family':'custom', 'width': 150,
+                                         "background-color": button['background'], 'display': 'inline-block', 'font-size': 13,
                                          'margin-left': 255}),
                       ],
                      style={'display': 'block'}),
@@ -319,7 +316,7 @@ app.layout = html.Div([
     ]),
 
     # Link to a help page and license name (someday github link)
-    html.Div([dcc.Link(html.Button('INSTRUCTION SET (HELP)', style={"color": help_font_color, 'font-family': 'custom',
+    html.Div([dcc.Link(html.Button('INSTRUCTION SET (HELP)', style={"color": help_font_color, 'font-family':'custom',
                                                                     "background-color": help_color,
                                                                     'margin-bottom': 15,
                                                                     'font-size': 13}), id='link', href='/help-risc3',
@@ -364,9 +361,6 @@ app.layout = html.Div([
     html.Div(id='run-storage', children=dcc.Interval(id='interval', interval=1 * 1000, n_intervals=0, disabled=True),
              style={'display': 'none'}),
 
-    # So called 'calls stack'
-    dcc.Interval(id='call-stack', interval=2 * 1000, n_intervals=0, disabled=True, max_intervals=0),
-
     # Storage to hold seconds for instruction per second
     html.Div(id='seconds-storage', children=1, style={'display': 'none'}),
 
@@ -410,27 +404,6 @@ def get_id(value):
     return user_id
 
 
-# Each 'next' button pressing add a position to a so-called stack of calls
-# Actually it is an interval, which will execute instructions one by one
-@app.callback([Output('call-stack', 'max_intervals'),
-               Output('call-stack', 'disabled')],
-              [Input('next', 'n_clicks')],
-              [State('id-storage', 'children'),
-               State('call-stack', 'max_intervals'),
-               State('call-stack', 'n_intervals'),
-               State("instruction-storage", "children")])
-def add_to_stack(n_clicks, user_id, current_max_intervals, n_intervals, instruction):
-
-    if user_id in user_dict:
-        print(user_dict[user_id]['cpu'].instruction.to01())
-        if user_dict[user_id]['cpu'].instruction.to01() != '0' * len(instruction) \
-                and n_clicks > user_dict[user_id]['next']:
-            print('it worked')
-            user_dict[user_id]['next'] = n_clicks
-            return current_max_intervals + 1, False
-    return 0, True
-
-
 # Save binary and hexadecimal code
 @app.callback([Output('code', 'children'),
                Output('next', 'n_clicks')],
@@ -471,7 +444,6 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
             user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
-            user_dict[user_id]['next'] = next_clicks
 
             next_clicks = 0
         else:
@@ -482,7 +454,8 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
             user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
-            user_dict[user_id]['next'] = next_clicks
+
+
 
     elif n_clicks:
 
@@ -500,7 +473,6 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
             user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
-            user_dict[user_id]['next'] = next_clicks
 
         elif reset_clicks > user_dict[user_id]['reset']:
             user_dict[user_id] = dict()
@@ -517,7 +489,6 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
             user_dict[user_id]['next-flags'] = 0
             user_dict[user_id]['next-memory'] = 0
             user_dict[user_id]['completed-changes'] = ['1', '1', '1', '1', '1']
-            user_dict[user_id]['next'] = next_clicks
 
             next_clicks = 0
 
@@ -628,14 +599,14 @@ def render_content_hex_bin(tab, code_lst, user_id):
     if tab == 'binary':
         return html.Div([
             dcc.Textarea(id='bin_hex', value=code_lst[0],
-                         style={'width': 190, 'height': 400, "color": table['font'], 'font-size': '15px',
+                         style={'width': 185, 'height': 400, "color": table['font'], 'font-size': '15px',
                                 "background-color": table['background']},
                          disabled=True)
         ])
     elif tab == 'hexadecimal':
         return html.Div([
             dcc.Textarea(id='bin_hex', value=code_lst[1],
-                         style={'text-align': 'right', 'width': 190, 'height': 400, "color": table['font'],
+                         style={'text-align': 'right', 'width': 185, 'height': 400, "color": table['font'],
                                 'font-size': '15px',
                                 "background-color": table['background']},
                          disabled=True)
@@ -643,7 +614,7 @@ def render_content_hex_bin(tab, code_lst, user_id):
     else:
         return html.Div([
             dcc.Textarea(id='bin_hex', value=code_lst[0],
-                         style={'width': 190, 'height': 400, "color": table['font'], 'font-size': '15px',
+                         style={'width': 185, 'height': 400, "color": table['font'], 'font-size': '15px',
                                 "background-color": table['background']},
                          disabled=True)
         ])
@@ -700,7 +671,7 @@ def create_instruction(value, user_id):
     :param value:
     :return:
     """
-    if user_id in user_dict and user_dict[user_id]["cpu"].instruction != bitarray(''):
+    if user_id in user_dict:
         user_dict[user_id]['completed-changes'][0] = '1'
         return dash_table.DataTable(columns=([{'id': '1', 'name': 'NEXT INSTRUCTION'}]),
                                     data=([{
@@ -763,7 +734,7 @@ def create_flags(value, user_id):
 
 @app.callback(Output('output', 'children'),
               [Input('output-storage', 'children'),
-               Input('next-storage', 'children')],
+               Input('next', 'n_clicks')],
               [State('id-storage', 'children')])
 def create_output(value, n_clicks, user_id):
     """
@@ -805,7 +776,7 @@ def get_io(data, editable, user_id):
 # mov_low %R00, $1 in %R00, $1 mov_low %R00, $10
 
 @app.callback(Output('memory-div', 'children'),
-              [Input('next-storage', 'children')],
+              [Input('next', 'n_clicks')],
               [State('info', 'children')])
 def change_memory_tabs(n_clicks, info):
     arch = info.split()[1]
@@ -928,7 +899,7 @@ def create_memory(tab, value, user_id):
 
 # UPDATE HIDDEN INFO FOR PROCESSOR
 @app.callback(Output('next-storage', 'children'),
-              [Input('call-stack', 'n_intervals'),
+              [Input('next', 'n_clicks'),
                Input('id-storage', 'children'),
                Input('interval', 'n_intervals'),
                Input('reset', 'n_clicks')],
@@ -943,43 +914,22 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
     :param user_id: id of the session/user
     :return: same n_clicks
     """
-    print('next-storage was provoked')
     if user_id in user_dict:
         if not user_dict[user_id]['cpu'].is_input_active:
             if interval > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id][
                 'completed-changes'] == ['1', '1', '1', '1', '1']:
-                print('web_next_instruction was provoked')
                 user_dict[user_id]['cpu'].web_next_instruction()
                 return interval
             if n_clicks > 0 and user_dict[user_id]['cpu'].instruction_completed and user_dict[user_id][
                 'completed-changes'] == ['1', '1', '1', '1', '1']:
-                print('web_next_instruction was provoked')
                 user_dict[user_id]['cpu'].web_next_instruction()
                 if user_dict[user_id]['cpu'].instruction.to01() != '0' * len(
                         user_dict[user_id]['cpu'].instruction.to01()):
                     user_dict[user_id]['completed-changes'] = ['0', '0', '0', '0', '0']
                 return n_clicks
-            if user_dict[user_id]['completed-changes'] != ['1', '1', '1', '1', '1']:
-                return n_clicks
         else:
             return current_situation
 
-
-# # Control if user can press 'next' button, or should wait till page reloading is finished
-# @app.callback([Output('next', 'disabled'),
-#                Output('next-interval', 'disabled')],
-#               [Input('next', 'n_clicks'),
-#                Input('next-interval', 'n_intervals')],
-#               [State('id-storage', 'children'),
-#                State('next', 'disabled')])
-# def control_next(n_clicks, n_intervals, user_id, disabled):
-#     print(n_clicks, n_intervals, disabled)
-#     if user_id in user_dict:
-#         if user_dict[user_id]['completed-changes'] != ['1', '1', '1', '1', '1']:
-#             print('block next')
-#             return True, False
-#     print('unblock next')
-#     return False, True
 
 # Work with intervals
 @app.callback(
