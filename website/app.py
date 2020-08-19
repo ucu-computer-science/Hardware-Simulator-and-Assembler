@@ -4,6 +4,8 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
+# Note: 'unused' parameters in callbacks are actually used to triger them
+
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -13,7 +15,7 @@ from bitarray import bitarray
 from copy import deepcopy
 import uuid
 import dash_table
-from flask import Flask, render_template, request, redirect, url_for, make_response, session
+from flask import Flask, render_template, make_response, session
 import json
 from datetime import datetime
 import time
@@ -65,8 +67,9 @@ empty_memory = dash_table.DataTable(id='mem', columns=([{'id': i, 'name': i} for
 
 # Create app
 server = Flask(__name__)
+# Actually different on server
 server.secret_key = b'_5#y2L"F4Q8'
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)', ]
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)']
 app = dash.Dash(name=__name__, server=server, external_stylesheets=external_stylesheets, routes_pathname_prefix='/')
 app.title = "ASSEMBLY SIMULATOR"
 
@@ -159,7 +162,7 @@ app.layout = html.Div([
             ], style={'display': 'inline-block'}),
 
         ], style={'display': 'inline-block', 'margin-left': 525}),
-    ], style={'margin-bottom': 5}),
+    ], style={'margin-bottom': 15}),
 
     # ASSEMBLER AND PROCESSOR
     html.Div([
@@ -326,10 +329,18 @@ app.layout = html.Div([
                                                                     'font-size': 13}), id='link', href='/help-risc3',
                        refresh=True,
                        style={'color': text_color, 'display': 'block', 'width': 260}),
-              dcc.Link("GitHub (private currently)", href='https://github.com/dariaomelkina/poc_project', refresh=True,
+              dcc.Link(children=["GitHub Repository"], href='https://github.com/dariaomelkina/poc_project',
+                       refresh=True,
                        style={'color': text_color, 'display': 'block',
-                              'margin-left': 1150, 'margin-top': -35})],
+                              'margin-left': 1238, 'margin-top': -35})],
              style={'margin-left': 14, 'margin-top': 40, 'display': 'block'}),
+
+    # Additional info (is one of the last in order not to override anything)
+    dcc.Markdown(
+        "Hardware Simulator with its own Assembly language (check the help page below), with support for several architectures",
+        style={'color': text_color,
+               'font-size': '13px', 'display': 'block', 'margin-left': 62, 'margin-top': -670, 'width': 350,
+               'text-align': 'center'}),
 
     # HIDDEN DIVS
 
@@ -396,7 +407,8 @@ app.layout = html.Div([
               [Input('id-creation', 'children')])
 def get_id(value):
     """
-    Return randomly generated id each time new session starts
+    Return randomly generated id each time new session starts.
+
     :param value: is not used (is here by default)
     :return: random id
     """
@@ -415,18 +427,22 @@ def get_id(value):
                Input('id-storage', 'children'),
                Input('reset-storage', 'children')],
               [State('info', 'children'),
-               State('id-storage', 'children'),
                State('input1', 'value'),
                State('ip-storage', 'children'),
                State('next', 'n_clicks')])
-def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip, next_clicks):
+def assemble(n_clicks, user_id, reset_clicks, info, assembly_code, ip, next_clicks):
     """
-    Translate input assembly code to binary and hexadecimal ones.
+    Create cpu instance, translate input assembly code to binary and hexadecimal ones.
+    Creates new empty cpu when reset is pressed, loads same cpu when page is refreshed.
+
     :param n_clicks: is not used (is here by default)
-    :param info: isa, architecture and I/O mode
     :param user_id: id of the session/user
+    :param reset_clicks: n_clicks of 'reset' button
+    :param info: isa, architecture and I/O mode
     :param assembly_code: input assembly code
-    :return: binary and hexadecimal codes or assembler error
+    :param ip: instruction pointer for cpu creation
+    :param next_clicks: n_clicks of 'next' button
+    :return: binary and hexadecimal codes or assembler error in a list, next_clicks + 1
     """
     isa, architecture, io = info.split()
     global user_dict
@@ -547,10 +563,16 @@ def assemble(n_clicks, not_used, reset_clicks, info, user_id, assembly_code, ip,
                Output('architecture-dropdown', 'value'),
                Output('io-dropdown', 'value')],
               [Input('isa-dropdown', 'value')],
-              [State('id-storage', 'children'),
-               State('info', 'children'),
-               State('architecture-dropdown', 'value')])
-def control_architecture(chosen_isa, user_id, info, initial_arch):
+              [State('info', 'children')])
+def control_architecture(chosen_isa, info):
+    """
+    Control architecture and io dropdowns.
+    Return same ones when refreshing the page, enable only Harvard architecture for Stack ISA.
+
+    :param chosen_isa: current value of isa dropdown
+    :param info: isa, architecture and I/O mode
+    :return: lables for architecture dropdown, availabe/chosen architecture, chosen I/O
+    """
     isa, arch, io = info.split()
     isa = chosen_isa
     if isa == 'risc1':
@@ -564,6 +586,13 @@ def control_architecture(chosen_isa, user_id, info, initial_arch):
               [Input('id-storage', 'children')],
               [State('info', 'children')])
 def control_isa(user_id, current_info):
+    """
+    Control ISA dropdown (return same one when refreshing the page).
+
+    :param user_id: id of the session/user
+    :param current_info: isa, architecture and I/O mode
+    :return: isa
+    """
     if user_id in user_dict:
         return user_dict[user_id]['cpu'].isa
     return current_info.split()[0]
@@ -574,6 +603,13 @@ def control_isa(user_id, current_info):
               [Input('reset-storage', 'children')],
               [State('id-storage', 'children')])
 def update_examples(n_clicks, user_id):
+    """
+    Control example dropdown in case of reset.
+
+    :param n_clicks: n_clicks of 'reset' button (processed in additional div)
+    :param user_id: id of the session/user
+    :return: example dropdown value
+    """
     if user_id in user_dict:
         return user_dict[user_id]['example']
     return 'none'
@@ -590,9 +626,11 @@ def update_output(isa, arch, io, user_id):
     """
     Update main information about the cpu,
     depending on the choice from dropdowns.
+
     :param isa: chosen isa
     :param arch: chosen architecture
     :param io: chosen I/O mode
+    :param user_id: id of the session/user
     :return: string with information
     """
     return ' '.join([isa, arch, io])
@@ -604,6 +642,13 @@ def update_output(isa, arch, io, user_id):
     [Input('info', 'children')],
     [State('reset', 'n_clicks')])
 def reset_computer(info, n_clicks):
+    """
+    Trigger reset button, if main info changes.
+
+    :param info: isa, architecture and I/O mode
+    :param n_clicks: n_clicks of 'reset' button
+    :return: new n_clicks
+    """
     return n_clicks + 1
 
 
@@ -614,8 +659,10 @@ def reset_computer(info, n_clicks):
                Input('id-storage', 'children')])
 def render_content_hex_bin(tab, code_lst, user_id):
     """
-    Render two tabs: with binary and with hexadecimal code translations
+    Render two tabs: with binary and with hexadecimal code translations (and intional one, binary too).
+
     :param tab: one of two: binary or hexadecimal
+    :param user_id: id of the session/user
     :param code_lst: list with binary and with hexadecimal code translations
     :return: tabs
     """
@@ -650,6 +697,12 @@ def render_content_hex_bin(tab, code_lst, user_id):
     Output('examples', 'children'),
     [Input('isa-dropdown', 'value')])
 def update_examples(isa):
+    """
+    Return code examples for the current isa.
+
+    :param isa: isa dropdown value
+    :return: list with examples
+    """
     return examples[isa]
 
 
@@ -658,6 +711,12 @@ def update_examples(isa):
     Output('input1', 'value'),
     [Input('input-code', 'children')])
 def code(input_code):
+    """
+    Add initial or example code to the textarea.
+
+    :param input_code: code saved in a div
+    :return: input_code
+    """
     return input_code
 
 
@@ -669,6 +728,16 @@ def code(input_code):
      Input('reset-storage-code', 'children')],
     [State('id-storage', 'children')])
 def add_example_code(example_name, app_examples, reset_clicks, user_id):
+    """
+    Control code storage: return examples, loading state, input pointer
+    or code, assembled before page refreshing.
+
+    :param example_name: chosen example name
+    :param app_examples: available list with examples
+    :param reset_clicks: n_clicks of 'reset' button
+    :param user_id: id of the session/user
+    :return: code
+    """
     if user_id in user_dict:
         if reset_clicks > user_dict[user_id]['reset-code']:
             user_dict[user_id]['reset-code'] = reset_clicks
@@ -697,9 +766,11 @@ def add_example_code(example_name, app_examples, reset_clicks, user_id):
               [State('id-storage', 'children')])
 def create_instruction(value, user_id):
     """
-    # TODO
-    :param value:
-    :return:
+    Return a table with current binary instruction and its assembly mnemonic.
+
+    :param value: current instruction in the div
+    :param user_id: id of the session/user
+    :return: dash table
     """
     if user_id in user_dict:
         user_dict[user_id]['completed-changes'][0] = '1'
@@ -719,9 +790,11 @@ def create_instruction(value, user_id):
               [State('id-storage', 'children')])
 def create_registers(value, user_id):
     """
-    # TODO
-    :param value:
-    :return:
+    Return a table with current registers and their values.
+
+    :param value: current registers in the div
+    :param user_id: id of the session/user
+    :return: dash table
     """
     regs = []
     values = []
@@ -747,9 +820,11 @@ def create_registers(value, user_id):
               [State('id-storage', 'children')])
 def create_flags(value, user_id):
     """
-    # TODO
-    :param value:
-    :return:
+    Return a table with flags and their values.
+
+    :param value: current flags in the div
+    :param user_id: id of the session/user
+    :return: dash table
     """
     flags = ['CF', 'ZF', 'OF', 'SF']
     if user_id in user_dict:
@@ -768,9 +843,12 @@ def create_flags(value, user_id):
               [State('id-storage', 'children')])
 def create_output(value, n_clicks, user_id):
     """
-    # TODO
-    :param value:
-    :return:
+    Return a table with current cpu output/Activate input mode and read user input.
+
+    :param value: current output in the div
+    :param n_clicks:n_clicks of 'next' button
+    :param user_id: id of the session/user
+    :return: dash table (in input case: editable dash table)
     """
     if user_id in user_dict:
         if user_dict[user_id]['cpu'].is_input_active:
@@ -795,6 +873,14 @@ def create_output(value, n_clicks, user_id):
               [State('in_out', 'editable'),
                State('id-storage', 'children')])
 def get_io(data, editable, user_id):
+    """
+    Read input data and store it in the cpu.
+
+    :param data: data from the tables
+    :param editable: bool
+    :param user_id: id of the session/user
+    :return: input char
+    """
     if editable:
         char = data[0]['1']
         if char:
@@ -803,12 +889,16 @@ def get_io(data, editable, user_id):
         return char
 
 
-# mov_low %R00, $1 in %R00, $1 mov_low %R00, $10
-
 @app.callback(Output('memory-div', 'children'),
               [Input('next', 'n_clicks')],
               [State('info', 'children')])
 def change_memory_tabs(n_clicks, info):
+    """
+    Return memory according;y to a chosen architecture.
+
+    :param n_clicks: n_clicks of 'next' button
+    :param info: isa, architecture and I/O mode
+    """
     arch = info.split()[1]
     if arch == 'neumann':
         return [dcc.Tabs(id='memory-tabs', value='data_memory', children=[
@@ -831,9 +921,12 @@ def change_memory_tabs(n_clicks, info):
               [State('id-storage', 'children')])
 def create_memory(tab, value, user_id):
     """
-    # TODO
-    :param value:
-    :return:
+    Create a table with memory of the cpu.
+
+    :param tab: chosen tab
+    :param value: current memory in the div
+    :param user_id: id of the session/user
+    :return: dash table
     """
     if tab == 'data_memory':
         headers = ["Addr   :  "]
@@ -939,10 +1032,14 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
     Return n_clicks for the 'next instruction' button,
     so it changes hidden div, on which graphic elements of
     the processor will react.
-    Executes next instruction in the cpu.
+    Executes next instruction in the cpu if page was completly reloaded after previous execution.
+
     :param n_clicks: n_clicks for the 'next instruction' button
     :param user_id: id of the session/user
-    :return: same n_clicks
+    :param interval: intervals (in case of pressing 'run' button)
+    :param reset:  n_clicks of 'reset' button
+    :param current_situation: current children of next storage
+    :return: same n_clicks/interval
     """
     if user_id in user_dict:
         if not user_dict[user_id]['cpu'].is_input_active:
@@ -977,6 +1074,18 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
     [State("interval", "disabled")]
 )
 def run_interval(n, user_id, instruction, current_state):
+    """
+    If the 'run' button is triggered, launch interval, which
+    will execute instructions one by one.
+    Stop interval if the 'stop' button is triggered, or
+    execution cycle is finished and came to a halt.
+
+    :param n: n_clicks of 'run-until-finished' button
+    :param user_id: id of the session/user
+    :param instruction: current instruction in the div
+    :param current_state: current state of the interval
+    :return: new state of the interval
+    """
     if not n and user_id in user_dict:
         user_dict[user_id]['intervals'] = 0
     elif user_id in user_dict:
@@ -1003,6 +1112,14 @@ def run_interval(n, user_id, instruction, current_state):
     [State('run-until-finished', 'n_clicks')]
 )
 def change_button_color(disabled, reset, n_clicks):
+    """
+    Change 'run' button to a 'stop' button, when interval is active.
+
+    :param disabled: current state of the interval
+    :param reset: n_clicks of 'reset' button
+    :param n_clicks: n_clicks of 'run-until-finished' button
+    :return: button object
+    """
     if disabled:
         return html.Button('RUN', id='run-until-finished', n_clicks=n_clicks,
                            style={"color": button['font'],
@@ -1023,6 +1140,13 @@ def change_button_color(disabled, reset, n_clicks):
      Input('reset', 'n_clicks')]
 )
 def update_seconds_interval(instructions, reset):
+    """
+    Change interval, when its is changed in the table by user.
+
+    :param instructions: number of instructions per second
+    :param reset: n_clicks of 'reset' button
+    :return: new interval value
+    """
     return 1000 / instructions
 
 
@@ -1032,6 +1156,14 @@ def update_seconds_interval(instructions, reset):
      Input('reset', 'n_clicks')]
 )
 def update_seconds_div(instructions, reset):
+    """
+    Read users input for instruction/second,
+    process it and return a right one. (0<= inst/sec <=1)
+
+    :param instructions: data from the table
+    :param reset: n_clicks of 'reset' button
+    :return: instruction/second
+    """
     try:
         inst_per_second = float(instructions[0]['1'])
         if inst_per_second >= 1 or inst_per_second < 0:
@@ -1045,10 +1177,17 @@ def update_seconds_div(instructions, reset):
     Output("seconds", "data"),
     [Input('next', 'n_clicks'),
      Input('reset', 'n_clicks')],
-    [State('interval', 'interval'),
-     ]
+    [State('interval', 'interval')]
 )
 def update_seconds_table(n_clicks, reset, interval):
+    """
+    Display the actual interval in the table.
+
+    :param n_clicks: n_clicks of 'next' button
+    :param reset: n_clicks of 'reset' button
+    :param interval: current interval value
+    :raturn: new table data
+    """
     return [{'1': (interval / 1000) ** (-1)}]
 
 
@@ -1058,11 +1197,12 @@ def update_seconds_table(n_clicks, reset, interval):
                Input('reset', 'n_clicks')])
 def update_instruction(value, user_id, reset):
     """
-    Reacts on changes in the div, which is
-    affected by the 'next instruction' button
-    :param value: is not used
+    Reacts on changes in the instruction div.
+
+    :param value: is not used (is here by default)
     :param user_id: id of the session/user
-    :return: string instruction
+    :param reset: n_clicks of 'reset' button
+    :return: string with instruction
     """
     if user_id in user_dict:
         return f"{user_dict[user_id]['cpu'].instruction.to01()}"
@@ -1072,23 +1212,20 @@ def update_instruction(value, user_id, reset):
 @app.callback(Output('flags-storage', 'children'),
               [Input('next-storage', 'children'),
                Input('id-storage', 'children'),
-               Input('reset', 'n_clicks')
-               ],
-              [State('flags-table', 'data'),
-               State('registers-table', 'data'),
-               State('next', 'n_clicks')])
-def update_flags(value, user_id, reset, data_flags, data_regs, n_clicks):
+               Input('reset', 'n_clicks')],
+              [State('next', 'n_clicks')])
+def update_flags(value, user_id, reset, n_clicks):
     """
-    Reacts on changes in the div, which is
-    affected by the 'next instruction' button
-    # TODO: about manual
-    :param value: is not used
+    Reacts on changes in the flags div.
+
+    :param value: is not used (is here by default)
     :param user_id: id of the session/user
-    :return: string flags
+    :param reset: n_clicks of 'reset' button
+    :param n_clicks: n_clicks of 'next' button
+    :return: list with flags values
     """
     if user_id in user_dict:
         user_dict[user_id]['next-flags'] = n_clicks
-
         return list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[-4:])
     return ['0', '0', '0', '0']
 
@@ -1101,16 +1238,19 @@ def update_flags(value, user_id, reset, data_flags, data_regs, n_clicks):
                Input('store-io', 'children'),
                Input('info', 'children')
                ],
-              [State('registers-table', 'data'),
-               State('next', 'n_clicks'),
-               ])
-def update_registers(value_not_used, user_id, ip_changes, reset, if_input, info, data, n_clicks):
+              [State('next', 'n_clicks')])
+def update_registers(value_not_used, user_id, ip_changes, reset, if_input, info, n_clicks):
     """
-    Reacts on changes in the div, which is
-    affected by the 'next instruction' button
-    :param value_not_used: is not used
+    Reacts on changes in the registers div.
+
+    :param value_not_used: is not used (is here by default)
     :param user_id: id of the session/user
-    :return: string registers
+    :param ip_changes: new ip value
+    :param reset: n_clicks of 'reset' button
+    :param if_input: reacts on enabked input
+    :param info: isa, architecture and I/O mode
+    :param n_clicks: n_clicks of 'next' button
+    :return: list with registers
     """
     coef = isas[info.split()[0]]
 
@@ -1128,14 +1268,15 @@ def update_registers(value_not_used, user_id, ip_changes, reset, if_input, info,
     elif ip_changes != 512:
         new_ip = ba2hex(int2ba(int(ip_changes), 16))
         return [['FR: 0000', 'SP: 0000', f'IP: {new_ip}', 'TOS: 0000'], ['FR: 0000', 'SP: 0400', f'IP: {new_ip}',
-                                                                          'IR: 0000', 'ACC: 0000'], ['SP: 0400',
-                                                                                                     f'IP: {new_ip}',
-                                                                                                     'LR: 0000',
-                                                                                                     'FR: 0000',
-                                                                                                     'R00: 0000',
-                                                                                                     'R01: 0000',
-                                                                                                     'R02: 0000',
-                                                                                                     'R03: 0000'], []][coef]
+                                                                         'IR: 0000', 'ACC: 0000'], ['SP: 0400',
+                                                                                                    f'IP: {new_ip}',
+                                                                                                    'LR: 0000',
+                                                                                                    'FR: 0000',
+                                                                                                    'R00: 0000',
+                                                                                                    'R01: 0000',
+                                                                                                    'R02: 0000',
+                                                                                                    'R03: 0000'], []][
+            coef]
     return \
         [['FR: 0000', 'SP: 0400', 'IP: 0200', 'TOS: 0000'],
          ['FR: 0000', 'SP: 0400', 'IP: 0200', 'IR: 0000', 'ACC: 0000'],
@@ -1148,11 +1289,12 @@ def update_registers(value_not_used, user_id, ip_changes, reset, if_input, info,
                Input('reset', 'n_clicks')])
 def update_output(value, user_id, reset):
     """
-    Reacts on changes in the div, which is
-    affected by the 'next instruction' button
+    Reacts on changes in the output div.
+
     :param value: is not used
     :param user_id: id of the session/user
-    :return: string output
+    :param reset: n_clicks of 'reset' button
+    :return: string with output
     """
     if user_id in user_dict:
         shell_slots = []
@@ -1168,16 +1310,16 @@ def update_output(value, user_id, reset):
                Input('id-storage', 'children'),
                Input('reset', 'n_clicks')
                ],
-              [State('mem', 'data'),
-               State('memory-tabs', 'value'),
-               State('next', 'n_clicks')])
-def update_memory(value, user_id, reset, data, chosen_tab, n_clicks):
+              [State('next', 'n_clicks')])
+def update_memory(value, user_id, reset, n_clicks):
     """
-    Reacts on changes in the div, which is
-    affected by the 'next instruction' button
-    :param value: is not used
+    Reacts on changes in the memory div.
+
+    :param value: is not used (is here by default)
     :param user_id: id of the session/user
-    :return: string memory
+    :param reset: n_clicks of 'reset' button
+    :param n_clicks: n_clicks of 'next' button
+    :return: list with data and program memories
     """
     if user_id in user_dict:
         user_dict[user_id]['next-memory'] = n_clicks
@@ -1213,12 +1355,26 @@ def update_memory(value, user_id, reset, data, chosen_tab, n_clicks):
 @app.callback(Output('reset-storage', 'children'),
               [Input('reset', 'n_clicks')])
 def update_reset(n_clicks):
+    """
+    Add new value to a reset storage.
+    (in order to separate some of the processes)
+
+    :param n_clicks: n_clicks of 'reset' button
+    :return: n_clicks
+    """
     return n_clicks
 
 
 @app.callback(Output('reset-storage-code', 'children'),
               [Input('reset-storage', 'children')])
 def update_reset(children):
+    """
+    Add new value to a code reset storage.
+    (in order to separate some of the processes)
+
+    :param children: n_clicks of 'reset' button
+    :return: children
+    """
     return children
 
 
@@ -1227,13 +1383,14 @@ def update_reset(children):
               [Input('initial-ip', 'data'),
                Input('reset', 'n_clicks')], )
 def update_ip(new_ip, reset):
+    """
+    Add chosen or default instruction pointer to a storage.
+
+    :param new_ip: data from ip table
+    :param reset: n_clicks of 'reset' button
+    :return: ip as integer
+    """
     return ba2int(hex2ba(new_ip[0]['1']))
-
-
-@app.callback(Output('link', 'href'),
-              [Input('info', 'children')])
-def change_link(info):
-    return f'/help-{info.split()[0]}'
 
 
 @app.callback(Output('flags-placeholder', 'children'),
@@ -1241,6 +1398,16 @@ def change_link(info):
               [State('id-storage', 'children'),
                State('next', 'n_clicks')])
 def manually_change_flags(data_flags, user_id, n_clicks):
+    """
+    Applies manual changes in the flags to the cpu (or skips, if there were no changes),
+    if page was completely loaded and user could have already made that changes.
+    (checks time for that situation)
+
+    :param data_flags: data from the flags table
+    :param user_id: id of the session/user
+    :param n_clicks: n_clicks of 'next' button
+    :return: does not matter, updates placeholder
+    """
     if user_id in user_dict:
         if user_dict[user_id]['completed-changes'] == ['1', '1', '1', '1', '1'] and (
                 time.time() - user_dict[user_id]['time']) > 3:
@@ -1271,6 +1438,18 @@ def manually_change_flags(data_flags, user_id, n_clicks):
               [State('id-storage', 'children'),
                State('next', 'n_clicks')])
 def manually_change_registers(data, user_id, n_clicks):
+    """
+    Applies manual changes in the registers to the cpu (or skips, if there were no changes),
+    if page was completely loaded and user could have already made that changes.
+    (checks time for that situation)
+
+    Does not override manual changes in flags!
+
+    :param data: data from the registers table
+    :param user_id: id of the session/user
+    :param n_clicks: n_clicks of 'next' button
+    :return: does not matter, updates placeholder
+    """
     if user_id in user_dict:
         if user_dict[user_id]['completed-changes'] == ['1', '1', '1', '1', '1'] and (
                 time.time() - user_dict[user_id]['time']) > 3:
@@ -1308,6 +1487,17 @@ def manually_change_registers(data, user_id, n_clicks):
                State('next', 'n_clicks'),
                State('memory-tabs', 'value')])
 def manually_change_memory(data, user_id, n_clicks, chosen_tab):
+    """
+    Applies manual changes in the memory to the cpu (or skips, if there were no changes),
+    if page was completely loaded and user could have already made that changes.
+    (checks time for that situation)
+
+    :param data: data from the memory table
+    :param user_id: id of the session/user
+    :param n_clicks: n_clicks of 'next' button
+    :param chosen_tab: determines, with which memory we work (data/program/both)
+    :return: does not matter, updates placeholder
+    """
     if user_id in user_dict:
         if user_dict[user_id]['completed-changes'] == ['1', '1', '1', '1', '1'] and (
                 time.time() - user_dict[user_id]['time']) > 3:
@@ -1336,8 +1526,26 @@ def manually_change_memory(data, user_id, n_clicks, chosen_tab):
     return 0
 
 
+@app.callback(Output('link', 'href'),
+              [Input('info', 'children')])
+def change_link(info):
+    """
+    Changes help page link accordingly to a chosen ISA.
+
+    :param info: isa, architecture and I/O mode
+    :return: new link part
+    """
+    return f'/help-{info.split()[0]}'
+
+
 # HELP PAGES
 def help(isa):
+    """
+    Helper function, renders a template for the help page.
+
+    :param isa: current isa of the computer
+    :return: html page
+    """
     with open("docs/help.json", "r") as file:
         help_dict = json.load(file)[isa]
     with open("modules/registers.json", "r") as file:
@@ -1349,26 +1557,51 @@ def help(isa):
 
 @app.server.route('/help-risc1')
 def help_risc1():
+    """
+    Create a help page for the risc1 isa.
+
+    :return: html page
+    """
     return help('risc1')
 
 
 @app.server.route('/help-risc2')
 def help_risc2():
+    """
+    Create a help page for the risc2 isa.
+
+    :return: html page
+    """
     return help('risc2')
 
 
 @app.server.route('/help-risc3')
 def help_risc3():
+    """
+    Create a help page for the risc3 isa.
+
+    :return: html page
+    """
     return help('risc3')
 
 
 @app.server.route('/help-cisc')
 def help_cisc():
+    """
+    Create a help page for the cisc isa.
+
+    :return: html page
+    """
     return help('cisc')
 
 
 @app.server.route('/')
 def index():
+    """
+    Create main page of the app.
+
+    :return: app page
+    """
     resp = make_response(app)
     return resp
 
@@ -1376,4 +1609,3 @@ def index():
 # Run the program
 if __name__ == '__main__':
     app.run_server(debug=True)
-# TODO: documentation
