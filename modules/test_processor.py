@@ -547,10 +547,91 @@ class TestCPU(unittest.TestCase):
         # Checking the bitwise rsh instruction
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.registers['ACC']._state), '7ffc')
-        
+
         # Checking the bitwise lsh instruction
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.registers['ACC']._state), 'fff8')
+
+        # Skipping the mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the call instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '023d')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0240')
+
+        # Checking the call instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0246')
+
+        # Checking the return instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0243')
+
+        # Checking the jmp instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0247')
+
+        # Skipping the mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the jmp instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '024a')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '024d')
+
+        # Skipping the mov, store instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the cmp instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0004')
+
+        # Checking the je instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0254')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0258')
+
+        # Checking the cmp instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0001')
+
+        # Checking the je instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '025b')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '025c')
+
+        # Checking the cmp instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0001')
+
+        # Checking the jne instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '025f')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0261')
+
+        # Checking the jne instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0265')
+
+        # Checking the test instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0002')
+
+        # Checking the test instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0006')
+
+        # Checking the in instruction
+        cpu.web_next_instruction()
+        cpu.input_finish(bin(ord("a"))[2:])
+        self.assertEqual(ba2hex(cpu.registers['ACC']._state), '0061')
+
+        # Checking the out $1 instruction
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+        self.assertEqual(str(cpu.ports_dictionary['1']), '                   E')
 
     def test_risc3_complete(self):
         """ Tests all of the instructions of RISC3 ISA """

@@ -37,28 +37,31 @@ xor
 not
 rsh $1
 lsh $1
+mov $3
+call
 nop
 nop
-# call
-# call $
-# ret
-# cmp
-# cmp $
-# test
-# test $
-# jmp
-# jmp $
-# je
-# je $
-# jne
-# jne $
-# jg
-# jg $
-# jge
-# jge $
-# jl
-# jl $
-# jle
-# jle $
-# in $
-# out $
+call $2
+jmp $2
+ret
+mov $3
+jmp
+nop
+nop
+mov $2
+store $2
+cmp
+je $2
+nop
+cmp $3
+je
+cmp $3
+jne
+nop
+jne $2
+nop
+test
+test $0
+in $1
+mov $69
+out $1

@@ -393,15 +393,15 @@ class CPU:
 
             # There is only one operand for a call function, and it determines the program_start from the IP
             operand = operands_aliases[0]
-            if operand.startswith("imm"):
+            if operand.startswith("imm") or ((len(operands_aliases) > 1) and operands_aliases[1] == "imm"):
                 if self.isa in ["risc3", "cisc"]:
                     # Calculate the new location of the instruction pointer, change it
                     imm_len = int(operand[3:])
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), imm_len)
                 else:
                     jump_num = twos_complement(int(self.long_immediate.to01(), 2), self.instruction_size[0] * 2)
-            elif operand in ["reg", "tos"]:
-                jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
+            elif operand in ["reg", "tos", "acc"] or operands_aliases[1] == "acc":
+                    jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
 
             # Calculate the new program_start in instructions
             if jump_num >= 0:
@@ -482,7 +482,7 @@ class CPU:
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), num_len)
                 else:
                     # Figure out if the value we should jump for was pushed on to the stack, or is in the instruction
-                    if operands_aliases[-1].startswith("tos"):
+                    if operands_aliases[-1].startswith("tos") or operands_aliases[-1] == "acc":
                         jump_num = twos_complement(int(operands_values[-1].to01(), 2), num_len)
                     else:
                         jump_num = twos_complement(int(self.long_immediate.to01(), 2), num_len)
