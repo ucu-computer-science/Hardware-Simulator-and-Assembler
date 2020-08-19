@@ -109,6 +109,30 @@ def add(operands, flag_register):
     return bitarray(result)
 
 
+def addc(operands, flag_register):
+    """
+    Performs addition of the register and the carry flag
+
+    Zero operand the value of the destination
+    First one is the value of the second register (first operand in the operation)
+
+    :param operands: list of operands
+    :param flag_register: Flag register
+    :return: new value of the first register
+    """
+    reg, carry_flag = twos_complement(int(operands[-1].to01(), 2), 16), int(flag_register._state[12:13].to01(), 2)
+    result = bin_clean(bin(twos_complement(reg + carry_flag, len(operands[-1])))).rjust(16, "0")
+
+    flag_register._state = bitarray("0" * 16)
+    if len(result) > 16:
+        flag_register._state[12] = "1"  # Carry flag
+        result = bin(twos_complement(reg + carry_flag, 18))[-16:]
+    # Change flag and result accordingly to the result and operation
+    change_flag_result(flag_register, operands, result)
+
+    return bitarray(result)
+
+
 def sub(operands, flag_register):
     """
     Performs subtraction of two registers, saving the result in the third one
@@ -455,7 +479,7 @@ functions_dictionary = {"load": load_store, "loadf": load_store, "loadi": load_s
                         "store": load_store, "storef": load_store, "storei": load_store,
                         "dup": load_store, "dup2": load_store,
                         "mov_low": mov_low, "mov_high": mov_high, "mov": mov,
-                        "add": add, "sub": sub, "inc": add, "dec": sub,
+                        "add": add, "addc": addc, "sub": sub, "inc": add, "dec": sub,
                         "mul": mul, "div": div,
                         "and": bit_and, "or": bit_or,
                         "xor": bit_xor, "not": bit_not,

@@ -572,6 +572,13 @@
       "description": "Adds the value of reg3 to the register reg2, saving the result in the register reg1"
     },
     {
+      "name": "addc",
+      "examples": [
+        "addc %reg1, %reg2"
+      ],
+      "description": "Adds the value of the carry flag to the register reg2, saving the result in the register reg1"
+    },
+    {
       "name": "sub",
       "examples": [
         "sub %reg1, %reg2, %reg3"

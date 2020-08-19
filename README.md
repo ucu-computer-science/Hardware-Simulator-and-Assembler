@@ -85,6 +85,8 @@ pip install -r requirements.txt
 ```bash
 python3 modules/test_assembler.py
 python3 modules/test_processor.py
+# After every run, there is a detailed log saved in ./log.txt
+less log.txt
 ```
 
 ---
