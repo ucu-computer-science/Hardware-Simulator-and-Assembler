@@ -753,5 +753,317 @@
             []
         ]
     },
-    "cisc": {}
+    "cisc": {
+
+        000  | 3-bit style specifier | 4-bit opcode | 3-bit register | = 10
+        001  | 3-bit style specifier | 1-bit opcode | = 4
+        010  | 3-bit style specifier | 4-bit opcode | 16-bit constant | = 23
+        011  | 3-bit style specifier | 6-bit opcode | 3-bit register | 3-bit register | = 15
+        100  | 3-bit style specifier | 5-bit opcode | 3-bit register | 16-bit constant | = 27
+        101  | 3-bit style specifier | 3-bit opcode | 3-bit register | 3-bit register | 16-bit constant | = 28
+        110  | 3-bit style specifier | 3-bit opcode | 3-bit register | 16-bit constant | 16-bit constant | = 41
+            ________
+            "firstop",
+            "stackpush",
+            "stackpop",
+            "call",
+            "ret",
+            "flags",
+            "jmp",
+            "in",
+            "out",
+            "nop"
+            __________________
+        "0000000": {
+          "halt",
+          "halt",
+          []
+        },
+        "10000000": {
+          "mov",
+          "firstop",
+          ["reg", "imm"]
+        },
+        "011000000": {
+          "mov",
+          "firstop",
+          ["reg", "reg"]
+        },
+        "011000001": {
+          "mov",
+          "firstop",
+          ["reg", "memreg"]
+        },
+        "101000": {
+          "mov",
+          "firstop",
+          ["reg", "reg", "imm"]
+        },
+        "011000010": {
+          "mov",
+          "firstop",
+          ["memreg", "reg"]
+        },
+        "10000001": {
+          "mov",
+          "firstop",
+          ["memreg", "imm"]
+        },
+        "101001": {
+          "mov",
+          "firstop",
+          ["reg", "imm", "reg"]
+        },
+        "110000": {
+          "mov",
+          "firstop",
+          ["reg", "imm", "imm"]
+        },
+        "0000001": {
+          "push",
+          "stackpush",
+          ["reg"]
+        },
+        "0100000": {
+          "push",
+          "stackpush",
+          ["imm"]
+        },
+        "0000010": {
+          "pop",
+          "stackpop",
+          ["reg"]
+        },
+        "0100001": {
+          "enter",
+          "enter",
+          ["imm"]
+        },
+        "0010": {
+          "leave",
+          "leave",
+          []
+        },
+        "011000011": {
+          "add",
+          "firstop",
+          ["reg", "memreg"]
+        },
+        "011000100": {
+          "add",
+          "firstop",
+          ["reg", "reg"]
+        },
+        "101010": {
+          "add",
+          "firstop",
+          ["reg", "reg", "imm"]
+        }
+        "011000101": {
+          "add",
+          "firstop",
+          ["memreg", "reg"]
+        },
+        "011000110": {
+          "sub",
+          "firstop",
+          ["reg", "memreg"]
+        },
+        "011000111": {
+          "sub",
+          "firstop",
+          ["reg", "reg"]
+        },
+        "101011": {
+          "sub",
+          "firstop",
+          ["reg", "reg", "imm"]
+        },
+        "011000100": {
+          "sub",
+          "firstop",
+          ["memreg", "reg"]
+        },
+        "0000011": {
+          "inc",
+          "firstop",
+          ["reg"]
+        },
+        "0000100": {
+          "inc",
+          "firstop",
+          ["memreg"]
+        },
+        "100 00010": {
+          "inc",
+          "firstop",
+          ["reg", "off"]
+        },
+        "0000101": {
+          "dec",
+          "firstop",
+          ["reg"]
+        },
+        "0000110": {
+          "dec",
+          "firstop",
+          ["memreg"]
+        },
+        "10010000": {
+          "dec",
+          "firstop",
+          ["reg", "off"]
+        },
+        " ": {
+          "",
+          " ",
+          []
+        },
+        " ": {
+          "",
+          " ",
+          []
+        },
+        " ": {
+          "",
+          " ",
+          []
+        },
+        " ": {
+          "",
+          " ",
+          []
+        },
+        " ": {
+          "",
+          " ",
+          []
+        },
+        " ": {
+          "",
+          " ",
+          []
+        },
+        " ": {
+          "",
+          " ",
+          []
+        },
+        "110011": {
+          "",
+          " ",
+          []
+        },
+        "10001110": {
+          "out",
+          "out",
+          ["imm", "reg"]
+        },
+        "10001111": {
+          "out",
+          "out",
+          ["imm", "memreg"]
+        },
+        "110100": {
+          "out",
+          "out",
+          ["imm", "reg", "imm"]
+        },
+        "0001011": {
+          "load4",
+          "firstop",
+          ["memreg"]
+        },
+        "0001100": {
+          "store4",
+          "firstop",
+          ["memreg"]
+        },
+        "011101010": {
+          "add4",
+          "firstop",
+          ["memreg", "memreg"]
+        },
+        "011101011": {
+          "sub4",
+          "firstop",
+          ["memreg", "memreg"]
+        },
+        "011101100": {
+          "mul4",
+          "firstop",
+          ["memreg", "memreg"]
+        },
+        "011101101": {
+          "div4",
+          "firstop",
+          ["memreg", "memreg"]
+        },
+        "011101110": {
+          "cmp4",
+          "firstop",
+          ["memreg", "memreg"]
+        },
+        "011101111": {
+          "test4",
+          "firstop",
+          ["memreg", "memreg"]
+        },
+        "0001101": {
+          "nop",
+          "nop",
+          []
+        },
+        mul %reg1, %reg2 011 110000
+		mul %reg1, [%reg2] 011 001000
+		mul [%reg1], %reg2 011 001001
+		mul %reg, $imm 100 00011
+		mul %reg1, [%reg2+$off] 101 100
+        div %reg1, %reg2 011 110001
+		div %reg1, [%reg2] 011 001010
+		div [%reg1], %reg2 011 001011
+		div %reg, $imm 100 00100
+		div %reg1, [%reg2+$off] 101 101
+        and %reg1, %reg2 011 001100
+		and %reg1, [%reg2] 011 001101
+		and [%reg1], %reg2 011 001110
+        or %reg1, %reg2 011 01111
+		or %reg1, [%reg2] 011 100000
+        or [%reg1], %reg2 011 100001
+        xor %reg1, %reg2 011 100010
+		xor %reg1, [%reg2] 011 100011
+		xor [%reg1], %reg2 011 100100
+        not %reg1 000 0111
+		not [%reg] 000 1000
+        lsh %reg, $imm 100 00101
+		lsh [%reg], $imm 100 00110
+		lsh [%reg+$off], $imm 110 001
+        rsh %reg, $imm 100 00111
+		rsh [%reg], $imm 100 01000
+		rsh [%reg+$off], $imm 110 010
+        call [$imm] 010 0011
+        call [%reg] 000 1001
+        call [%reg+$off] 100 01001
+        ret 001 1
+        cmp %reg1, %reg2 011 100101
+        cmp %reg, $imm 100 01010
+        cmp %reg1, [%reg2] 011 100110
+        cmp %reg1, [%reg2+$off] 101 110
+        test %reg1, %reg2 011 100111
+        test %reg1, [%reg2] 011 101000
+        test %reg1, [%reg2+$off] 101 111
+        test [%reg1], %reg2 011 101001
+        jmp [$off] 010 0100
+        jmp [%reg] 000 1010
+        jmp [%reg+$off] 100 01011
+        je $off 010 0101
+        jne $off 010 0110
+        jg $off 010 0111
+        jge $off 010 1000
+        jl $off 010 1001
+        jle $off 010 1010
+        in $reg, $port 100 01100
+        in [%reg], $port 100 01101
+        in [%reg+$off], $port 110 011
+    }
 }
