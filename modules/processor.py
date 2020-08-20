@@ -77,13 +77,20 @@
 # TODO: Plus, we probably do not need any distinction between registers and memory, as memory can be
 #  really just a huge general-purpose register, or the other way around, whatever
 
-# TODO: Implement 'add carry' and similar operations for RISC2, RISC3 architectures
-
 # TODO: Implement interrupts, create a special place in memory for an interrupt vector,
 #  which is going to be divided into three types of interrupts:
 #  * CPU Interrupts
 #  * Hardware interrupts
 #  * and Program interrupts
+
+# TODO: Implement and test CISC architecture
+#  000  | 3-bit style specifier | 4-bit opcode | 3-bit register | = 10
+#  001  | 3-bit style specifier | 1-bit opcode | = 4
+#  010  | 3-bit style specifier | 4-bit opcode | 16-bit constant | = 23
+#  011  | 3-bit style specifier | 6-bit opcode | 3-bit register | 3-bit register | = 15
+#  100  | 3-bit style specifier | 5-bit opcode | 3-bit register | 16-bit constant | = 27
+#  101  | 3-bit style specifier | 3-bit opcode | 3-bit register | 3-bit register | 16-bit constant | = 28
+#  110  | 3-bit style specifier | 3-bit opcode | 3-bit register | 16-bit constant | 16-bit constant | = 41
 
 import os
 import json
