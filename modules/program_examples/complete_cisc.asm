@@ -2,13 +2,9 @@
 # (counting different operand types for the same instructions)
 # This assembly program aims to meaningfully test all of them, with edge cases considered
 #########################################################################################
-mov %R00, $5
+mov %R00, $512
 mov %R01, %R00
-
-# mov
-# firstop
-# reg memreg
-
+mov %R00, [%R00]
 # mov
 # firstop
 # reg reg imm

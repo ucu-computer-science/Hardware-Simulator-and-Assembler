@@ -72,7 +72,7 @@
 
 # TODO: Additionally, we do not use the general-purposiveness info provided to us by register module,
 #  and the user is currently free to do whatever they want with any register, defying the purpose
-#  of the special registers (SP, IP, FR etc.). This is probably going to be done after a massive refactoring/remake
+#  of the special registers (SP, IP, FR etc.).
 
 # TODO: Plus, we probably do not need any distinction between registers and memory, as memory can be
 #  really just a huge general-purpose register, or the other way around, whatever
@@ -84,15 +84,16 @@
 #  * and Program interrupts
 
 # TODO: Implement and test CISC architecture
-#  !!!!! THIS IS OUTDATED ALREADY, EACH OPCODE NOW CONSISTS OF 3 BITS OF STYLE SPECIFIER, AND 5 BITS OF OPCODE ITSELF !!!!
-#  IF NEEDED, BYTE WITH REGISTERS GOES AFTER, AND BYTES WITH CONSTANTS GO AFTERWARDS
-#  000  | 3-bit style specifier | 4-bit opcode | 3-bit register | = 10
-#  001  | 3-bit style specifier | 1-bit opcode | = 4
-#  010  | 3-bit style specifier | 4-bit opcode | 16-bit constant | = 23
-#  011  | 3-bit style specifier | 6-bit opcode | 3-bit register | 3-bit register | = 15
-#  100  | 3-bit style specifier | 5-bit opcode | 3-bit register | 16-bit constant | = 27
-#  101  | 3-bit style specifier | 3-bit opcode | 3-bit register | 3-bit register | 16-bit constant | = 28
-#  110  | 3-bit style specifier | 3-bit opcode | 3-bit register | 16-bit constant | 16-bit constant | = 41
+#  000  | 3-bit style specifier | 5-bit opcode | 1 register in register byte |
+#  001  | 3-bit style specifier | 5-bit opcode |
+#  010  | 3-bit style specifier | 5-bit opcode | 2 constant immediate bytes |
+#  011  | 3-bit style specifier | 5-bit opcode | 2 registers in register byte |
+#  100  | 3-bit style specifier | 5-bit opcode | 1 register in register byte | 2 constant immediate bytes |
+#  101  | 3-bit style specifier | 5-bit opcode | 2 registers in register byte | 2 constant immediate bytes |
+#  110  | 3-bit style specifier | 5-bit opcode | 1 register in register byte | 2 constant immediate bytes | 2 constant immediate bytes |
+
+# TODO: CISC *should* work okay, except for offsets!!! I'll leave this for tomorrow, there is quite a lot of stuff to
+#  rework to adapt offsets for CISC (probably going to end up changing instructions.json, idk)
 
 import os
 import json
@@ -317,7 +318,6 @@ class CPU:
             printout_temp += f", Long registers: {self.long_registers[-1]}"
             self.additional_jump += 1
 
-        # TODO: I MIGHT HAVE BROKEN LONG IMMEDIATE FUNCTIONALITY A LITTLE, AM NOT 100% ABOUT THIS
         self.long_immediates = []
         # If we are in the state of reading the two-byte encoded immediate constant,
         # read it and add to the list of operands

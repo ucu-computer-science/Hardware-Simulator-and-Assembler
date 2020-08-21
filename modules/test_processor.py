@@ -850,7 +850,17 @@ class TestCPU(unittest.TestCase):
 
         # Check the mov %R00, $5 instruction
         cpu.web_next_instruction()
-        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0005')
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0200')
+
+        # Check the mov %R01, %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), ba2hex(cpu.registers['R00']._state))
+
+        # Check the mov %R00, [%R00] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '8000')
+
+        # Check
 
 
 if __name__ == '__main__':
