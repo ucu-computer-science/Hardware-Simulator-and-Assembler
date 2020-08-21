@@ -294,7 +294,7 @@ class CPU:
             # Styles of CISC architecture with counters for register and constant readers
             # {"STYLECODE": (Register counter, constant counter)}
             cisc_styles = {"000": (1, 0), "001": (0, 0), "010": (0, 1), "011": (2, 0), "100": (1, 1), "101": (2, 1), "110": (1, 2)}
-            register_reader, constant_reader = cisc_styles[self.opcode[0:3]]
+            register_reader, constant_reader = cisc_styles[self.opcode[0:3].to01()]
 
         self.additional_jump = 0
 
@@ -303,13 +303,13 @@ class CPU:
         # Read all the registers additionally recorded after the opcode
         for _ in range(register_reader):
             self.long_registers = self.program_memory.read_data(start_read_location,
-                                                                start_read_location + self.instruction_size[2])
+                                                                start_read_location + self.instruction_size[2]).to01()
             # This needs to be reversed because we pop from the end of it
             self.long_registers = [self.long_registers[3:6], self.long_registers[0:3]]
             # Saving the register which is going to save the result of the operation
             self.long_register_result = self.long_registers[-1]
             start_read_location += self.instruction_size[2]
-            printout_temp += f", Long registers: {self.long_registers.to01()}"
+            printout_temp += f", Long registers: {self.long_registers[-1]}"
             self.additional_jump += 1
 
         # TODO: I MIGHT HAVE BROKEN LONG IMMEDIATE FUNCTIONALITY A LITTLE, AM NOT 100% ABOUT THIS
@@ -736,8 +736,8 @@ class CPU:
                     register_code = self.long_registers.pop()
                 else:
                     register_code = self.instruction[start_point:start_point + 3].to01()
+                    start_point += 3
                 operands_values.append(self.register_codes[register_code]._state)
-                start_point += 3
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
@@ -746,9 +746,9 @@ class CPU:
                     register_code = self.long_registers.pop()
                 else:
                     register_code = self.instruction[start_point:start_point + 3].to01()
+                    start_point += 3
                 tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16) * 8
                 operands_values.append(self.data_memory.read_data(tmp_register, tmp_register + 16))
-                start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand.startswith("imm"):
