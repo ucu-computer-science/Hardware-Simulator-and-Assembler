@@ -106,6 +106,7 @@ app.layout = html.Div([
                     options=[
                         {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
                         {'label': 'HELLO WORLD', 'value': 'hello'},
+                        {'label': 'BUBBLE SORT', 'value': 'bubble_sort'},
                         {'label': 'NONE', 'value': 'none'},
                     ],
                     placeholder="NONE",
@@ -750,6 +751,10 @@ def add_example_code(example_name, app_examples, reset_clicks, user_id):
         if user_id in user_dict:
             user_dict[user_id]['example'] = 'hello'
         return app_examples[1]
+    elif example_name == 'bubble_sort':
+        if user_id in user_dict:
+            user_dict[user_id]['example'] = 'bubble_sort'
+        return app_examples[2]
     if user_id in user_dict:
         user_dict[user_id]['example'] = 'none'
         if user_dict[user_id]['code']:
