@@ -5,6 +5,7 @@ isas = ['risc1', 'risc2', 'risc3', 'cisc']
 alphabets = []
 hellos = []
 bubble_sorts = []
+polynomials = []
 
 for isa in isas:
     try:
@@ -25,11 +26,17 @@ for isa in isas:
         bubble_sorts.append(program)
     except FileNotFoundError:
         bubble_sorts.append('')
+    try:
+        with open(os.path.join("modules", "demos", isa, "polynomial.asm"), 'r') as file:
+            program = file.read()
+        polynomials.append(program)
+    except FileNotFoundError:
+        polynomials.append('')
 
-risc1_examples = [alphabets[0], hellos[0], bubble_sorts[0]]
-risc2_examples = [alphabets[1], hellos[1], bubble_sorts[1]]
-risc3_examples = [alphabets[2], hellos[2], bubble_sorts[2]]
-cisc_examples = [alphabets[3], hellos[3], bubble_sorts[3]]
+risc1_examples = [alphabets[0], hellos[0], bubble_sorts[0], polynomials[0]]
+risc2_examples = [alphabets[1], hellos[1], bubble_sorts[1], polynomials[1]]
+risc3_examples = [alphabets[2], hellos[2], bubble_sorts[2], polynomials[2]]
+cisc_examples = [alphabets[3], hellos[3], bubble_sorts[3], polynomials[3]]
 
 # That dictionary is used later in the web app
 examples = {'risc1': risc1_examples, 'risc2': risc2_examples, 'risc3': risc3_examples, 'cisc': cisc_examples}

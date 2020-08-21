@@ -107,6 +107,7 @@ app.layout = html.Div([
                         {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
                         {'label': 'HELLO WORLD', 'value': 'hello'},
                         {'label': 'BUBBLE SORT', 'value': 'bubble_sort'},
+                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial', 'disabled':True},
                         {'label': 'NONE', 'value': 'none'},
                     ],
                     placeholder="NONE",
@@ -755,6 +756,10 @@ def add_example_code(example_name, app_examples, reset_clicks, user_id):
         if user_id in user_dict:
             user_dict[user_id]['example'] = 'bubble_sort'
         return app_examples[2]
+    elif example_name == 'polynomial':
+        if user_id in user_dict:
+            user_dict[user_id]['example'] = 'polynomial'
+        return app_examples[3]
     if user_id in user_dict:
         user_dict[user_id]['example'] = 'none'
         if user_dict[user_id]['code']:
@@ -1049,8 +1054,7 @@ def update_next(n_clicks, user_id, interval, reset, current_situation):
     if user_id in user_dict:
         if not user_dict[user_id]['cpu'].is_input_active:
 
-            if (interval > 0 and user_dict[user_id]['completed-changes'] == ['1', '1', '1', '1', '1'] and \
-                user_dict[user_id]['manual-changes'] == ['1', '1', '1']) or interval == 1:
+            if (interval > 0 and user_dict[user_id]['completed-changes'] == ['1', '1', '1', '1', '1']) or interval == 1:
                 user_dict[user_id]['cpu'].web_next_instruction()
                 if user_dict[user_id]['cpu'].instruction.to01() != '0' * len(
                         user_dict[user_id]['cpu'].instruction.to01()):
