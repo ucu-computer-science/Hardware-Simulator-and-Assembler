@@ -27,7 +27,8 @@ class TestCPU(unittest.TestCase):
                          ('risc1', os.path.join("modules", "program_examples", "complete_risc1.asm")),
                          ('risc2', os.path.join("modules", "demos", "risc2", "helloworld.asm")),
                          ('risc2', os.path.join("modules", "demos", "risc2", "alphabet_printout.asm")),
-                         ('risc2', os.path.join("modules", "program_examples", "complete_risc2.asm"))]
+                         ('risc2', os.path.join("modules", "program_examples", "complete_risc2.asm")),
+                         ('cisc', os.path.join("modules", "program_examples", "complete_cisc.asm"))]
 
         output_files = self.reassemble(test_programs)
 
@@ -60,6 +61,9 @@ class TestCPU(unittest.TestCase):
 
         with open(output_files[9], "r") as file:
             self.complete_risc2 = file.read()
+
+        with open(output_files[10], "r") as file:
+            self.complete_cisc = file.read()
 
     def reassemble(self, programs):
         """ Reassembles all the test programs """
@@ -838,6 +842,15 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         cpu.input_finish(bin(ord("a"))[2:])
         self.assertEqual(ba2hex(cpu.registers['R00']._state), '0061')
+
+    def test_cisc_complete(self):
+        """ Tests all of the instructions of CISC ISA """
+        cpu = CPU("cisc", "neumann", "special", self.complete_cisc)
+        cpu.web_next_instruction()
+
+        # Check the mov %R00, $5 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0005')
 
 
 if __name__ == '__main__':

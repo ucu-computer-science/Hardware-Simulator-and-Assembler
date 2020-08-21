@@ -301,11 +301,16 @@ class CPU:
         printout_temp = f"FETCH: Instruction: {self.instruction.to01()}, Opcode: {self.opcode.to01()}"
 
         # Read all the registers additionally recorded after the opcode
-        for _ in range(register_reader):
+        if register_reader > 0:
             self.long_registers = self.program_memory.read_data(start_read_location,
                                                                 start_read_location + self.instruction_size[2]).to01()
+
             # This needs to be reversed because we pop from the end of it
-            self.long_registers = [self.long_registers[3:6], self.long_registers[0:3]]
+            if register_reader == 2:
+                self.long_registers = [self.long_registers[3:6], self.long_registers[0:3]]
+            else:
+                self.long_registers = [self.long_registers[0:3]]
+
             # Saving the register which is going to save the result of the operation
             self.long_register_result = self.long_registers[-1]
             start_read_location += self.instruction_size[2]

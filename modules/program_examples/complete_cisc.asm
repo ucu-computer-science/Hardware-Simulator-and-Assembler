@@ -3,12 +3,7 @@
 # This assembly program aims to meaningfully test all of them, with edge cases considered
 #########################################################################################
 mov %R00, $5
-# firstop
-# reg imm
-
-# mov
-# firstop
-# reg reg
+mov %R01, %R00
 
 # mov
 # firstop
