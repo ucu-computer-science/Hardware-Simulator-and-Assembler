@@ -326,7 +326,7 @@ class CPU:
             start_read_location += 2 * self.instruction_size[2]
 
             self.additional_jump += 2
-            printout_temp += f", Long immediate constant: {self.long_immediates.to01()}"
+            printout_temp += f", Long immediate constant: {self.long_immediates[-1].to01()}"
 
         # This needs to be reversed because we pop from the end of it
         self.long_immediates.reverse()
@@ -431,7 +431,7 @@ class CPU:
                     imm_len = int(operand[3:])
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), imm_len)
                 else:
-                    jump_num = twos_complement(int(self.long_immediates.to01(), 2), self.instruction_size[0] * 2)
+                    jump_num = twos_complement(int(self.long_immediate_port.to01(), 2), self.instruction_size[0] * 2)
             elif operand in ["reg", "tos", "acc"] or operands_aliases[1] == "acc":
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
 
@@ -517,7 +517,7 @@ class CPU:
                     if operands_aliases[-1].startswith("tos") or operands_aliases[-1] == "acc":
                         jump_num = twos_complement(int(operands_values[-1].to01(), 2), num_len)
                     else:
-                        jump_num = twos_complement(int(self.long_immediates.to01(), 2), num_len)
+                        jump_num = twos_complement(int(self.long_immediate_port.to01(), 2), num_len)
 
                 # Calculate the number of bits to jump
                 if jump_num >= 0:
@@ -661,7 +661,7 @@ class CPU:
             elif res_type == "stackpopf":
                 result_destination = self.registers["FR"]
             elif res_type == "out":
-                result_destination = self.ports_dictionary[str(int(self.long_immediates.to01(), 2))]
+                result_destination = self.ports_dictionary[str(int(self.long_immediate_port.to01(), 2))]
 
         # Accumulator-RISC
         elif self.isa == "risc2":
@@ -676,7 +676,7 @@ class CPU:
                 memory_write_access = True
                 result_destination = int(self.registers["IR"]._state.to01(), 2)
             elif res_type == "out":
-                result_destination = self.ports_dictionary[str(int(self.long_immediates.to01(), 2))]
+                result_destination = self.ports_dictionary[str(int(self.long_immediate_port.to01(), 2))]
             elif res_type in ["cmp", "fr"]:
                 result_destination = self.registers["FR"]
             elif res_type == "ir":
@@ -777,7 +777,7 @@ class CPU:
                 operands_values.append(self.data_memory.read_data(ir_value, ir_value + 16))
 
             elif operand == "memimm":
-                start_read = int(self.long_immediates.to01(), 2) * 8
+                start_read = int(self.long_immediate_port.to01(), 2) * 8
                 operands_values.append(self.data_memory.read_data(start_read, start_read + 16))
 
             elif operand in ["fr", "ir", "acc"]:

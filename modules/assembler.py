@@ -203,8 +203,8 @@ class Assembler:
                     # RISC-Accumulator and CISC have to divide the number into two 8-bit bytes
                     # Immediate constant length is undefined for Risc-Register architecture,
                     # and thus is set for every instruction
-                    bit_lengths = {"risc1": 12, "risc2": 16, "risc3": int(op_type[3:]), "cisc": 16}
-                    bit_len = bit_lengths[self.isa]
+                    bit_lengths = {"risc1": "12", "risc2": "16", "risc3": op_type[3:], "cisc": "16"}
+                    bit_len = int(bit_lengths[self.isa])
 
                     # Check if the size of the number is valid
                     if not (-1 * 2 ** (bit_len - 1) < num < 2 ** (bit_len - 1)):
