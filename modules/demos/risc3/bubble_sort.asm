@@ -1,3 +1,5 @@
+# Bubble Sort | Register-RISC example Assembly program
+# These instructions sort a manually 'created' list with three values
 # Manually write three values into the memory (in the very start)
 # Example: 00 30 00 20 00 10 00 00
 # Result should be: 00 10 00 20 00 30 00 00
