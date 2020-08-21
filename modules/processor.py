@@ -84,6 +84,8 @@
 #  * and Program interrupts
 
 # TODO: Implement and test CISC architecture
+#  !!!!! THIS IS OUTDATED ALREADY, EACH OPCODE NOW CONSISTS OF 3 BITS OF STYLE SPECIFIER, AND 5 BITS OF OPCODE ITSELF !!!!
+#  IF NEEDED, BYTE WITH REGISTERS GOES AFTER, AND BYTES WITH CONSTANTS GO AFTERWARDS
 #  000  | 3-bit style specifier | 4-bit opcode | 3-bit register | = 10
 #  001  | 3-bit style specifier | 1-bit opcode | = 4
 #  010  | 3-bit style specifier | 4-bit opcode | 16-bit constant | = 23
@@ -178,7 +180,6 @@ class CPU:
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
         self.registers["IP"].write_data(bin(program_start)[2:])
         self.__load_program(program_text)
-        self.read_state = "opcode"
         self.first_instruction = True
         self.is_input_active = False
 
@@ -276,33 +277,59 @@ class CPU:
         Reads a long immediate encoded in the next byets if the ISA uses those
         Does not actually move the instruction pointer to the next instruction
         """
+        register_reader, constant_reader = 0, 0
         start_read_location = int(self.registers["IP"]._state.to01(), 2) * self.instruction_size[2]
         self.instruction = self.program_memory.read_data(start_read_location,
                                                          start_read_location + self.instruction_size[0])
+        start_read_location += self.instruction_size[0]
 
         # Read the opcode part of the instruction
-        if self.read_state == "opcode":
-            self.opcode = self.instruction[0:self.instruction_size[1]]
+        self.opcode = self.instruction[0:self.instruction_size[1]]
 
-            # If the first bit of the encoded binary instruction indicates that the next two
-            # bytes are going to be an immediate constant, change the read_state
-            if self.isa in ["risc1", "risc2"] and self.opcode[0]:
-                self.read_state = "constant"
-            self.additional_jump = 0
+        # If the first bit of the encoded binary instruction indicates that the next two
+        # bytes are going to be an immediate constant, change the read_state
+        if self.isa in ["risc1", "risc2"] and self.opcode[0]:
+            constant_reader = 1
+        elif self.isa == "cisc":
+            # Styles of CISC architecture with counters for register and constant readers
+            # {"STYLECODE": (Register counter, constant counter)}
+            cisc_styles = {"000": (1, 0), "001": (0, 0), "010": (0, 1), "011": (2, 0), "100": (1, 1), "101": (2, 1), "110": (1, 2)}
+            register_reader, constant_reader = cisc_styles[self.opcode[0:3]]
 
-        printout_temp = f"READ: Instruction: {self.instruction.to01()}, Opcode: {self.opcode.to01()}"
+        self.additional_jump = 0
 
+        printout_temp = f"FETCH: Instruction: {self.instruction.to01()}, Opcode: {self.opcode.to01()}"
+
+        # Read all the registers additionally recorded after the opcode
+        for _ in range(register_reader):
+            self.long_registers = self.program_memory.read_data(start_read_location,
+                                                                start_read_location + self.instruction_size[2])
+            # This needs to be reversed because we pop from the end of it
+            self.long_registers = [self.long_registers[3:6], self.long_registers[0:3]]
+            # Saving the register which is going to save the result of the operation
+            self.long_register_result = self.long_registers[-1]
+            start_read_location += self.instruction_size[2]
+            printout_temp += f", Long registers: {self.long_registers.to01()}"
+            self.additional_jump += 1
+
+        # TODO: I MIGHT HAVE BROKEN LONG IMMEDIATE FUNCTIONALITY A LITTLE, AM NOT 100% ABOUT THIS
+        self.long_immediates = []
         # If we are in the state of reading the two-byte encoded immediate constant,
         # read it and add to the list of operands
-        if self.read_state == "constant":
-            self.long_immediate = self.program_memory.read_data(start_read_location + 1 * self.instruction_size[2],
-                                                                start_read_location + 3 * self.instruction_size[2])
-
+        for _ in range(constant_reader):
+            temp = self.program_memory.read_data(start_read_location,
+                                                 start_read_location + 2 * self.instruction_size[2])
             # In order to turn 12-bit signed number into 16-bit signed number, we copy the sign bit into all high bits
-            self.long_immediate = bitarray(self.long_immediate.to01().rjust(16, self.long_immediate.to01()[0]))
-            self.additional_jump = 2
-            self.read_state = "opcode"
-            printout_temp += f", Long immediate constant: {self.long_immediate.to01()}"
+            self.long_immediates.append(bitarray(temp.to01().rjust(16, temp.to01()[0])))
+            # Saving the first long immediate which might point to the device port
+            self.long_immediate_port = self.long_immediates[0]
+            start_read_location += 2 * self.instruction_size[2]
+
+            self.additional_jump += 2
+            printout_temp += f", Long immediate constant: {self.long_immediates.to01()}"
+
+        # This needs to be reversed because we pop from the end of it
+        self.long_immediates.reverse()
 
         self.logger.debug(printout_temp)
 
@@ -340,6 +367,7 @@ class CPU:
         """
         Updates the devices if they are Memory-Mapped
         """
+        # TODO: I think we've never properly tested this? I know this SHOULD work, but anyhow
         for port, device in self.ports_dictionary.items():
             if device.io_type == "mmio":
                 self.logger.debug(f"Updating mmio device at {port}, memory[{device.start_point}:{device.end_point}]")
@@ -403,7 +431,7 @@ class CPU:
                     imm_len = int(operand[3:])
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), imm_len)
                 else:
-                    jump_num = twos_complement(int(self.long_immediate.to01(), 2), self.instruction_size[0] * 2)
+                    jump_num = twos_complement(int(self.long_immediates.to01(), 2), self.instruction_size[0] * 2)
             elif operand in ["reg", "tos", "acc"] or operands_aliases[1] == "acc":
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
 
@@ -489,7 +517,7 @@ class CPU:
                     if operands_aliases[-1].startswith("tos") or operands_aliases[-1] == "acc":
                         jump_num = twos_complement(int(operands_values[-1].to01(), 2), num_len)
                     else:
-                        jump_num = twos_complement(int(self.long_immediate.to01(), 2), num_len)
+                        jump_num = twos_complement(int(self.long_immediates.to01(), 2), num_len)
 
                 # Calculate the number of bits to jump
                 if jump_num >= 0:
@@ -579,12 +607,8 @@ class CPU:
 
         :return: start_point - int, representing the bit value in the instruction from which the opcodes begin
         """
-        # Figure out the operands details for the RISC-Stack ISA
-        if self.isa in ["risc1", "risc2"]:
-            start_point = None
-
         # Figure out the operands details for the RISC-Register ISA
-        elif self.isa == "risc3":
+        if self.isa == "risc3":
 
             # Load the special case moves for RISC-Register architecture
             low_high_load_risc = ["mov_low", "mov_high"]
@@ -596,10 +620,12 @@ class CPU:
                 start_point = 5
             else:
                 start_point = 6
-
-        # Figure out the operands details for the CISC-Register ISA
+        # We don't really include operands in instructions for RISC1, RISC2 and CISC. This really speaks volumes about
+        # how all of this was 'engineered', ahem, starting with RISC3 and having no idea whatsoever about the future
+        # modifications, which, turns out, do not conform to the standard workflow and require tweaks and hacks
+        # This *should* work, anyway :=)
         else:
-            start_point = 8
+            start_point = None
 
         return start_point
 
@@ -609,9 +635,9 @@ class CPU:
         :param start_point: the point in the instruction where operands' encodings start
         :param operands_aliases: list of aliases for the operands encoded in binary
         """
-        # Set 'write' access to the memory to False by default
-        memory_write_access = False
         result_destination = None
+        # Set 'write' access to memory and tos_push bools to False by default
+        memory_write_access = False
         tos_push = False
 
         # Determining where to save the result of the operation depending on type of the operation specified
@@ -635,7 +661,7 @@ class CPU:
             elif res_type == "stackpopf":
                 result_destination = self.registers["FR"]
             elif res_type == "out":
-                result_destination = self.ports_dictionary[str(int(self.long_immediate.to01(), 2))]
+                result_destination = self.ports_dictionary[str(int(self.long_immediates.to01(), 2))]
 
         # Accumulator-RISC
         elif self.isa == "risc2":
@@ -650,7 +676,7 @@ class CPU:
                 memory_write_access = True
                 result_destination = int(self.registers["IR"]._state.to01(), 2)
             elif res_type == "out":
-                result_destination = self.ports_dictionary[str(int(self.long_immediate.to01(), 2))]
+                result_destination = self.ports_dictionary[str(int(self.long_immediates.to01(), 2))]
             elif res_type in ["cmp", "fr"]:
                 result_destination = self.registers["FR"]
             elif res_type == "ir":
@@ -660,25 +686,22 @@ class CPU:
         elif self.isa in ["risc3", "cisc"]:
 
             # If the result is to be saved into the first operand
-            if (res_type := self.instructions_dict[self.opcode.to01()][1]) in ["firstop", "in"]:
+            if (res_type := self.instructions_dict[self.opcode.to01()][1]) in ["firstop", "in", "stackpop"]:
 
+                # Determining the code of the result register
+                if self.isa == "cisc":
+                    register_code = self.long_register_result
+                else:
+                    register_code = self.instruction[start_point:start_point + 3].to01()
+
+                # Figuring out if it's the register we are working with, or where it points to in memory
                 if operands_aliases[0] == "reg":
-                    # If the destination is the register
-                    register_code = self.instruction[start_point:start_point + 3].to01()
                     result_destination = self.register_codes[register_code]
-
                 elif operands_aliases[0] == "memreg":
-                    # If the destination is memory
                     memory_write_access = True
-                    register_code = self.instruction[start_point:start_point + 3].to01()
                     result_destination = int(self.register_codes[register_code]._state.to01(), 2)
 
-            # If the result is popped from the stack
-            elif res_type == "stackpop":
-                register_code = self.instruction[start_point:start_point + 3].to01()
-                result_destination = self.register_codes[register_code]
-
-            # If the result is the flag register affected (compare ops)
+            # If the result is the flag register affected (compare operations)
             elif res_type == "flags":
                 result_destination = self.registers["FR"]
 
@@ -688,8 +711,11 @@ class CPU:
                 if self.io_arch == "mmio":
                     raise SimulatorError("This instruction does not exist in MMIO architecture")
                 else:
-                    imm_len = int(operands_aliases[0][3:])
-                    port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
+                    if self.isa == "cisc":
+                        port_num = int(self.long_immediate_port, 2)
+                    else:
+                        imm_len = int(operands_aliases[0][3:])
+                        port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
                     result_destination = self.ports_dictionary[str(port_num)]
 
         return memory_write_access, result_destination, tos_push
@@ -705,21 +731,29 @@ class CPU:
 
             # If the operand is the register, add its value and go to the next operand
             if operand == "reg":
-                register_code = self.instruction[start_point:start_point + 3].to01()
+
+                if self.isa == "cisc":
+                    register_code = self.long_registers.pop()
+                else:
+                    register_code = self.instruction[start_point:start_point + 3].to01()
                 operands_values.append(self.register_codes[register_code]._state)
                 start_point += 3
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":
-                register_code = self.instruction[start_point:start_point + 3].to01()
+
+                if self.isa == "cisc":
+                    register_code = self.long_registers.pop()
+                else:
+                    register_code = self.instruction[start_point:start_point + 3].to01()
                 tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16) * 8
                 operands_values.append(self.data_memory.read_data(tmp_register, tmp_register + 16))
                 start_point += 3
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand.startswith("imm"):
-                if self.isa in ["risc1", "risc2"]:
-                    operands_values.append(self.long_immediate)
+                if self.isa in ["risc1", "risc2", "cisc"]:
+                    operands_values.append(self.long_immediates.pop())
                 else:
                     immediate_length = int(operand[3:])
                     operands_values.append(bitarray(self.instruction[start_point:start_point + immediate_length]))
@@ -743,7 +777,7 @@ class CPU:
                 operands_values.append(self.data_memory.read_data(ir_value, ir_value + 16))
 
             elif operand == "memimm":
-                start_read = int(self.long_immediate.to01(), 2) * 8
+                start_read = int(self.long_immediates.to01(), 2) * 8
                 operands_values.append(self.data_memory.read_data(start_read, start_read + 16))
 
             elif operand in ["fr", "ir", "acc"]:

@@ -196,16 +196,8 @@ class Assembler:
                         binary_line += self.register_names[operand[2:-1]]
                 elif op_type.startswith("imm"):
 
-                    # CISC ISA requires the register byte to be left-adjusted before starting to add immediate constants
-                    if self.isa == "cisc":
-                        binary_line.ljust(instruction_length, '0')
-
                     # Read the number from the assembly code
                     num = int(operand[1:])
-
-                    # Check if the size of the number is valid
-                    if not (-1 * 2 ** (bit_len - 1) < num < 2 ** (bit_len - 1)):
-                        raise AssemblerError(f"Immediate constant provided too big: {self.line}")
 
                     # RISC-Stack has to divide the number into two 6-bit bytes
                     # RISC-Accumulator and CISC have to divide the number into two 8-bit bytes
@@ -213,6 +205,10 @@ class Assembler:
                     # and thus is set for every instruction
                     bit_lengths = {"risc1": 12, "risc2": 16, "risc3": int(op_type[3:]), "cisc": 16}
                     bit_len = bit_lengths[self.isa]
+
+                    # Check if the size of the number is valid
+                    if not (-1 * 2 ** (bit_len - 1) < num < 2 ** (bit_len - 1)):
+                        raise AssemblerError(f"Immediate constant provided too big: {self.line}")
 
                     encoded_number = self.__encode_number(num, bit_len)
 
@@ -225,7 +221,9 @@ class Assembler:
                 raise AssemblerError(f"Provide valid operands for this instruction: {self.line}")
 
         if self.isa == "cisc":
-            binary_line += register_byte.ljust(8, '0') + immediate_bytes
+            if register_byte:
+                register_byte = register_byte.ljust(8, '0')
+            binary_line += register_byte + immediate_bytes
 
         return binary_line.ljust(instruction_length, '0')
 
