@@ -21,6 +21,7 @@ class AssemblerCLI:
     """
     Command-Line interface for the Assembler (as opposed to the general functionality class)
     """
+
     def __init__(self):
         """
         Checks the validity of the arguments and instantiates new Assembler class instance with them
@@ -111,6 +112,7 @@ class Assembler:
 
         # Divide the program into lines
         for line in text.split("\n"):
+            line = line.rstrip(" ")
             # Check if its an empty line or a comment line, skip if yes
             if line.strip(" ").startswith("#") or line.isspace() or not line:
                 continue
@@ -169,53 +171,63 @@ class Assembler:
         binary_line = instruction_info[0]
         types = instruction_info[1]
 
+        instruction_length = self.instruction_size[0]
+        if self.isa == "cisc":
+            register_byte = ""
+            immediate_bytes = ""
+
         if len(operands) != len(types):
             raise AssemblerError(f"Provide valid operands for this instruction: {self.line}")
 
         # Check if the operand provided is of the type needed, if yes, encode and add it to the current line
         for index, operand in enumerate(operands):
-            if self.__valid_type(operand, op_type:=types[index]):
+            if self.__valid_type(operand, op_type := types[index]):
 
                 # Encode the operand properly and add it to the line
                 if op_type == "reg" or op_type == "fr":
-                    binary_line += self.register_names[operand[1:]]
+                    if self.isa == "cisc":
+                        register_byte += self.register_names[operand[1:]]
+                    else:
+                        binary_line += self.register_names[operand[1:]]
                 elif op_type == "memreg":
-                    binary_line += self.register_names[operand[2:-1]]
+                    if self.isa == "cisc":
+                        register_byte += self.register_names[operand[2:-1]]
+                    else:
+                        binary_line += self.register_names[operand[2:-1]]
                 elif op_type.startswith("imm"):
+
+                    # CISC ISA requires the register byte to be left-adjusted before starting to add immediate constants
+                    if self.isa == "cisc":
+                        binary_line.ljust(instruction_length, '0')
+
                     # Read the number from the assembly code
                     num = int(operand[1:])
 
-                    # RISC-Stack has to divide the number into two 6-bit bytes
-                    if self.isa == "risc1":
-                        bit_len = 12
-                        temp = self.__encode_number(num, bit_len)
-
-                    # RISC-Accumulator has to divide the number into two lines of 8 bits
-                    elif self.isa == "risc2":
-                        bit_len = 16
-                        temp = self.__encode_number(num, bit_len)
-
-                    # Immediate constant length is undefined for Risc-Register architecture,
-                    # and thus is set for every instruction
-                    elif self.isa == "risc3":
-                        bit_len = int(op_type[3:])
-                        temp = self.__encode_number(num, bit_len)
-
-                    # CISC stub
-                    else:
-                        bit_len = 8
-                        temp = ''
-
-                    # Check if the size of the number was valid
-                    if not (-1*2**(bit_len-1) < num < 2**(bit_len-1)):
+                    # Check if the size of the number is valid
+                    if not (-1 * 2 ** (bit_len - 1) < num < 2 ** (bit_len - 1)):
                         raise AssemblerError(f"Immediate constant provided too big: {self.line}")
 
-                    binary_line += temp
+                    # RISC-Stack has to divide the number into two 6-bit bytes
+                    # RISC-Accumulator and CISC have to divide the number into two 8-bit bytes
+                    # Immediate constant length is undefined for Risc-Register architecture,
+                    # and thus is set for every instruction
+                    bit_lengths = {"risc1": 12, "risc2": 16, "risc3": int(op_type[3:]), "cisc": 16}
+                    bit_len = bit_lengths[self.isa]
+
+                    encoded_number = self.__encode_number(num, bit_len)
+
+                    if self.isa == "cisc":
+                        immediate_bytes += encoded_number
+                    else:
+                        binary_line += encoded_number
 
             else:
                 raise AssemblerError(f"Provide valid operands for this instruction: {self.line}")
 
-        return binary_line.ljust(self.instruction_size[0], '0')
+        if self.isa == "cisc":
+            binary_line += register_byte.ljust(8, '0') + immediate_bytes
+
+        return binary_line.ljust(instruction_length, '0')
 
     def __valid_type(self, assembly_op, op_type):
         """
