@@ -75,95 +75,72 @@ ret
 nop
 ret
 nop
-# ADD NEXT TEST HERE
+jmp %R00
+nop
+nop
+nop
+mov %R00, $-5
+jmp %R00+$1
 # Still have to test all of the compares, tests and almost all jumps :(((((
 # Gonna have to implement SIMD too, have no idea howwwwwwwww
 
 # cmp
-# flags
 # reg reg
 
 # cmp
-# flags
 # reg imm
 
 # cmp
-# flags
 # reg memreg
 
 # cmp
-# flags
 # reg reg imm
 
 # test
-# flags
 # reg reg
 
 # test
-# flags
 # reg memreg
 
 # test
-# flags
 # reg reg imm
 
 # test
-# flags
 # memreg reg
 
-# jmp
-# jmp
-# reg
-
-# jmp
-# jmp
-# reg imm
-
 # je
-# jmp
 # imm
 
 # jne
-# jmp
 # imm
 
 # jg
-# jmp
 # imm
 
 # jge
-# jmp
 # imm
 
 # jl
-# jmp
 # imm
 
 # jle
-# jmp
 # imm
 
 # in
-# in
 # reg imm
 
-# in
 # in
 # mereg imm
 
 # in
-# in
 # reg imm imm
 
-# out
 # out
 # imm reg
 
 # out
-# out
 # imm memreg
 
-# out
 # out
 # imm reg imm
 
