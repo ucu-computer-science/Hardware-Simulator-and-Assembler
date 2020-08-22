@@ -5,9 +5,7 @@
 mov %R00, $512
 mov %R01, %R00
 mov %R00, [%R00]
-# mov
-# firstop
-# reg reg imm
+mov %R01, [%R00+$15]
 
 # mov
 # firstop
