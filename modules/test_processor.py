@@ -856,11 +856,46 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.registers['R01']._state), ba2hex(cpu.registers['R00']._state))
 
-        # Check the mov %R00, [%R00] instruction
+        # Check the mov %R00, [%R01] instruction
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.registers['R00']._state), '8000')
 
-        # Check
+        # Check the mov %R00, [%R01+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0200')
+
+        # Check the mov [%R01], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512*8, 512*8 + 16)), ba2hex(cpu.registers['R00']._state))
+
+        # Check the mov [%R01], $666 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512*8, 512*8 + 16)), '029a')
+
+        # Check the mov %R01, $128 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0080')
+
+        # Check the mov [%R01+$2], %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(130*8, 132*8)), '0080')
+
+        # Check the mov [%R01+$2], $512 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(130*8, 132*8)), '0200')
+
+        # Check the push %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-16, 1024*8)), ba2hex(cpu.registers['R01']._state))
+
+        # Check the push $512 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-32, 1024*8-16)), '0200')
+
+        # Check the pop %R01 instruction
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0080')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0200')
 
 
 if __name__ == '__main__':

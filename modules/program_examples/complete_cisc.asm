@@ -4,36 +4,16 @@
 #########################################################################################
 mov %R00, $512
 mov %R01, %R00
-mov %R00, [%R00]
-mov %R01, [%R00+$15]
-
-# mov
-# firstop
-# memreg reg
-
-# mov
-# firstop
-# memreg imm
-
-# mov
-# firstop
-# reg imm reg
-
-# mov
-# firstop
-# reg imm imm
-
-# push
-# stackpush
-# reg
-
-# push
-# stackpush
-# imm
-
-# pop
-# stackpop
-# reg
+mov %R00, [%R01]
+mov %R00, [%R01+$2]
+mov [%R01], %R00
+mov [%R01], $666
+mov %R01, $128
+mov [%R01+$2], %R01
+mov [%R01+$2], $512
+push %R01
+push $512
+pop %R01
 
 # enter
 # enter

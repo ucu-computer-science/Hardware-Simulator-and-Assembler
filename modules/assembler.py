@@ -4,10 +4,14 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
-# TODO: This assembler works pretty fine, but still there is label decoding left to be implemented
+# TODO: Implement label decoding for jumps and calls
+
+# TODO: Implement assembly directives (db and dw)
 
 # TODO: There is more though, instructions.json is pretty inconsistent between different
 #  architectures as it was all done on the go, and is under-documented
+
+
 
 import os
 import json
@@ -180,6 +184,7 @@ class Assembler:
             raise AssemblerError(f"Provide valid operands for this instruction: {self.line}")
 
         # TODO: This probably could be moved to a separate function to allow for normal recursion calls
+        # TODO: Offsets work only like this for now: [%reg + $-5], implement proper workflow for [%reg - $5]
 
         # Check if the operand provided is of the type needed, if yes, encode and add it to the current line
         for index, operand in enumerate(operands):

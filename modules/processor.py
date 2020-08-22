@@ -92,6 +92,18 @@
 #  101  | 3-bit style specifier | 5-bit opcode | 2 registers in register byte | 2 constant immediate bytes |
 #  110  | 3-bit style specifier | 5-bit opcode | 1 register in register byte | 2 constant immediate bytes | 2 constant immediate bytes |
 
+# TODO: Kill myself
+# TODO: Implement enter and leave instructions:
+#   * enter replaces three instructions on moving the stack further down when calling a new procedure:
+#       push %ebp
+#       mov %ebp, %esp
+#       sub %esp, $num
+#   Notice you still have to push the other registers onto the memory stack
+#  ___
+#  * leave replaces two instructions when returning to the previous procedure's stack frame:
+#       mov %esp, %ebp
+#       pop %ebp
+
 import os
 import json
 import curses
