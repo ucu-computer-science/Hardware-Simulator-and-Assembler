@@ -613,7 +613,8 @@ def update_examples(n_clicks, user_id):
     :return: example dropdown value
     """
     if user_id in user_dict:
-        return user_dict[user_id]['example']
+        if 'example' in user_dict[user_id]:
+            return user_dict[user_id]['example']
     return 'none'
 
 
