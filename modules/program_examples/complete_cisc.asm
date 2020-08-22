@@ -28,26 +28,11 @@ sub %R00, [%R00+$2]
 mov %R00, $514
 sub %R00, [%R00+$-2]
 inc %R00
-
-# inc
-# firstop
-# memreg
-
-# inc
-# firstop
-# reg off
-
-# dec
-# firstop
-# reg
-
-# dec
-# firstop
-# memreg
-
-# dec
-# firstop
-# reg off
+inc [%R01]
+inc [%R01+$2]
+dec %R00
+dec [%R01]
+dec [%R01+$2]
 
 # mul
 # firstop

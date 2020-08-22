@@ -953,6 +953,26 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fd69')
 
+        # Checking a inc [%R01] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(16, 32)), '0001')
+
+        # Checking a inc [%R01+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(32, 48)), '0001')
+
+        # Checking a dec %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fd68')
+
+        # Checking a dec [%R01] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(16, 32)), '0000')
+
+        # Checking a dec [%R01+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(32, 48)), '0000')
+
 
 if __name__ == '__main__':
     unittest.main()

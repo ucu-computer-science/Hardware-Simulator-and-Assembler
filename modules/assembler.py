@@ -174,6 +174,9 @@ class Assembler:
         binary_line = instruction_info[0]
         types = instruction_info[1]
 
+        # Eliminate processor-only information in type lists
+        if "one" in types: types.remove("one")
+
         instruction_length = self.instruction_size[0]
         if self.isa == "cisc":
             register_byte = ""

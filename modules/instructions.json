@@ -1258,42 +1258,48 @@
       "inc",
       "firstop",
       [
-        "reg"
+        "reg",
+        "one"
       ]
     ],
     "00000100": [
       "inc",
       "firstop",
       [
-        "memreg"
+        "memreg",
+        "one"
       ]
     ],
     "10000010": [
       "inc",
       "firstop",
       [
-        "memregoff"
+        "memregoff",
+        "one"
       ]
     ],
     "00000101": [
       "dec",
       "firstop",
       [
-        "reg"
+        "reg",
+        "one"
       ]
     ],
     "00000110": [
       "dec",
       "firstop",
       [
-        "memreg"
+        "memreg",
+        "one"
       ]
     ],
     "10000011": [
       "dec",
       "firstop",
       [
-        "memregoff"
+        "memregoff",
+        "one"
       ]
     ],
     "01101001": [
