@@ -84,25 +84,6 @@
 #  * and Program interrupts
 
 # TODO: Implement and test CISC architecture
-#  000  | 3-bit style specifier | 5-bit opcode | 1 register in register byte |
-#  001  | 3-bit style specifier | 5-bit opcode |
-#  010  | 3-bit style specifier | 5-bit opcode | 2 constant immediate bytes |
-#  011  | 3-bit style specifier | 5-bit opcode | 2 registers in register byte |
-#  100  | 3-bit style specifier | 5-bit opcode | 1 register in register byte | 2 constant immediate bytes |
-#  101  | 3-bit style specifier | 5-bit opcode | 2 registers in register byte | 2 constant immediate bytes |
-#  110  | 3-bit style specifier | 5-bit opcode | 1 register in register byte | 2 constant immediate bytes | 2 constant immediate bytes |
-
-# TODO: Kill myself
-# TODO: Implement enter and leave instructions:
-#   * enter replaces three instructions on moving the stack further down when calling a new procedure:
-#       push %ebp
-#       mov %ebp, %esp
-#       sub %esp, $num
-#   Notice you still have to push the other registers onto the memory stack
-#  ___
-#  * leave replaces two instructions when returning to the previous procedure's stack frame:
-#       mov %esp, %ebp
-#       pop %ebp
 
 import os
 import json
@@ -229,7 +210,7 @@ class CPU:
             if register[0] == "TOS":
                 self.tos_start = 256
                 temp.write_data(bin(self.tos_start)[2:])
-            elif register[0] == "SP":
+            elif register[0] in ["SP", "BP"]:
                 self.stack_start = 1024
                 temp.write_data(bin(self.stack_start)[2:])
 
@@ -303,7 +284,8 @@ class CPU:
         elif self.isa == "cisc":
             # Styles of CISC architecture with counters for register and constant readers
             # {"STYLECODE": (Register counter, constant counter)}
-            cisc_styles = {"000": (1, 0), "001": (0, 0), "010": (0, 1), "011": (2, 0), "100": (1, 1), "101": (2, 1), "110": (1, 2)}
+            cisc_styles = {"000": (1, 0), "001": (0, 0), "010": (0, 1), "011": (2, 0), "100": (1, 1), "101": (2, 1),
+                           "110": (1, 2)}
             register_reader, constant_reader = cisc_styles[self.opcode[0:3].to01()]
 
         self.additional_jump = 0
@@ -447,7 +429,7 @@ class CPU:
                 else:
                     jump_num = twos_complement(int(self.long_immediate_result.to01(), 2), self.instruction_size[0] * 2)
             elif operand in ["reg", "tos", "acc"] or operands_aliases[1] == "acc":
-                    jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
+                jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
 
             # Calculate the new program_start in instructions
             if jump_num >= 0:
@@ -549,6 +531,22 @@ class CPU:
             else:
                 self.logger.debug("INST INFO <jmp> not successful")
 
+        # If the opcode is CISC's 'enter' instruction, which replaces three instructions on moving the stack further
+        # down when calling a new procedure: push %bp / mov %bp, %sp / sub %sp, $num
+        elif res_type == "enter":
+            self.logger.debug(f"INST INFO <enter> {operands_values[0]}")
+            self.__push_stack(self.registers['BP']._state)  # Push %bp
+            self.registers['BP'].write_data(self.registers['SP']._state)  # mov %bp, %sp
+            new_stack_pointer_value = int(self.registers["SP"]._state.to01(), 2) - int(operands_values[0], 2)
+            self.registers["SP"].write_data(bin(new_stack_pointer_value)[2:])  # sub %sp, $num
+
+        # If the opcode is CISC's 'leave' instruction, which replaces two instructions when returning to the previous
+        # procedure's stack frame: mov %sp, %bp / pop %bp
+        elif res_type == "leave":
+            self.logger.debug(f"INST INFO <leave>")
+            self.registers['SP'].write_data(bitarray(self.registers['BP']._state.to01()))  # mov %sp, %bp
+            self.registers['BP'].write_data(self.__pop_stack())  # pop %bp
+
         # If the opcode specified pushes the value on the stack
         elif res_type == "stackpush":
             self.logger.debug(f"INST INFO <stackpush>")
@@ -608,7 +606,8 @@ class CPU:
             else:
                 result_destination.write_data(result_value)
 
-            self.logger.debug(f"INST INFO mwa: {memory_write_access}, tos_push: {tos_push}, result: {result_value.to01()}")
+            self.logger.debug(
+                f"INST INFO mwa: {memory_write_access}, tos_push: {tos_push}, result: {result_value.to01()}")
 
         return go_to_next_instruction
 
@@ -783,7 +782,7 @@ class CPU:
                 offset_number = twos_complement(int(self.long_immediates.pop().to01(), 2), 16)
                 register_offset = register_value + offset_number
 
-                operands_values.append(self.data_memory.read_data(register_offset*8, register_offset*8 + 16))
+                operands_values.append(self.data_memory.read_data(register_offset * 8, register_offset * 8 + 16))
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand.startswith("imm"):
