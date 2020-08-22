@@ -14,30 +14,13 @@ mov [%R01+$2], $512
 push %R01
 push $512
 pop %R01
-
-# enter
-# enter
-# imm
-
-# leave
-# leave
-
-
-# add
-# firstop
-# reg memreg
-
-# add
-# firstop
-# reg reg
-
-# add
-# firstop
-# reg reg imm
-
-# add
-# firstop
-# memreg reg
+enter $5
+leave
+add %R00, [%R00]
+add %R00, %R01
+add %R01, [%R01+$2]
+mov %R00, $512
+add [%R00], %R00
 
 # sub
 # firstop

@@ -306,7 +306,7 @@ class CPU:
             # Saving the register which is going to save the result of the operation
             self.long_register_result = self.long_registers[-1]
             start_read_location += self.instruction_size[2]
-            printout_temp += f", Long registers: {self.long_registers[-1]}"
+            printout_temp += f", Long registers: {self.long_registers}"
             self.additional_jump += 1
 
         self.long_immediates = []
@@ -537,7 +537,7 @@ class CPU:
             self.logger.debug(f"INST INFO <enter> {operands_values[0]}")
             self.__push_stack(self.registers['BP']._state)  # Push %bp
             self.registers['BP'].write_data(self.registers['SP']._state)  # mov %bp, %sp
-            new_stack_pointer_value = int(self.registers["SP"]._state.to01(), 2) - int(operands_values[0], 2)
+            new_stack_pointer_value = int(self.registers["SP"]._state.to01(), 2) - int(operands_values[0].to01(), 2)
             self.registers["SP"].write_data(bin(new_stack_pointer_value)[2:])  # sub %sp, $num
 
         # If the opcode is CISC's 'leave' instruction, which replaces two instructions when returning to the previous

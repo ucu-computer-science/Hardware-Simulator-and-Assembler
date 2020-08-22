@@ -897,6 +897,36 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.registers['R01']._state), '0200')
 
+        # Check the enter $5 instruction
+        self.assertEqual(ba2hex(cpu.registers['SP']._state), '03fe')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['BP']._state), '03fc')
+        self.assertEqual(ba2hex(cpu.registers['SP']._state), '03f7')
+
+        # Check the leave instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['BP']._state), '0400')
+        self.assertEqual(ba2hex(cpu.registers['SP']._state), '03fe')
+
+        # Check the add %R00, [%R00] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '049a')
+
+        # Check the add %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '069a')
+
+        # Check the add %R01, [%R01+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0400')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the add [%R00], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512*8, 512*8+16)), '049a')
+
 
 if __name__ == '__main__':
     unittest.main()
