@@ -92,8 +92,7 @@
 #  101  | 3-bit style specifier | 5-bit opcode | 2 registers in register byte | 2 constant immediate bytes |
 #  110  | 3-bit style specifier | 5-bit opcode | 1 register in register byte | 2 constant immediate bytes | 2 constant immediate bytes |
 
-# TODO: CISC *should* work okay, except for offsets!!! I'll leave this for tomorrow, there is quite a lot of stuff to
-#  rework to adapt offsets for CISC (probably going to end up changing instructions.json, idk)
+# TODO: Implement proper memregoff and regoff workflow (they can be used both as operands and as result destinations)
 
 import os
 import json

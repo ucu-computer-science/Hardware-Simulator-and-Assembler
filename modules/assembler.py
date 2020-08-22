@@ -179,6 +179,9 @@ class Assembler:
         if len(operands) != len(types):
             raise AssemblerError(f"Provide valid operands for this instruction: {self.line}")
 
+        # TODO: Implement memory register offset for CISC architecture: [%reg+$off] - uses memregoff as a keyword
+        # TODO: Implement register offset for jump and call instructions %reg+$off - uses regoff as a keyword
+
         # Check if the operand provided is of the type needed, if yes, encode and add it to the current line
         for index, operand in enumerate(operands):
             if self.__valid_type(operand, op_type := types[index]):
