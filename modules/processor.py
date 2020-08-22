@@ -85,6 +85,9 @@
 
 # TODO: Implement and test CISC architecture
 
+# TODO: Hack something out with decremenets and incremenets, they worked on RISC2 since we had separate
+#  lists for the assembler and processor
+
 import os
 import json
 import curses

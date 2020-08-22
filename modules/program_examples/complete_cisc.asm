@@ -21,26 +21,13 @@ add %R00, %R01
 add %R01, [%R01+$2]
 mov %R00, $512
 add [%R00], %R00
-
-# sub
-# firstop
-# reg memreg
-
-# sub
-# firstop
-# reg reg
-
-# sub
-# firstop
-# reg reg imm
-
-# sub
-# firstop
-# memreg reg
-
-# inc
-# firstop
-# reg
+mov %R01, $514
+sub %R01, [%R01]
+sub %R00, %R01
+sub %R00, [%R00+$2]
+mov %R00, $514
+sub %R00, [%R00+$-2]
+inc %R00
 
 # inc
 # firstop

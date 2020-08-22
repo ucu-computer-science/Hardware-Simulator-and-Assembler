@@ -927,6 +927,32 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.data_memory.read_data(512*8, 512*8+16)), '049a')
 
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the sub %R01, [%R01] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0002')
+
+        # Checking the sub %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '01fe')
+
+        # Checking the sub %R00, [%R00+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fd64')
+
+        # Skipping through a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking a sub %R00, [%R00+$-2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fd68')
+
+        # Checking a inc %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fd69')
+
 
 if __name__ == '__main__':
     unittest.main()
