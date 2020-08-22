@@ -973,6 +973,121 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.data_memory.read_data(32, 48)), '0000')
 
+        # Skipping through two mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the mul %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '000c')
+
+        # Checking the div %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0002')
+
+        # Checking the mul %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0400')
+
+        # Checking the div %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0002')
+
+        # Checking the mul [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(514*8, 516*8)), '0400')
+
+        # Checking the div [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(514*8, 516*8)), '0200')
+
+        # Checking the mul %R01, $3 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0012')
+
+        # Checking the div %R01, $3 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0006')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the mul %R00, [%R02+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0400')
+
+        # Checking the div %R00, [%R02+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0002')
+
+        # Checking the and %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0002')
+
+        # Skip a mov instructiom
+        cpu.web_next_instruction()
+
+        # Checking the or %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0007')
+
+        # Checking the and %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0002')
+
+        # Checking the or %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '049a')
+
+        # Skipping two mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the xor %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0007')
+
+        # Checking the xor %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '049d')
+
+        # Checking the not %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fb62')
+
+        # Checking the not [%R02] instruction
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512 * 8, 514 * 8)), '049a')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512 * 8, 514 * 8)), 'fb65')
+
+        # Skipping the mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the lsh %R00, $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0008')
+
+        # Checking the rsh %R00, $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0004')
+
+        # Checking the rsh [%R02], $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512 * 8, 514 * 8)), '7db2')
+
+        # Checking the lsh [%R02], $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512 * 8, 514 * 8)), 'fb64')
+
+        # Checking the rsh [%R02+$2], $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(514 * 8, 516 * 8)), '0100')
+
+        # Checking the lsh [%R02+$2], $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(514 * 8, 516 * 8)), '0200')
+
 
 if __name__ == '__main__':
     unittest.main()

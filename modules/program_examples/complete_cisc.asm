@@ -33,102 +33,38 @@ inc [%R01+$2]
 dec %R00
 dec [%R01]
 dec [%R01+$2]
-
-# mul
-# firstop
-# reg reg
-
-# mul
-# firstop
-# reg memreg
-
-# mul
-# firstop
-# memreg reg
-
-# mul
-# firstop
-# reg imm
-
-# mul
-# firstop
-# reg reg imm
-
-# div
-# firstop
-# reg reg
-
-# div
-# firstop
-# reg memreg
-
-# div
-# firstop
-# memreg reg
-
-# div
-# firstop
-# reg imm
-
-# div
-# firstop
-# reg reg imm
-
-# and
-# firstop
-# reg reg
-
-# and
-# firstop
-# reg memreg
-
-# or
-# firstop
-# reg reg
-
-# or
-# firstop
-# reg memreg
-
-# xor
-# firstop
-# reg reg
-
-# xor
-# firstop
-# reg memreg
-
-# not
-# firstop
-# reg
-
-# not
-# firstop
-# memreg
-
-# lsh
-# firstop
-# reg imm
-
-# lsh
-# firstop
-# memreg imm
-
-# lsh
-# firstop
-# reg imm imm
-
-# rsh
-# firstop
-# reg imm
-
-# rsh
-# firstop
-# memreg imm
-
-# rsh
-# firstop
-# reg imm imm
+mov %R00, $2
+mov %R01, $6
+mov %R02, $514
+mul %R00, %R01
+div %R00, %R01
+mul %R00, [%R02]
+div %R00, [%R02]
+mul [%R02], %R00
+div [%R02], %R00
+mul %R01, $3
+div %R01, $3
+mov %R02, $512
+mul %R00, [%R02+$2]
+div %R00, [%R02+$2]
+and %R00, %R01
+mov %R01, $5
+or %R00, %R01
+and %R00, [%R02]
+or %R00, [%R02]
+mov %R00, $5
+mov %R01, $2
+xor %R00, %R01
+xor %R00, [%R02]
+not %R00
+not [%R02]
+mov %R00, $4
+lsh %R00, $1
+rsh %R00, $1
+rsh [%R02], $1
+lsh [%R02], $1
+rsh [%R02+$2], $1
+lsh [%R02+$2], $1
 
 # call
 # call
@@ -144,7 +80,6 @@ dec [%R01+$2]
 
 # ret
 # ret
-
 
 # cmp
 # flags
@@ -272,4 +207,3 @@ dec [%R01+$2]
 
 # nop
 # nop
-
