@@ -1088,6 +1088,35 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         self.assertEqual(ba2hex(cpu.data_memory.read_data(514 * 8, 516 * 8)), '0200')
 
+        # Checking the call $2 instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02c5')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02c9')
+
+        # Checking the call %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02d3')
+
+        # Checking the ret instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02cb')
+
+        # Checking the call %R00+$1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02d5')
+
+        # Checking the ret instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02cf')
+
+        # Checking the jmp $5 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02d6')
+
+        # Checking the nop instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02d8')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -84,6 +84,11 @@
 #  * and Program interrupts
 
 # TODO: Implement and test CISC architecture
+#  (I can only guess as it's not tested fully yet, but only SIMD operations remain to be implemented)
+
+# TODO: Port the existing demos to CISC ISA
+
+# TODO: Should we have a SIMD switch on / off for CISC?
 
 import os
 import json
@@ -422,13 +427,15 @@ class CPU:
             # There is only one operand for a call function, and it determines the program_start from the IP
             operand = operands_aliases[0]
             if operand.startswith("imm") or ((len(operands_aliases) > 1) and operands_aliases[1] == "imm"):
-                if self.isa in ["risc3", "cisc"]:
+                if self.isa == "risc3":
                     # Calculate the new location of the instruction pointer, change it
                     imm_len = int(operand[3:])
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), imm_len)
+                elif self.isa == "cisc":
+                    jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
                 else:
                     jump_num = twos_complement(int(self.long_immediate_result.to01(), 2), self.instruction_size[0] * 2)
-            elif operand in ["reg", "tos", "acc"] or operands_aliases[1] == "acc":
+            elif operand in ["reg", "tos", "acc", "regoff"] or operands_aliases[1] == "acc":
                 jump_num = twos_complement(int(operands_values[0].to01(), 2), 16)
 
             # Calculate the new program_start in instructions
@@ -500,7 +507,7 @@ class CPU:
 
                 # If the program_start was specified with the number, its length was specified as well
                 # Else, just use the register length or long immediate length
-                if operands_aliases[0].startswith("imm") and self.isa in ["risc3", "cisc"]:
+                if operands_aliases[0].startswith("imm") and self.isa == "risc3":
                     num_len = int(operands_aliases[0][3:])
                 else:
                     num_len = 16
@@ -510,7 +517,7 @@ class CPU:
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), num_len)
                 else:
                     # Figure out if the value we should jump for was pushed on to the stack, or is in the instruction
-                    if operands_aliases[-1].startswith("tos") or operands_aliases[-1] == "acc":
+                    if operands_aliases[-1].startswith("tos") or operands_aliases[-1] in ["acc", "regoff"]:
                         jump_num = twos_complement(int(operands_values[-1].to01(), 2), num_len)
                     else:
                         jump_num = twos_complement(int(self.long_immediate_result.to01(), 2), num_len)

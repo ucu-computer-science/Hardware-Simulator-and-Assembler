@@ -65,21 +65,19 @@ rsh [%R02], $1
 lsh [%R02], $1
 rsh [%R02+$2], $1
 lsh [%R02+$2], $1
-
-# call
-# call
-# imm
-
-# call
-# call
-# reg
-
-# call
-# call
-# reg imm
-
-# ret
-# ret
+call $2
+nop
+call %R00
+call %R00+$1
+jmp $5
+nop
+ret
+nop
+ret
+nop
+# ADD NEXT TEST HERE
+# Still have to test all of the compares, tests and almost all jumps :(((((
+# Gonna have to implement SIMD too, have no idea howwwwwwwww
 
 # cmp
 # flags
@@ -112,10 +110,6 @@ lsh [%R02+$2], $1
 # test
 # flags
 # memreg reg
-
-# jmp
-# jmp
-# imm
 
 # jmp
 # jmp
@@ -204,6 +198,3 @@ lsh [%R02+$2], $1
 # test4
 # firstop
 # memreg memreg
-
-# nop
-# nop
