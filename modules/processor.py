@@ -739,7 +739,7 @@ class CPU:
                     raise SimulatorError("This instruction does not exist in MMIO architecture")
                 else:
                     if self.isa == "cisc":
-                        port_num = int(self.long_immediate_result, 2)
+                        port_num = int(self.long_immediate_result.to01(), 2)
                     else:
                         imm_len = int(operands_aliases[0][3:])
                         port_num = int(self.instruction[start_point:start_point + imm_len].to01(), 2)
@@ -773,7 +773,8 @@ class CPU:
                 offset_number = twos_complement(int(self.long_immediates.pop().to01(), 2), 16)
 
                 result = bin_clean(bin(register_value + offset_number))
-                operands_values.append(bitarray(result.rjust(16, result[0])))
+                sign_adjuster = "0" if (register_value + offset_number) >= 0 else "1"
+                operands_values.append(bitarray(result.rjust(16, sign_adjuster)))
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
             elif operand == "memreg":

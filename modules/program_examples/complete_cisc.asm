@@ -76,73 +76,33 @@ nop
 ret
 nop
 jmp %R00
-nop
-nop
+cmp %R00, $-5
+je $4
 nop
 mov %R00, $-5
 jmp %R00+$1
-# Still have to test all of the compares, tests and almost all jumps :(((((
-# Gonna have to implement SIMD too, have no idea howwwwwwwww
-
-# cmp
-# reg reg
-
-# cmp
-# reg imm
-
-# cmp
-# reg memreg
-
-# cmp
-# reg reg imm
-
-# test
-# reg reg
-
-# test
-# reg memreg
-
-# test
-# reg reg imm
-
-# test
-# memreg reg
-
-# je
-# imm
-
-# jne
-# imm
-
-# jg
-# imm
-
-# jge
-# imm
-
-# jl
-# imm
-
-# jle
-# imm
-
-# in
-# reg imm
-
-# in
-# mereg imm
-
-# in
-# reg imm imm
-
-# out
-# imm reg
-
-# out
-# imm memreg
-
-# out
-# imm reg imm
+cmp %R00, %R01
+jne $2
+nop
+cmp %R00, [%R02]
+jg $5
+jl $2
+nop
+mov %R00, $512
+cmp %R00, [%R02+$2]
+jl $2
+jge $2
+jmp $2
+jle $-1
+test %R00, %R01
+test %R00, [%R02]
+test %R00, [%R02+$2]
+in %R00, $1
+in [%R02], $1
+in [%R02+$2], $1
+out $1, %R00
+out $1, [%R02]
+out $1, [%R02+$2]
 
 # load4
 # firstop
