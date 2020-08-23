@@ -21,6 +21,7 @@ class Memory:
     def __init__(self, size):
         """
         Creates a new memory structure.
+
         :param memory_architecture: chosen program/data architecture.
         :return: NoneType
         """
@@ -30,6 +31,7 @@ class Memory:
     def write_data(self, location, data):
         """
         Writes the data to the memory starting at location
+
         :param location: start location - in bits, from where the data is going to be stored (incrementingly)
         :param data: data for writing into the memory
         :return: NoneType
@@ -42,6 +44,7 @@ class Memory:
     def read_data(self, start_location, end_location):
         """
         Reads the data from memory [start_location:end_location]
+
         :param start_location: int - starting location in bits
         :param end_location: int - end location in bits
         """

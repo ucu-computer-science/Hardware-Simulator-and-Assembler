@@ -23,5 +23,14 @@
         ["R02", 1, "010", "General-Purpose Register"],
         ["R03", 1, "011", "General-Purpose Register"]
     ],
-    "cisc": {}
+    "cisc": [
+        ["R00", 1, "000", "General-Purpose Register"],
+        ["R01", 1, "001", "General-Purpose Register"],
+        ["R02", 1, "010", "General-Purpose Register"],
+        ["R03", 1, "011", "General-Purpose Register"],
+        ["SP", 0, "100", "Stack Pointer"],
+        ["BP", 0, "101", "Base Pointer"],
+        ["FR", 0, "110", "Flag Register"],
+        ["IP", 0, "101", "Instruction Pointer"]
+    ]
 }

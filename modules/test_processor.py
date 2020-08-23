@@ -27,7 +27,8 @@ class TestCPU(unittest.TestCase):
                          ('risc1', os.path.join("modules", "program_examples", "complete_risc1.asm")),
                          ('risc2', os.path.join("modules", "demos", "risc2", "helloworld.asm")),
                          ('risc2', os.path.join("modules", "demos", "risc2", "alphabet_printout.asm")),
-                         ('risc2', os.path.join("modules", "program_examples", "complete_risc2.asm"))]
+                         ('risc2', os.path.join("modules", "program_examples", "complete_risc2.asm")),
+                         ('cisc', os.path.join("modules", "program_examples", "complete_cisc.asm"))]
 
         output_files = self.reassemble(test_programs)
 
@@ -60,6 +61,9 @@ class TestCPU(unittest.TestCase):
 
         with open(output_files[9], "r") as file:
             self.complete_risc2 = file.read()
+
+        with open(output_files[10], "r") as file:
+            self.complete_cisc = file.read()
 
     def reassemble(self, programs):
         """ Reassembles all the test programs """
@@ -838,6 +842,427 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         cpu.input_finish(bin(ord("a"))[2:])
         self.assertEqual(ba2hex(cpu.registers['R00']._state), '0061')
+
+    def test_cisc_complete(self):
+        """ Tests all of the instructions of CISC ISA """
+        cpu = CPU("cisc", "neumann", "special", self.complete_cisc)
+        cpu.web_next_instruction()
+
+        # Check the mov %R00, $5 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0200')
+
+        # Check the mov %R01, %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), ba2hex(cpu.registers['R00']._state))
+
+        # Check the mov %R00, [%R01] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '8000')
+
+        # Check the mov %R00, [%R01+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0200')
+
+        # Check the mov [%R01], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512*8, 512*8 + 16)), ba2hex(cpu.registers['R00']._state))
+
+        # Check the mov [%R01], $666 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512*8, 512*8 + 16)), '029a')
+
+        # Check the mov %R01, $128 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0080')
+
+        # Check the mov [%R01+$2], %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(130*8, 132*8)), '0080')
+
+        # Check the mov [%R01+$2], $512 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(130*8, 132*8)), '0200')
+
+        # Check the push %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-16, 1024*8)), ba2hex(cpu.registers['R01']._state))
+
+        # Check the push $512 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(1024*8-32, 1024*8-16)), '0200')
+
+        # Check the pop %R01 instruction
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0080')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0200')
+
+        # Check the enter $5 instruction
+        self.assertEqual(ba2hex(cpu.registers['SP']._state), '03fe')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['BP']._state), '03fc')
+        self.assertEqual(ba2hex(cpu.registers['SP']._state), '03f7')
+
+        # Check the leave instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['BP']._state), '0400')
+        self.assertEqual(ba2hex(cpu.registers['SP']._state), '03fe')
+
+        # Check the add %R00, [%R00] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '049a')
+
+        # Check the add %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '069a')
+
+        # Check the add %R01, [%R01+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0400')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the add [%R00], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512*8, 512*8+16)), '049a')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the sub %R01, [%R01] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0002')
+
+        # Checking the sub %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '01fe')
+
+        # Checking the sub %R00, [%R00+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fd64')
+
+        # Skipping through a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking a sub %R00, [%R00+$-2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fd68')
+
+        # Checking a inc %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fd69')
+
+        # Checking a inc [%R01] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(16, 32)), '0001')
+
+        # Checking a inc [%R01+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(32, 48)), '0001')
+
+        # Checking a dec %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fd68')
+
+        # Checking a dec [%R01] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(16, 32)), '0000')
+
+        # Checking a dec [%R01+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(32, 48)), '0000')
+
+        # Skipping through two mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the mul %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '000c')
+
+        # Checking the div %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0002')
+
+        # Checking the mul %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0400')
+
+        # Checking the div %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0002')
+
+        # Checking the mul [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(514*8, 516*8)), '0400')
+
+        # Checking the div [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(514*8, 516*8)), '0200')
+
+        # Checking the mul %R01, $3 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0012')
+
+        # Checking the div %R01, $3 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0006')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the mul %R00, [%R02+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0400')
+
+        # Checking the div %R00, [%R02+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0002')
+
+        # Checking the and %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0002')
+
+        # Skip a mov instructiom
+        cpu.web_next_instruction()
+
+        # Checking the or %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0007')
+
+        # Checking the and %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0002')
+
+        # Checking the or %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '049a')
+
+        # Skipping two mov instructions
+        cpu.web_next_instruction()
+        cpu.web_next_instruction()
+
+        # Checking the xor %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0007')
+
+        # Checking the xor %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '049d')
+
+        # Checking the not %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fb62')
+
+        # Checking the not [%R02] instruction
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512 * 8, 514 * 8)), '049a')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512 * 8, 514 * 8)), 'fb65')
+
+        # Skipping the mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the lsh %R00, $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0008')
+
+        # Checking the rsh %R00, $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0004')
+
+        # Checking the rsh [%R02], $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512 * 8, 514 * 8)), '7db2')
+
+        # Checking the lsh [%R02], $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512 * 8, 514 * 8)), 'fb64')
+
+        # Checking the rsh [%R02+$2], $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(514 * 8, 516 * 8)), '0100')
+
+        # Checking the lsh [%R02+$2], $1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(514 * 8, 516 * 8)), '0200')
+
+        # Checking the call $2 instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02c5')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02c9')
+
+        # Checking the call %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02d3')
+
+        # Checking the ret instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02cb')
+
+        # Checking the call %R00+$1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02d5')
+
+        # Checking the ret instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02cf')
+
+        # Checking the jmp $5 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02d6')
+
+        # Checking the nop instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02d7')
+
+        # Checking the jmp %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02e1')
+
+        # Checking the mov %R00, $-5 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fffb')
+
+        # Checking the jmp %R00+$1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02d9')
+
+        # Checking the cmp %R00, $-5 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0004')
+
+        # Checking the je $4 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02e9')
+
+        # Checking the cmp %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0001')
+
+        # Checking the jne $2 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02ef')
+
+        # Checking the cmp %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0002')
+
+        # Checking the jg $5 instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02f1')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02f4')
+
+        # Checking the jl $2 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '02f8')
+
+        # Checking the mov %R00, $512 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0200')
+
+        # Checking the cmp %R00, [%R02+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0004')
+
+        # Checking the jl $2 instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0300')
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0303')
+
+        # Checking the jge $2 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0309')
+
+        # Checking the jle $-1 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0306')
+
+        # Checking the jmp $2 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '030c')
+
+        # Checking the test %R00, %R01 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0006')
+
+        # Checking the test %R00, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0002')
+
+        # Checking the test %R00, [%R02+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['FR']._state), '0002')
+
+        # Checking the in %R00, $1 instruction
+        cpu.web_next_instruction()
+        cpu.input_finish(bin(69)[2:])
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), '0045')
+
+        # Checking the in [%R02], $1 instruction
+        cpu.web_next_instruction()
+        cpu.input_finish(bin(70)[2:])
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(512*8, 514*8)), '0046')
+
+        # Checking the in [%R02+$2], $1 instruction
+        cpu.web_next_instruction()
+        cpu.input_finish(bin(71)[2:])
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(514*8, 516*8)), '0047')
+
+        # Checking the out $1, %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(str(cpu.ports_dictionary['1']), '                   E')
+
+        # Checking the out $1, [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(str(cpu.ports_dictionary['1']), '                  EF')
+
+        # Checking the out $1, [%R02+$2] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(str(cpu.ports_dictionary['1']), '                 EFG')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.registers['R02']._state), '0200')
+
+        # Checking the load4 [%R02] instruction
+        self.assertEqual(ba2hex(cpu.registers['IP']._state), '0334')
+        cpu.web_next_instruction()
+        test_str = ba2hex(cpu.data_memory.read_data(512*8, 520*8))
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), test_str[0:4])
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), test_str[4:8])
+        self.assertEqual(ba2hex(cpu.registers['R02']._state), test_str[8:12])
+        self.assertEqual(ba2hex(cpu.registers['R03']._state), test_str[12:16])
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the store4 [%R02] instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '0046004701006104')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the add4 [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '0047004801016105')
+
+        # Checking the sub4 [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '0046004701006104')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the mul4 [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '008c008e02003df8')
+
+        # Checking the div4 [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '0046004701001efc')
 
 
 if __name__ == '__main__':

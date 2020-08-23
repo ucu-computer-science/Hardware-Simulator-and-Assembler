@@ -1,1198 +1,1740 @@
 {
-    "comments": "Each architecture contains a dict of instructions: encoding, name, result destination and list of operands",
-    "risc1": {
-        "000000": [
-            "halt",
-            "halt"
-        ],
-        "000001": [
-            "load",
-            ["tos", "memtos"],
-            []
-        ],
-        "000010": [
-            "loadf",
-            ["tos", "fr"],
-            []
-        ],
-        "100000": [
-            "load",
-            ["tos", "memimm"],
-            ["imm"]
-        ],
-        "000100": [
-            "store",
-            ["memtos", "tospop"],
-            []
-        ],
-        "100001": [
-            "store",
-            ["memtos", "imm"],
-            ["imm"]
-        ],
-        "000101": [
-            "storef",
-            ["fr", "tospop"],
-            []
-        ],
-        "000110": [
-            "swap",
-            ["swap", "tospop", "tospop"],
-            []
-        ],
-        "000111": [
-            "dup",
-            ["tos", "tos"],
-            []
-        ],
-        "001000": [
-            "dup2",
-            ["tos", "tos2"],
-            []
-        ],
-        "100010": [
-            "mov",
-            ["tos", "imm"],
-            ["imm"]
-        ],
-        "001001": [
-            "push",
-            ["stackpush", "tospop"],
-            []
-        ],
-        "001010": [
-            "pushf",
-            ["stackpush", "fr"],
-            []
-        ],
-        "001100": [
-            "pop",
-            ["stackpop", "tos"],
-            []
-        ],
-        "001101": [
-            "popf",
-            ["stackpopf", "fr"],
-            []
-        ],
-        "001110": [
-            "add",
-            ["tos", "tospop", "tospop"],
-            []
-        ],
-        "001111": [
-            "sub",
-            ["tos", "tospop", "tospop"],
-            []
-        ],
-        "010000": [
-            "mul",
-            ["tos", "tospop", "tospop"],
-            []
-        ],
-        "010001": [
-            "div",
-            ["tos", "tospop", "tospop"],
-            []
-        ],
-        "010010": [
-            "and",
-            ["tos", "tospop", "tospop"],
-            []
-        ],
-        "010011": [
-            "or",
-            ["tos", "tospop", "tospop"],
-            []
-        ],
-        "010100": [
-            "xor",
-            ["tos", "tospop", "tospop"],
-            []
-        ],
-        "010101": [
-            "not",
-            ["tos", "tospop"],
-            []
-        ],
-        "100011": [
-            "lsh",
-            ["tos", "tospop","imm"],
-            ["imm"]
-        ],
-        "100100": [
-            "rsh",
-            ["tos", "tospop","imm"],
-            ["imm"]
-        ],
-        "100101": [
-            "call",
-            ["call", "imm"],
-            ["imm"]
-        ],
-        "010110": [
-            "call",
-            ["call", "tos"],
-            []
-        ],
-        "010111": [
-            "ret",
-            ["ret"],
-            []
-        ],
-        "011000": [
-            "cmpe",
-            ["tos", "tospop", "tospop"],
-            []
-        ],
-        "100110": [
-            "cmpe",
-            ["tos", "tospop", "imm"],
-            ["imm"]
-        ],
-        "011001": [
-            "cmpb",
-            ["tos", "tospop", "tospop"],
-            []
-        ],
-        "100111": [
-            "cmpb",
-            ["tos", "tospop", "imm"],
-            ["imm"]
-        ],
-        "101000": [
-            "jmp",
-            ["jmp", "imm"],
-            ["imm"]
-        ],
-        "011010": [
-            "jmp",
-            ["jmp", "tospop"],
-            []
-        ],
-        "101001": [
-            "jc",
-            ["jmp", "tospop", "imm"],
-            ["imm"]
-        ],
-        "011011": [
-            "jc",
-            ["jmp", "tospop", "tospop"],
-            []
-        ],
-        "101010": [
-            "in",
-            ["in", "imm"],
-            ["imm"]
-        ],
-        "101011": [
-            "out",
-            ["out", "imm", "tospop"],
-            ["imm"]
-        ],
-        "011100": [
-            "nop",
-            [],
-            []
-        ]
-    },
-    "risc2": {
-        "00000000": [
-            "halt",
-            "halt"
-        ],
-        "00000001": [
-            "load",
-            ["acc", "memir"],
-            []
-        ],
-        "00000010": [
-            "loadf",
-            ["acc", "fr"],
-            []
-        ],
-        "00000011": [
-            "loadi",
-            ["acc", "ir"],
-            []
-        ],
-        "00000100": [
-            "store",
-            ["memir", "acc"],
-            []
-        ],
-        "10000000": [
-            "store",
-            ["memir", "imm"],
-            ["imm"]
-        ],
-        "00000101": [
-            "storef",
-            ["fr", "acc"],
-            []
-        ],
-        "00000110": [
-            "storei",
-            ["ir", "acc"],
-            []
-        ],
-        "10000001": [
-            "mov",
-            ["acc", "imm"],
-            ["imm"]
-        ],
-        "00000111": [
-            "push",
-            ["stackpush", "acc"],
-            []
-        ],
-        "00001000": [
-            "pushf",
-            ["stackpush", "fr"],
-            []
-        ],
-        "00001001": [
-            "pushi",
-            ["stackpush", "ir"],
-            []
-        ],
-        "00001010": [
-            "pop",
-            ["stackpop", "acc"],
-            []
-        ],
-        "00001011": [
-            "popf",
-            ["stackpop", "fr"],
-            []
-        ],
-        "00001100": [
-            "popi",
-            ["stackpop", "ir"],
-            []
-        ],
-        "00001101": [
-            "add",
-            ["acc", "memir"],
-            []
-        ],
-        "00001110": [
-            "sub",
-            ["acc", "memir"],
-            []
-        ],
-        "00001111": [
-            "inc",
-            ["acc", "one"],
-            []
-        ],
-        "00010000": [
-            "dec",
-            ["acc", "one"],
-            []
-        ],
-        "00010001": [
-            "mul",
-            ["acc", "memir"],
-            []
-        ],
-        "00010010": [
-            "div",
-            ["acc", "memir"],
-            []
-        ],
-        "00010011": [
-            "and",
-            ["acc", "memir"],
-            []
-        ],
-        "00010100": [
-            "or",
-            ["acc", "memir"],
-            []
-        ],
-        "00010101": [
-            "xor",
-            ["acc", "memir"],
-            []
-        ],
-        "00010110": [
-            "not",
-            ["acc", "acc"],
-            []
-        ],
-        "10000010": [
-            "lsh",
-            ["acc", "imm"],
-            ["imm"]
-        ],
-        "10000011": [
-            "rsh",
-            ["acc", "imm"],
-            ["imm"]
-        ],
-        "00010111": [
-            "call",
-            ["call", "acc"],
-            []
-        ],
-        "10000100": [
-            "call",
-            ["call", "imm"],
-            ["imm"]
-        ],
-        "00011000": [
-            "ret",
-            ["ret"],
-            []
-        ],
-        "00011001": [
-            "cmp",
-            ["cmp", "acc", "memir"],
-            []
-        ],
-        "10000101": [
-            "cmp",
-            ["cmp", "acc", "imm"],
-            ["imm"]
-        ],
-        "00011010": [
-            "test",
-            ["cmp", "acc", "memir"],
-            []
-        ],
-        "10000110": [
-            "test",
-            ["cmp", "acc", "imm"],
-            ["imm"]
-        ],
-        "10000111": [
-            "jmp",
-            ["jmp", "imm"],
-            ["imm"]
-        ],
-        "00011011": [
-            "jmp",
-            ["jmp", "acc"],
-            []
-        ],
-        "10001000": [
-            "je",
-            ["jmp", "imm"],
-            ["imm"]
-        ],
-        "00011100": [
-            "je",
-            ["jmp", "acc"],
-            []
-        ],
-        "10001001": [
-            "jne",
-            ["jmp", "imm"],
-            ["imm"]
-        ],
-        "00011101": [
-            "jne",
-            ["jmp", "acc"],
-            []
-        ],
-        "10001010": [
-            "jg",
-            ["jmp", "imm"],
-            ["imm"]
-        ],
-        "00011110": [
-            "jg",
-            ["jmp", "acc"],
-            []
-        ],
-        "10001011": [
-            "jge",
-            ["jmp", "imm"],
-            ["imm"]
-        ],
-        "00011111": [
-            "jge",
-            ["jmp", "acc"],
-            []
-        ],
-        "10001100": [
-            "jl",
-            ["jmp", "imm"],
-            ["imm"]
-        ],
-        "00100000": [
-            "jl",
-            ["jmp", "acc"],
-            []
-        ],
-        "10001101": [
-            "jle",
-            ["jmp", "imm"],
-            ["imm"]
-        ],
-        "00100001": [
-            "jle",
-            ["jmp", "acc"],
-            []
-        ],
-        "10001110": [
-            "in",
-            ["in", "imm"],
-            ["imm"]
-        ],
-        "10001111": [
-            "out",
-            ["out", "imm", "acc"],
-            ["imm"]
-        ],
-        "00100010": [
-            "nop",
-            []
-        ]
-    },
-    "risc3": {
-        "000000": [
-            "halt",
-            "halt",
-            []
-        ],
-        "000001": [
-            "load",
-            "firstop",
-            [
-                "reg",
-                "memreg"
-            ]
-        ],
-        "000010": [
-            "store",
-            "firstop",
-            [
-                "memreg",
-                "reg"
-            ]
-        ],
-        "000110": [
-            "mov_low",
-            "firstop",
-            [
-                "reg",
-                "imm8"
-            ]
-        ],
-        "000111": [
-            "mov_low",
-            "firstop",
-            [
-                "reg",
-                "imm8"
-            ]
-        ],
-        "001000": [
-            "mov_high",
-            "firstop",
-            [
-                "reg",
-                "imm8"
-            ]
-        ],
-        "001001": [
-            "mov_high",
-            "firstop",
-            [
-                "reg",
-                "imm8"
-            ]
-        ],
-        "000101": [
-            "mov",
-            "firstop",
-            [
-                "reg",
-                "reg"
-            ]
-        ],
-        "101000": [
-            "push",
-            "stackpush",
-            [
-                "reg"
-            ]
-        ],
-        "101001": [
-            "pop",
-            "stackpop",
-            [
-                "reg"
-            ]
-        ],
-        "000011": [
-            "add",
-            "firstop",
-            [
-                "reg",
-                "reg",
-                "reg"
-            ]
-        ],
-        "100100": [
-            "addc",
-            "firstop",
-            [
-                "reg",
-                "reg"
-            ]
-        ],
-        "000100": [
-            "sub",
-            "firstop",
-            [
-                "reg",
-                "reg",
-                "reg"
-            ]
-        ],
-        "001010": [
-            "mul",
-            "firstop",
-            [
-                "reg",
-                "reg",
-                "reg"
-            ]
-        ],
-        "001011": [
-            "div",
-            "firstop",
-            [
-                "reg",
-                "reg",
-                "reg"
-            ]
-        ],
-        "001100": [
-            "and",
-            "firstop",
-            [
-                "reg",
-                "reg",
-                "reg"
-            ]
-        ],
-        "001101": [
-            "or",
-            "firstop",
-            [
-                "reg",
-                "reg",
-                "reg"
-            ]
-        ],
-        "001110": [
-            "xor",
-            "firstop",
-            [
-                "reg",
-                "reg",
-                "reg"
-            ]
-        ],
-        "001111": [
-            "not",
-            "firstop",
-            [
-                "reg",
-                "reg"
-            ]
-        ],
-        "010000": [
-            "lsh",
-            "firstop",
-            [
-                "reg",
-                "reg",
-                "reg"
-            ]
-        ],
-        "010001": [
-            "rsh",
-            "firstop",
-            [
-                "reg",
-                "reg",
-                "reg"
-            ]
-        ],
-        "010010": [
-            "call",
-            "call",
-            [
-                "imm10"
-            ]
-        ],
-        "010011": [
-            "call",
-            "call",
-            [
-                "reg"
-            ]
-        ],
-        "010100": [
-            "ret",
-            "ret",
-            []
-        ],
-        "010101": [
-            "cmp",
-            "flags",
-            [
-                "reg",
-                "reg"
-            ]
-        ],
-        "010110": [
-            "cmp",
-            "flags",
-            [
-                "reg",
-                "imm7"
-            ]
-        ],
-        "010111": [
-            "test",
-            "flags",
-            [
-                "reg",
-                "reg"
-            ]
-        ],
-        "011000": [
-            "jmp",
-            "jmp",
-            [
-                "imm10"
-            ]
-        ],
-        "011001": [
-            "jmp",
-            "jmp",
-            [
-                "reg"
-            ]
-        ],
-        "011010": [
-            "je",
-            "jmp",
-            [
-                "imm10"
-            ]
-        ],
-        "011011": [
-            "jne",
-            "jmp",
-            [
-                "imm10"
-            ]
-        ],
-        "011100": [
-            "jg",
-            "jmp",
-            [
-                "imm10"
-            ]
-        ],
-        "011101": [
-            "jge",
-            "jmp",
-            [
-                "imm10"
-            ]
-        ],
-        "011110": [
-            "jl",
-            "jmp",
-            [
-                "imm10"
-            ]
-        ],
-        "011111": [
-            "jle",
-            "jmp",
-            [
-                "imm10"
-            ]
-        ],
-        "100000": [
-            "in",
-            "in",
-            [
-                "reg",
-                "imm7"
-            ]
-        ],
-        "100001": [
-            "out",
-            "out",
-            [
-                "imm5",
-                "imm5"
-            ]
-        ],
-        "100010": [
-            "out",
-            "out",
-            [
-                "imm7",
-                "reg"
-            ]
-        ],
-        "100011": [
-            "nop",
-            "nop",
-            []
-        ]
-    },
-    "cisc": {
-        "00000000": [
-          "halt",
-          "halt",
-          []
-        ],
-        "10000000": [
-          "mov",
-          "firstop",
-          ["reg", "imm"]
-        ],
-        "01100000": [
-          "mov",
-          "firstop",
-          ["reg", "reg"]
-        ],
-        "01100001": [
-          "mov",
-          "firstop",
-          ["reg", "memreg"]
-        ],
-        "10100000": [
-          "mov",
-          "firstop",
-          ["reg", "reg", "imm"]
-        ],
-        "01100010": [
-          "mov",
-          "firstop",
-          ["memreg", "reg"]
-        ],
-        "10000001": [
-          "mov",
-          "firstop",
-          ["memreg", "imm"]
-        ],
-        "10100001": [
-          "mov",
-          "firstop",
-          ["reg", "imm", "reg"]
-        ],
-        "11000000": [
-          "mov",
-          "firstop",
-          ["reg", "imm", "imm"]
-        ],
-        "00000001": [
-          "push",
-          "stackpush",
-          ["reg"]
-        ],
-        "01000000": [
-          "push",
-          "stackpush",
-          ["imm"]
-        ],
-        "00000010": [
-          "pop",
-          "stackpop",
-          ["reg"]
-        ],
-        "01000001": [
-          "enter",
-          "enter",
-          ["imm"]
-        ],
-        "00100000": [
-          "leave",
-          "leave",
-          []
-        ],
-        "01100011": [
-          "add",
-          "firstop",
-          ["reg", "memreg"]
-        ],
-        "01100100": [
-          "add",
-          "firstop",
-          ["reg", "reg"]
-        ],
-        "10100010": [
-          "add",
-          "firstop",
-          ["reg", "reg", "imm"]
-        ],
-        "01100101": [
-          "add",
-          "firstop",
-          ["memreg", "reg"]
-        ],
-        "01100110": [
-          "sub",
-          "firstop",
-          ["reg", "memreg"]
-        ],
-        "01100111": [
-          "sub",
-          "firstop",
-          ["reg", "reg"]
-        ],
-        "10100011": [
-          "sub",
-          "firstop",
-          ["reg", "reg", "imm"]
-        ],
-        "01101000": [
-          "sub",
-          "firstop",
-          ["memreg", "reg"]
-        ],
-        "00000011": [
-          "inc",
-          "firstop",
-          ["reg"]
-        ],
-        "00000100": [
-          "inc",
-          "firstop",
-          ["memreg"]
-        ],
-        "10000010": [
-          "inc",
-          "firstop",
-          ["reg", "off"]
-        ],
-        "00000101": [
-          "dec",
-          "firstop",
-          ["reg"]
-        ],
-        "00000110": [
-          "dec",
-          "firstop",
-          ["memreg"]
-        ],
-        "10000011": [
-          "dec",
-          "firstop",
-          ["reg", "off"]
-        ],
-        "01101001": [
-          "mul",
-          "firstop",
-          ["reg", "reg"]
-        ],
-        "01101010": [
-          "mul",
-          "firstop",
-          ["reg", "memreg"]
-        ],
-        "01101011": [
-          "mul",
-          "firstop",
-          ["memreg", "reg"]
-        ],
-        "10000100": [
-          "mul",
-          "firstop",
-          ["reg", "imm"]
-        ],
-        "10100100": [
-          "mul",
-          "firstop",
-          ["reg", "reg", "imm"]
-        ],
-        "01101100": [
-          "div",
-          "firstop",
-          ["reg", "reg"]
-        ],
-        "01101101": [
-          "div",
-          "firstop",
-          ["reg", "memreg"]
-        ],
-        "01101110": [
-          "div",
-          "firstop",
-          ["memreg", "reg"]
-        ],
-        "10000101": [
-          "div",
-          "firstop",
-          ["reg", "imm"]
-        ],
-        "10100101": [
-          "div",
-          "firstop",
-          ["reg", "reg", "imm"]
-        ],
-        "01101111": [
-            "and",
-            "firstop",
-            ["reg", "reg"]
-        ],
-        "01110000": [
-            "and",
-            "firstop",
-            ["reg", "memreg"]
-        ],
-        "01110001": [
-            "or",
-            "firstop",
-            ["reg", "reg"]
-        ],
-        "01110010": [
-            "or",
-            "firstop",
-            ["reg", "memreg"]
-        ],
-        "01110011": [
-            "xor",
-            "firstop",
-            ["reg", "reg"]
-        ],
-        "01110100": [
-            "xor",
-            "firstop",
-            ["reg", "memreg"]
-        ],
-        "00000111": [
-            "not",
-            "firstop",
-            ["reg"]
-        ],
-        "00001000": [
-            "not",
-            "firstop",
-            ["memreg"]
-        ],
-        "10000110": [
-            "lsh",
-            "firstop",
-            ["reg", "imm"]
-        ],
-        "10000111": [
-            "lsh",
-            "firstop",
-            ["memreg", "imm"]
-        ],
-        "11000001": [
-            "lsh",
-            "firstop",
-            ["reg", "imm", "imm"]
-        ],
-        "10001000": [
-            "rsh",
-            "firstop",
-            ["reg", "imm"]
-        ],
-        "10001001": [
-            "rsh",
-            "firstop",
-            ["memreg", "imm"]
-        ],
-        "11000010": [
-            "rsh",
-            "firstop",
-            ["reg", "imm", "imm"]
-        ],
-        "01000010": [
-          "call",
-          "call",
-          ["imm"]
-        ],
-        "00001001": [
-          "call",
-          "call",
-          ["reg"]
-        ],
-        "10001010": [
-          "call",
-          "call",
-          ["reg", "imm"]
-        ],
-        "00100001": [
-            "ret",
-            "ret",
-            []
-        ],
-        "01110101": [
-          "cmp",
-          "flags",
-          ["reg", "reg"]
-        ],
-        "10001011": [
-          "cmp",
-          "flags",
-          ["reg", "imm"]
-        ],
-        "01110110": [
-          "cmp",
-          "flags",
-          ["reg", "memreg"]
-        ],
-        "10100110": [
-          "cmp",
-          "flags",
-          ["reg", "reg", "imm"]
-        ],
-        "01110111": [
-          "test",
-          "flags",
-          ["reg", "reg"]
-        ],
-        "01111000": [
-          "test",
-          "flags",
-          ["reg", "memreg"]
-        ],
-        "10100111": [
-          "test",
-          "flags",
-          ["reg", "reg", "imm"]
-        ],
-        "01111001": [
-          "test",
-          "flags",
-          ["memreg", "reg"]
-        ],
-        "01000011": [
-          "jmp",
-          "jmp",
-          ["imm"]
-        ],
-        "00001010": [
-          "jmp",
-          "jmp",
-          ["reg"]
-        ],
-        "10001100": [
-          "jmp",
-          "jmp",
-          ["reg", "imm"]
-        ],
-        "01000100": [
-          "je",
-          "jmp",
-          ["imm"]
-        ],
-        "01000101": [
-          "jne",
-          "jmp",
-          ["imm"]
-        ],
-        "01000110": [
-          "jg",
-          "jmp",
-          ["imm"]
-        ],
-        "01000111": [
-          "jge",
-          "jmp",
-          ["imm"]
-        ],
-        "01001000": [
-          "jl",
-          "jmp",
-          ["imm"]
-        ],
-        "01001001": [
-          "jle",
-          "jmp",
-          ["imm"]
-        ],
-        "10001101": [
-          "in",
-          "in",
-          ["reg", "imm"]
-        ],
-        "10001110": [
-          "in",
-          "in",
-          ["mereg", "imm"]
-        ],
-        "11000011": [
-          "in",
-          "in",
-          ["reg", "imm", "imm"]
-        ],
-        "10001111": [
-          "out",
-          "out",
-          ["imm", "reg"]
-        ],
-        "10010000": [
-          "out",
-          "out",
-          ["imm", "memreg"]
-        ],
-        "11000100": [
-          "out",
-          "out",
-          ["imm", "reg", "imm"]
-        ],
-        "00001011": [
-          "load4",
-          "firstop",
-          ["memreg"]
-        ],
-        "00001100": [
-          "store4",
-          "firstop",
-          ["memreg"]
-        ],
-        "01111010": [
-          "add4",
-          "firstop",
-          ["memreg", "memreg"]
-        ],
-        "01111011": [
-          "sub4",
-          "firstop",
-          ["memreg", "memreg"]
-        ],
-        "01111100": [
-          "mul4",
-          "firstop",
-          ["memreg", "memreg"]
-        ],
-        "01111101": [
-          "div4",
-          "firstop",
-          ["memreg", "memreg"]
-        ],
-        "01111110": [
-          "cmp4",
-          "firstop",
-          ["memreg", "memreg"]
-        ],
-        "01111111": [
-          "test4",
-          "firstop",
-          ["memreg", "memreg"]
-        ],
-        "00001101": [
-          "nop",
-          "nop",
-          []
-        ]
-    }
+  "comments": "Each architecture contains a dict of instructions: encoding, name, result destination and list of operands",
+  "risc1": {
+    "000000": [
+      "halt",
+      "halt"
+    ],
+    "000001": [
+      "load",
+      [
+        "tos",
+        "memtos"
+      ],
+      []
+    ],
+    "000010": [
+      "loadf",
+      [
+        "tos",
+        "fr"
+      ],
+      []
+    ],
+    "100000": [
+      "load",
+      [
+        "tos",
+        "memimm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "000100": [
+      "store",
+      [
+        "memtos",
+        "tospop"
+      ],
+      []
+    ],
+    "100001": [
+      "store",
+      [
+        "memtos",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "000101": [
+      "storef",
+      [
+        "fr",
+        "tospop"
+      ],
+      []
+    ],
+    "000110": [
+      "swap",
+      [
+        "swap",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "000111": [
+      "dup",
+      [
+        "tos",
+        "tos"
+      ],
+      []
+    ],
+    "001000": [
+      "dup2",
+      [
+        "tos",
+        "tos2"
+      ],
+      []
+    ],
+    "100010": [
+      "mov",
+      [
+        "tos",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "001001": [
+      "push",
+      [
+        "stackpush",
+        "tospop"
+      ],
+      []
+    ],
+    "001010": [
+      "pushf",
+      [
+        "stackpush",
+        "fr"
+      ],
+      []
+    ],
+    "001100": [
+      "pop",
+      [
+        "stackpop",
+        "tos"
+      ],
+      []
+    ],
+    "001101": [
+      "popf",
+      [
+        "stackpopf",
+        "fr"
+      ],
+      []
+    ],
+    "001110": [
+      "add",
+      [
+        "tos",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "001111": [
+      "sub",
+      [
+        "tos",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "010000": [
+      "mul",
+      [
+        "tos",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "010001": [
+      "div",
+      [
+        "tos",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "010010": [
+      "and",
+      [
+        "tos",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "010011": [
+      "or",
+      [
+        "tos",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "010100": [
+      "xor",
+      [
+        "tos",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "010101": [
+      "not",
+      [
+        "tos",
+        "tospop"
+      ],
+      []
+    ],
+    "100011": [
+      "lsh",
+      [
+        "tos",
+        "tospop",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "100100": [
+      "rsh",
+      [
+        "tos",
+        "tospop",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "100101": [
+      "call",
+      [
+        "call",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "010110": [
+      "call",
+      [
+        "call",
+        "tos"
+      ],
+      []
+    ],
+    "010111": [
+      "ret",
+      [
+        "ret"
+      ],
+      []
+    ],
+    "011000": [
+      "cmpe",
+      [
+        "tos",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "100110": [
+      "cmpe",
+      [
+        "tos",
+        "tospop",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "011001": [
+      "cmpb",
+      [
+        "tos",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "100111": [
+      "cmpb",
+      [
+        "tos",
+        "tospop",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "101000": [
+      "jmp",
+      [
+        "jmp",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "011010": [
+      "jmp",
+      [
+        "jmp",
+        "tospop"
+      ],
+      []
+    ],
+    "101001": [
+      "jc",
+      [
+        "jmp",
+        "tospop",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "011011": [
+      "jc",
+      [
+        "jmp",
+        "tospop",
+        "tospop"
+      ],
+      []
+    ],
+    "101010": [
+      "in",
+      [
+        "in",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "101011": [
+      "out",
+      [
+        "out",
+        "imm",
+        "tospop"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "011100": [
+      "nop",
+      [],
+      []
+    ]
+  },
+  "risc2": {
+    "00000000": [
+      "halt",
+      "halt"
+    ],
+    "00000001": [
+      "load",
+      [
+        "acc",
+        "memir"
+      ],
+      []
+    ],
+    "00000010": [
+      "loadf",
+      [
+        "acc",
+        "fr"
+      ],
+      []
+    ],
+    "00000011": [
+      "loadi",
+      [
+        "acc",
+        "ir"
+      ],
+      []
+    ],
+    "00000100": [
+      "store",
+      [
+        "memir",
+        "acc"
+      ],
+      []
+    ],
+    "10000000": [
+      "store",
+      [
+        "memir",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00000101": [
+      "storef",
+      [
+        "fr",
+        "acc"
+      ],
+      []
+    ],
+    "00000110": [
+      "storei",
+      [
+        "ir",
+        "acc"
+      ],
+      []
+    ],
+    "10000001": [
+      "mov",
+      [
+        "acc",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00000111": [
+      "push",
+      [
+        "stackpush",
+        "acc"
+      ],
+      []
+    ],
+    "00001000": [
+      "pushf",
+      [
+        "stackpush",
+        "fr"
+      ],
+      []
+    ],
+    "00001001": [
+      "pushi",
+      [
+        "stackpush",
+        "ir"
+      ],
+      []
+    ],
+    "00001010": [
+      "pop",
+      [
+        "stackpop",
+        "acc"
+      ],
+      []
+    ],
+    "00001011": [
+      "popf",
+      [
+        "stackpop",
+        "fr"
+      ],
+      []
+    ],
+    "00001100": [
+      "popi",
+      [
+        "stackpop",
+        "ir"
+      ],
+      []
+    ],
+    "00001101": [
+      "add",
+      [
+        "acc",
+        "memir"
+      ],
+      []
+    ],
+    "00001110": [
+      "sub",
+      [
+        "acc",
+        "memir"
+      ],
+      []
+    ],
+    "00001111": [
+      "inc",
+      [
+        "acc",
+        "one"
+      ],
+      []
+    ],
+    "00010000": [
+      "dec",
+      [
+        "acc",
+        "one"
+      ],
+      []
+    ],
+    "00010001": [
+      "mul",
+      [
+        "acc",
+        "memir"
+      ],
+      []
+    ],
+    "00010010": [
+      "div",
+      [
+        "acc",
+        "memir"
+      ],
+      []
+    ],
+    "00010011": [
+      "and",
+      [
+        "acc",
+        "memir"
+      ],
+      []
+    ],
+    "00010100": [
+      "or",
+      [
+        "acc",
+        "memir"
+      ],
+      []
+    ],
+    "00010101": [
+      "xor",
+      [
+        "acc",
+        "memir"
+      ],
+      []
+    ],
+    "00010110": [
+      "not",
+      [
+        "acc",
+        "acc"
+      ],
+      []
+    ],
+    "10000010": [
+      "lsh",
+      [
+        "acc",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "10000011": [
+      "rsh",
+      [
+        "acc",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00010111": [
+      "call",
+      [
+        "call",
+        "acc"
+      ],
+      []
+    ],
+    "10000100": [
+      "call",
+      [
+        "call",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00011000": [
+      "ret",
+      [
+        "ret"
+      ],
+      []
+    ],
+    "00011001": [
+      "cmp",
+      [
+        "cmp",
+        "acc",
+        "memir"
+      ],
+      []
+    ],
+    "10000101": [
+      "cmp",
+      [
+        "cmp",
+        "acc",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00011010": [
+      "test",
+      [
+        "cmp",
+        "acc",
+        "memir"
+      ],
+      []
+    ],
+    "10000110": [
+      "test",
+      [
+        "cmp",
+        "acc",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "10000111": [
+      "jmp",
+      [
+        "jmp",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00011011": [
+      "jmp",
+      [
+        "jmp",
+        "acc"
+      ],
+      []
+    ],
+    "10001000": [
+      "je",
+      [
+        "jmp",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00011100": [
+      "je",
+      [
+        "jmp",
+        "acc"
+      ],
+      []
+    ],
+    "10001001": [
+      "jne",
+      [
+        "jmp",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00011101": [
+      "jne",
+      [
+        "jmp",
+        "acc"
+      ],
+      []
+    ],
+    "10001010": [
+      "jg",
+      [
+        "jmp",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00011110": [
+      "jg",
+      [
+        "jmp",
+        "acc"
+      ],
+      []
+    ],
+    "10001011": [
+      "jge",
+      [
+        "jmp",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00011111": [
+      "jge",
+      [
+        "jmp",
+        "acc"
+      ],
+      []
+    ],
+    "10001100": [
+      "jl",
+      [
+        "jmp",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00100000": [
+      "jl",
+      [
+        "jmp",
+        "acc"
+      ],
+      []
+    ],
+    "10001101": [
+      "jle",
+      [
+        "jmp",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00100001": [
+      "jle",
+      [
+        "jmp",
+        "acc"
+      ],
+      []
+    ],
+    "10001110": [
+      "in",
+      [
+        "in",
+        "imm"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "10001111": [
+      "out",
+      [
+        "out",
+        "imm",
+        "acc"
+      ],
+      [
+        "imm"
+      ]
+    ],
+    "00100010": [
+      "nop",
+      []
+    ]
+  },
+  "risc3": {
+    "000000": [
+      "halt",
+      "halt",
+      []
+    ],
+    "000001": [
+      "load",
+      "firstop",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "000010": [
+      "store",
+      "firstop",
+      [
+        "memreg",
+        "reg"
+      ]
+    ],
+    "000110": [
+      "mov_low",
+      "firstop",
+      [
+        "reg",
+        "imm8"
+      ]
+    ],
+    "000111": [
+      "mov_low",
+      "firstop",
+      [
+        "reg",
+        "imm8"
+      ]
+    ],
+    "001000": [
+      "mov_high",
+      "firstop",
+      [
+        "reg",
+        "imm8"
+      ]
+    ],
+    "001001": [
+      "mov_high",
+      "firstop",
+      [
+        "reg",
+        "imm8"
+      ]
+    ],
+    "000101": [
+      "mov",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "101000": [
+      "push",
+      "stackpush",
+      [
+        "reg"
+      ]
+    ],
+    "101001": [
+      "pop",
+      "stackpop",
+      [
+        "reg"
+      ]
+    ],
+    "000011": [
+      "add",
+      "firstop",
+      [
+        "reg",
+        "reg",
+        "reg"
+      ]
+    ],
+    "100100": [
+      "addc",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "000100": [
+      "sub",
+      "firstop",
+      [
+        "reg",
+        "reg",
+        "reg"
+      ]
+    ],
+    "001010": [
+      "mul",
+      "firstop",
+      [
+        "reg",
+        "reg",
+        "reg"
+      ]
+    ],
+    "001011": [
+      "div",
+      "firstop",
+      [
+        "reg",
+        "reg",
+        "reg"
+      ]
+    ],
+    "001100": [
+      "and",
+      "firstop",
+      [
+        "reg",
+        "reg",
+        "reg"
+      ]
+    ],
+    "001101": [
+      "or",
+      "firstop",
+      [
+        "reg",
+        "reg",
+        "reg"
+      ]
+    ],
+    "001110": [
+      "xor",
+      "firstop",
+      [
+        "reg",
+        "reg",
+        "reg"
+      ]
+    ],
+    "001111": [
+      "not",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "010000": [
+      "lsh",
+      "firstop",
+      [
+        "reg",
+        "reg",
+        "reg"
+      ]
+    ],
+    "010001": [
+      "rsh",
+      "firstop",
+      [
+        "reg",
+        "reg",
+        "reg"
+      ]
+    ],
+    "010010": [
+      "call",
+      "call",
+      [
+        "imm10"
+      ]
+    ],
+    "010011": [
+      "call",
+      "call",
+      [
+        "reg"
+      ]
+    ],
+    "010100": [
+      "ret",
+      "ret",
+      []
+    ],
+    "010101": [
+      "cmp",
+      "flags",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "010110": [
+      "cmp",
+      "flags",
+      [
+        "reg",
+        "imm7"
+      ]
+    ],
+    "010111": [
+      "test",
+      "flags",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "011000": [
+      "jmp",
+      "jmp",
+      [
+        "imm10"
+      ]
+    ],
+    "011001": [
+      "jmp",
+      "jmp",
+      [
+        "reg"
+      ]
+    ],
+    "011010": [
+      "je",
+      "jmp",
+      [
+        "imm10"
+      ]
+    ],
+    "011011": [
+      "jne",
+      "jmp",
+      [
+        "imm10"
+      ]
+    ],
+    "011100": [
+      "jg",
+      "jmp",
+      [
+        "imm10"
+      ]
+    ],
+    "011101": [
+      "jge",
+      "jmp",
+      [
+        "imm10"
+      ]
+    ],
+    "011110": [
+      "jl",
+      "jmp",
+      [
+        "imm10"
+      ]
+    ],
+    "011111": [
+      "jle",
+      "jmp",
+      [
+        "imm10"
+      ]
+    ],
+    "100000": [
+      "in",
+      "in",
+      [
+        "reg",
+        "imm7"
+      ]
+    ],
+    "100001": [
+      "out",
+      "out",
+      [
+        "imm5",
+        "imm5"
+      ]
+    ],
+    "100010": [
+      "out",
+      "out",
+      [
+        "imm7",
+        "reg"
+      ]
+    ],
+    "100011": [
+      "nop",
+      "nop",
+      []
+    ]
+  },
+  "cisc": {
+    "00000000": [
+      "halt",
+      "halt",
+      []
+    ],
+    "10000000": [
+      "mov",
+      "firstop",
+      [
+        "reg",
+        "imm"
+      ]
+    ],
+    "01100000": [
+      "mov",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "01100001": [
+      "mov",
+      "firstop",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "10100000": [
+      "mov",
+      "firstop",
+      [
+        "reg",
+        "memregoff"
+      ]
+    ],
+    "01100010": [
+      "mov",
+      "firstop",
+      [
+        "memreg",
+        "reg"
+      ]
+    ],
+    "10000001": [
+      "mov",
+      "firstop",
+      [
+        "memreg",
+        "imm"
+      ]
+    ],
+    "10100001": [
+      "mov",
+      "firstop",
+      [
+        "memregoff",
+        "reg"
+      ]
+    ],
+    "11000000": [
+      "mov",
+      "firstop",
+      [
+        "memregoff",
+        "imm"
+      ]
+    ],
+    "00000001": [
+      "push",
+      "stackpush",
+      [
+        "reg"
+      ]
+    ],
+    "01000000": [
+      "push",
+      "stackpush",
+      [
+        "imm"
+      ]
+    ],
+    "00000010": [
+      "pop",
+      "stackpop",
+      [
+        "reg"
+      ]
+    ],
+    "01000001": [
+      "enter",
+      "enter",
+      [
+        "imm"
+      ]
+    ],
+    "00100000": [
+      "leave",
+      "leave",
+      []
+    ],
+    "01100011": [
+      "add",
+      "firstop",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "01100100": [
+      "add",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "10100010": [
+      "add",
+      "firstop",
+      [
+        "reg",
+        "memregoff"
+      ]
+    ],
+    "01100101": [
+      "add",
+      "firstop",
+      [
+        "memreg",
+        "reg"
+      ]
+    ],
+    "01100110": [
+      "sub",
+      "firstop",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "01100111": [
+      "sub",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "10100011": [
+      "sub",
+      "firstop",
+      [
+        "reg",
+        "memregoff"
+      ]
+    ],
+    "01101000": [
+      "sub",
+      "firstop",
+      [
+        "memreg",
+        "reg"
+      ]
+    ],
+    "00000011": [
+      "inc",
+      "firstop",
+      [
+        "reg",
+        "one"
+      ]
+    ],
+    "00000100": [
+      "inc",
+      "firstop",
+      [
+        "memreg",
+        "one"
+      ]
+    ],
+    "10000010": [
+      "inc",
+      "firstop",
+      [
+        "memregoff",
+        "one"
+      ]
+    ],
+    "00000101": [
+      "dec",
+      "firstop",
+      [
+        "reg",
+        "one"
+      ]
+    ],
+    "00000110": [
+      "dec",
+      "firstop",
+      [
+        "memreg",
+        "one"
+      ]
+    ],
+    "10000011": [
+      "dec",
+      "firstop",
+      [
+        "memregoff",
+        "one"
+      ]
+    ],
+    "01101001": [
+      "mul",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "01101010": [
+      "mul",
+      "firstop",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "01101011": [
+      "mul",
+      "firstop",
+      [
+        "memreg",
+        "reg"
+      ]
+    ],
+    "10000100": [
+      "mul",
+      "firstop",
+      [
+        "reg",
+        "imm"
+      ]
+    ],
+    "10100100": [
+      "mul",
+      "firstop",
+      [
+        "reg",
+        "memregoff"
+      ]
+    ],
+    "01101100": [
+      "div",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "01101101": [
+      "div",
+      "firstop",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "01101110": [
+      "div",
+      "firstop",
+      [
+        "memreg",
+        "reg"
+      ]
+    ],
+    "10000101": [
+      "div",
+      "firstop",
+      [
+        "reg",
+        "imm"
+      ]
+    ],
+    "10100101": [
+      "div",
+      "firstop",
+      [
+        "reg",
+        "memregoff"
+      ]
+    ],
+    "01101111": [
+      "and",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "01110000": [
+      "and",
+      "firstop",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "01110001": [
+      "or",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "01110010": [
+      "or",
+      "firstop",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "01110011": [
+      "xor",
+      "firstop",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "01110100": [
+      "xor",
+      "firstop",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "00000111": [
+      "not",
+      "firstop",
+      [
+        "reg"
+      ]
+    ],
+    "00001000": [
+      "not",
+      "firstop",
+      [
+        "memreg"
+      ]
+    ],
+    "10000110": [
+      "lsh",
+      "firstop",
+      [
+        "reg",
+        "imm"
+      ]
+    ],
+    "10000111": [
+      "lsh",
+      "firstop",
+      [
+        "memreg",
+        "imm"
+      ]
+    ],
+    "11000001": [
+      "lsh",
+      "firstop",
+      [
+        "memregoff",
+        "imm"
+      ]
+    ],
+    "10001000": [
+      "rsh",
+      "firstop",
+      [
+        "reg",
+        "imm"
+      ]
+    ],
+    "10001001": [
+      "rsh",
+      "firstop",
+      [
+        "memreg",
+        "imm"
+      ]
+    ],
+    "11000010": [
+      "rsh",
+      "firstop",
+      [
+        "memregoff",
+        "imm"
+      ]
+    ],
+    "01000010": [
+      "call",
+      "call",
+      [
+        "imm"
+      ]
+    ],
+    "00001001": [
+      "call",
+      "call",
+      [
+        "reg"
+      ]
+    ],
+    "10001010": [
+      "call",
+      "call",
+      [
+        "regoff"
+      ]
+    ],
+    "00100001": [
+      "ret",
+      "ret",
+      []
+    ],
+    "01110101": [
+      "cmp",
+      "flags",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "10001011": [
+      "cmp",
+      "flags",
+      [
+        "reg",
+        "imm"
+      ]
+    ],
+    "01110110": [
+      "cmp",
+      "flags",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "10100110": [
+      "cmp",
+      "flags",
+      [
+        "reg",
+        "memregoff"
+      ]
+    ],
+    "01110111": [
+      "test",
+      "flags",
+      [
+        "reg",
+        "reg"
+      ]
+    ],
+    "01111000": [
+      "test",
+      "flags",
+      [
+        "reg",
+        "memreg"
+      ]
+    ],
+    "10100111": [
+      "test",
+      "flags",
+      [
+        "reg",
+        "memregoff"
+      ]
+    ],
+    "01000011": [
+      "jmp",
+      "jmp",
+      [
+        "imm"
+      ]
+    ],
+    "00001010": [
+      "jmp",
+      "jmp",
+      [
+        "reg"
+      ]
+    ],
+    "10001100": [
+      "jmp",
+      "jmp",
+      [
+        "regoff"
+      ]
+    ],
+    "01000100": [
+      "je",
+      "jmp",
+      [
+        "imm"
+      ]
+    ],
+    "01000101": [
+      "jne",
+      "jmp",
+      [
+        "imm"
+      ]
+    ],
+    "01000110": [
+      "jg",
+      "jmp",
+      [
+        "imm"
+      ]
+    ],
+    "01000111": [
+      "jge",
+      "jmp",
+      [
+        "imm"
+      ]
+    ],
+    "01001000": [
+      "jl",
+      "jmp",
+      [
+        "imm"
+      ]
+    ],
+    "01001001": [
+      "jle",
+      "jmp",
+      [
+        "imm"
+      ]
+    ],
+    "10001101": [
+      "in",
+      "in",
+      [
+        "reg",
+        "imm"
+      ]
+    ],
+    "10001110": [
+      "in",
+      "in",
+      [
+        "memreg",
+        "imm"
+      ]
+    ],
+    "11000011": [
+      "in",
+      "in",
+      [
+        "memregoff",
+        "imm"
+      ]
+    ],
+    "10001111": [
+      "out",
+      "out",
+      [
+        "imm",
+        "reg"
+      ]
+    ],
+    "10010000": [
+      "out",
+      "out",
+      [
+        "imm",
+        "memreg"
+      ]
+    ],
+    "11000100": [
+      "out",
+      "out",
+      [
+        "imm",
+        "memregoff"
+      ]
+    ],
+    "00001011": [
+      "load4",
+      "simdload",
+      [
+        "simdreg"
+      ]
+    ],
+    "00001100": [
+      "store4",
+      "simdstore",
+      [
+        "simdreg"
+      ]
+    ],
+    "01111010": [
+      "add4",
+      "simd",
+      [
+        "simdreg",
+        "reg"
+      ]
+    ],
+    "01111011": [
+      "sub4",
+      "simd",
+      [
+        "simdreg",
+        "reg"
+      ]
+    ],
+    "01111100": [
+      "mul4",
+      "simd",
+      [
+        "simdreg",
+        "reg"
+      ]
+    ],
+    "01111101": [
+      "div4",
+      "simd",
+      [
+        "simdreg",
+        "reg"
+      ]
+    ],
+    "00100010": [
+      "nop",
+      "nop",
+      []
+    ]
+  }
 }

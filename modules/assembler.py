@@ -4,10 +4,13 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
-# TODO: This assembler works pretty fine, but still there is label decoding left to be implemented
+# TODO: Implement label decoding for jumps and calls
+
+# TODO: Implement assembly directives (db and dw)
 
 # TODO: There is more though, instructions.json is pretty inconsistent between different
 #  architectures as it was all done on the go, and is under-documented
+
 
 import os
 import json
@@ -21,6 +24,7 @@ class AssemblerCLI:
     """
     Command-Line interface for the Assembler (as opposed to the general functionality class)
     """
+
     def __init__(self):
         """
         Checks the validity of the arguments and instantiates new Assembler class instance with them
@@ -111,6 +115,7 @@ class Assembler:
 
         # Divide the program into lines
         for line in text.split("\n"):
+            line = line.rstrip(" ")
             # Check if its an empty line or a comment line, skip if yes
             if line.strip(" ").startswith("#") or line.isspace() or not line:
                 continue
@@ -169,67 +174,128 @@ class Assembler:
         binary_line = instruction_info[0]
         types = instruction_info[1]
 
+        # Eliminate processor-only information in type lists
+        if "one" in types: types.remove("one")
+
+        instruction_length = self.instruction_size[0]
+        if self.isa == "cisc":
+            register_byte = ""
+            immediate_bytes = ""
+
         if len(operands) != len(types):
             raise AssemblerError(f"Provide valid operands for this instruction: {self.line}")
 
+        # TODO: This probably could be moved to a separate function to allow for normal recursion calls
+        # TODO: Offsets work only like this for now: [%reg + $-5], implement proper workflow for [%reg - $5]
+
         # Check if the operand provided is of the type needed, if yes, encode and add it to the current line
         for index, operand in enumerate(operands):
-            if self.__valid_type(operand, op_type:=types[index]):
+            if self.__valid_type(operand, op_type := types[index]):
 
                 # Encode the operand properly and add it to the line
                 if op_type == "reg" or op_type == "fr":
-                    binary_line += self.register_names[operand[1:]]
-                elif op_type == "memreg":
-                    binary_line += self.register_names[operand[2:-1]]
+                    if self.isa == "cisc":
+                        register_byte += self.register_names[operand[1:]]
+                    else:
+                        binary_line += self.register_names[operand[1:]]
+
+                elif op_type == "regoff":
+                    index = operand.find("+")
+                    reg_op = operand[:index].rstrip(" ")
+                    offset_op = int(operand[index + 2:].lstrip(" "))
+                    register_byte += self.register_names[reg_op[1:]]
+
+                    # Check if the size of the number is valid
+                    if not (-1 * 2**15 < offset_op < 2**15):
+                        raise AssemblerError(f"Immediate constant provided too big: {self.line}")
+
+                    encoded_number = self.__encode_number(offset_op, 16)
+                    immediate_bytes += encoded_number
+
+                elif op_type in ["memreg", "simdreg"]:
+                    if self.isa == "cisc":
+                        register_byte += self.register_names[operand[2:-1]]
+                    else:
+                        binary_line += self.register_names[operand[2:-1]]
+
+                elif op_type == "memregoff":
+                    index = operand.find("+")
+                    reg_op = operand[1:index].rstrip(" ")
+                    offset_op = int(operand[index + 2:-1].lstrip(" "))
+                    register_byte += self.register_names[reg_op[1:]]
+
+                    # Check if the size of the number is valid
+                    if not (-1 * 2 ** 15 < offset_op < 2 ** 15):
+                        raise AssemblerError(f"Immediate constant provided too big: {self.line}")
+
+                    encoded_number = self.__encode_number(offset_op, 16)
+                    immediate_bytes += encoded_number
+
                 elif op_type.startswith("imm"):
+
                     # Read the number from the assembly code
                     num = int(operand[1:])
 
                     # RISC-Stack has to divide the number into two 6-bit bytes
-                    if self.isa == "risc1":
-                        bit_len = 12
-                        temp = self.__encode_number(num, bit_len)
-
-                    # RISC-Accumulator has to divide the number into two lines of 8 bits
-                    elif self.isa == "risc2":
-                        bit_len = 16
-                        temp = self.__encode_number(num, bit_len)
-
+                    # RISC-Accumulator and CISC have to divide the number into two 8-bit bytes
                     # Immediate constant length is undefined for Risc-Register architecture,
                     # and thus is set for every instruction
-                    elif self.isa == "risc3":
-                        bit_len = int(op_type[3:])
-                        temp = self.__encode_number(num, bit_len)
+                    bit_lengths = {"risc1": "12", "risc2": "16", "risc3": op_type[3:], "cisc": "16"}
+                    bit_len = int(bit_lengths[self.isa])
 
-                    # CISC stub
-                    else:
-                        bit_len = 8
-                        temp = ''
-
-                    # Check if the size of the number was valid
-                    if not (-1*2**(bit_len-1) < num < 2**(bit_len-1)):
+                    # Check if the size of the number is valid
+                    if not (-1 * 2 ** (bit_len - 1) < num < 2 ** (bit_len - 1)):
                         raise AssemblerError(f"Immediate constant provided too big: {self.line}")
 
-                    binary_line += temp
+                    encoded_number = self.__encode_number(num, bit_len)
+
+                    if self.isa == "cisc":
+                        immediate_bytes += encoded_number
+                    else:
+                        binary_line += encoded_number
 
             else:
                 raise AssemblerError(f"Provide valid operands for this instruction: {self.line}")
 
-        return binary_line.ljust(self.instruction_size[0], '0')
+        if self.isa == "cisc":
+            if register_byte:
+                register_byte = register_byte.ljust(8, '0')
+            binary_line += register_byte + immediate_bytes
+
+        return binary_line.ljust(instruction_length, '0')
 
     def __valid_type(self, assembly_op, op_type):
         """
         Checks if the operand provided in assembly code is of valid type for this instruction
+        :param assembly_op: str - assembly operand
+        :param op_type: str - keyword with operand type
+        :return: bool - whether the operand is validly encoded
         """
         # If the operand signifies a register, it should start
         # with a '%' sign and the name should exist in this architecture
         if op_type == "reg":
             return assembly_op.startswith("%") and assembly_op[1:] in self.register_names
 
-        # If the operand is a memory location addressed by a register, it shoould look like [%reg]
-        elif op_type == "memreg":
+        elif op_type == "regoff":
+            index = assembly_op.find("+")
+            if index == -1: return False
+            reg_op = assembly_op[:index].rstrip(" ")
+            offset_op = assembly_op[index + 1:].lstrip(" ")
+            return self.__valid_type(reg_op, "reg") and self.__valid_type(offset_op, "imm")
+
+        # If the operand is a memory location addressed by a register, it should look like [%reg]
+        elif op_type in ["memreg", "simdreg"]:
             return (assembly_op.startswith("[") and assembly_op.endswith("]")
                     and self.__valid_type(assembly_op[1:-1], "reg"))
+
+        # If the operand provided is a memory location with an immediate constant offset - [%reg\s+\+\s+$off]
+        elif op_type == "memregoff":
+            index = assembly_op.find("+")
+            if index == -1: return False
+            memreg_op = assembly_op[1:index].rstrip(" ")
+            offset_op = assembly_op[index+1:-1].lstrip(" ")
+            return (assembly_op.startswith("[") and assembly_op.endswith("]")
+                    and self.__valid_type(memreg_op, "reg") and self.__valid_type(offset_op, "imm"))
 
         # If the operand is an immediate constant, it should start with a '$' sign and contain numbers only
         elif op_type.startswith("imm"):
