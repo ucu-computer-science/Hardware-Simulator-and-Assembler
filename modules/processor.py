@@ -83,9 +83,6 @@
 #  * Hardware interrupts
 #  * and Program interrupts
 
-# TODO: Implement and test CISC architecture
-#  (I can only guess as it's not tested fully yet, but only SIMD operations remain to be implemented)
-
 # TODO: Port the existing demos to CISC ISA
 
 # TODO: Should we have a SIMD switch on / off for CISC?
@@ -618,12 +615,12 @@ class CPU:
             if res_type in ["simd", "simdstore"]:
                 self.data_memory.write_data(result_destination * 8, bitarray(result))
             elif res_type == "simdload":
-                self.registers['R00'].write_data(operands_values[0][0:16])
-                self.registers['R01'].write_data(operands_values[0][16:32])
-                self.registers['R02'].write_data(operands_values[0][32:48])
-                self.registers['R03'].write_data(operands_values[0][48:64])
+                self.registers['R00'].write_data(operands_values[0][0:16].to01())
+                self.registers['R01'].write_data(operands_values[0][16:32].to01())
+                self.registers['R02'].write_data(operands_values[0][32:48].to01())
+                self.registers['R03'].write_data(operands_values[0][48:64].to01())
 
-            self.logger.debug(f"SIMD OPERATION op_val[-1]: {ba2hex(operands_values[-1])}")
+            self.logger.debug(f"SIMD OPERATION op_val: {', '.join([ba2hex(op_value) for op_value in operands_values])}")
 
         # Else, we have to execute the needed computations for this function in the virtual ALU
         else:

@@ -1224,44 +1224,45 @@ class TestCPU(unittest.TestCase):
 
         # Skipping a mov instruction
         cpu.web_next_instruction()
-        self.assertEqual(ba2hex(cpu.registers['R02']._state), '0201')
+        self.assertEqual(ba2hex(cpu.registers['R02']._state), '0200')
 
         # Checking the load4 [%R02] instruction
         self.assertEqual(ba2hex(cpu.registers['IP']._state), '0334')
-        # print(cpu.instruction)
-        # print(cpu.registers)
         cpu.web_next_instruction()
-        # print(cpu.registers)
-        self.assertEqual(ba2hex(cpu.registers['R00']._state), 'fb64')
-        self.assertEqual(ba2hex(cpu.registers['R01']._state), '0200')
-        self.assertEqual(ba2hex(cpu.registers['R02']._state), '6020')
-        self.assertEqual(ba2hex(cpu.registers['R03']._state), '6104')
-
-        # TODO: THERE"S A HUGE PROBLEM AND I'M STUCK
-        #  WHEN RUNNING THE PROCESSOR BY HAND, THE TESTS BELOW SHOULD PASS, THAT IS, THEY CONTAIN THE VALUES
-        #  THEY SHOULD CONTAIN, RECEIVED FROM MEMORY.
-        #  HOWEVER WHEN THE MODULE ITSELF RUNS THE PROGRAM, SOMEHOW THE REGISTERS ARE NOT THE SAME
-        #  i have no idea why this happens, i checked the instruction pointer, i checked the instruction itself,
-        #  i checked the log output when running by hand, here it is:
-        #  DEBUG FETCH: Instruction: 00001011, Opcode: 00001011, Long registers: ['010']
-        #  DEBUG START decoding and executing the instruction
-        #  DEBUG INST INFO, <load4> Operands Aliases: ['simdreg']
-        #  DEBUG INST INFO Operands Values: 0110010000000010000000000110000000100000011000010000010010100000
-        #  DEBUG INST INFO (Memory Write Access: False, Destination: None, TOS_Push: False)
-        #  DEBUG SIMD OPERATION op_val[-1]: 64020060206104a0
-        #  DEBUG FINISH decoding and executing the instruction
-        #  !!!! NOTICE THE NEXT LINE: !!!!!
-        #  Registers state: R00: fb64, R01: 0200, R02: 6020, R03: 6104, SP: 03fc, BP: 0400, FR: 0002, IP: 0334
-        #  DEBUG MOVE IP to the next instruction
-        #  ----------------------------------------------------------------------------------------------------
-        #  And that's it, I have no idea what's causing it to freak out and am unable to proceed with further testing
+        test_str = ba2hex(cpu.data_memory.read_data(512*8, 520*8))
+        self.assertEqual(ba2hex(cpu.registers['R00']._state), test_str[0:4])
+        self.assertEqual(ba2hex(cpu.registers['R01']._state), test_str[4:8])
+        self.assertEqual(ba2hex(cpu.registers['R02']._state), test_str[8:12])
+        self.assertEqual(ba2hex(cpu.registers['R03']._state), test_str[12:16])
 
         # Skipping a mov instruction
         cpu.web_next_instruction()
 
         # Checking the store4 [%R02] instruction
         cpu.web_next_instruction()
-        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '0047')
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '0046004701006104')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the add4 [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '0047004801016105')
+
+        # Checking the sub4 [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '0046004701006104')
+
+        # Skipping a mov instruction
+        cpu.web_next_instruction()
+
+        # Checking the mul4 [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '008c008e02003df8')
+
+        # Checking the div4 [%R02], %R00 instruction
+        cpu.web_next_instruction()
+        self.assertEqual(ba2hex(cpu.data_memory.read_data(256 * 8, 264 * 8)), '0046004701001efc')
 
 
 if __name__ == '__main__':

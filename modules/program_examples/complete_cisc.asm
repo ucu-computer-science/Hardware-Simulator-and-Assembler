@@ -107,24 +107,9 @@ mov %R02, $512
 load4 [%R02]
 mov %R02, $256
 store4 [%R02]
-
-# store4
-# memreg
-
-# add4
-# memreg memreg
-
-# sub4
-# memreg memreg
-
-# mul4
-# memreg memreg
-
-# div4
-# memreg memreg
-
-# cmp4
-# memreg memreg
-
-# test4
-# memreg memreg
+mov %R00, $1
+add4 [%R02], %R00
+sub4 [%R02], %R00
+mov %R00, $2
+mul4 [%R02], %R00
+div4 [%R02], %R00
