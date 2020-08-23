@@ -1687,64 +1687,64 @@
     ],
     "00001011": [
       "load4",
-      "firstop",
+      "simdload",
       [
-        "memreg"
+        "simdreg"
       ]
     ],
     "00001100": [
       "store4",
-      "firstop",
+      "simdstore",
       [
-        "memreg"
+        "simdreg"
       ]
     ],
     "01111010": [
       "add4",
-      "firstop",
+      "simd",
       [
-        "memreg",
-        "memreg"
+        "simdreg",
+        "reg"
       ]
     ],
     "01111011": [
       "sub4",
-      "firstop",
+      "simd",
       [
-        "memreg",
-        "memreg"
+        "simdreg",
+        "reg"
       ]
     ],
     "01111100": [
       "mul4",
-      "firstop",
+      "simd",
       [
-        "memreg",
-        "memreg"
+        "simdreg",
+        "reg"
       ]
     ],
     "01111101": [
       "div4",
-      "firstop",
+      "simd",
       [
-        "memreg",
-        "memreg"
+        "simdreg",
+        "reg"
       ]
     ],
     "01111110": [
       "cmp4",
-      "firstop",
+      "simd",
       [
-        "memreg",
-        "memreg"
+        "simdreg",
+        "reg"
       ]
     ],
     "01111111": [
       "test4",
-      "firstop",
+      "simd",
       [
-        "memreg",
-        "memreg"
+        "simdreg",
+        "reg"
       ]
     ],
     "00100010": [

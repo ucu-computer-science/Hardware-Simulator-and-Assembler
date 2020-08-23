@@ -544,7 +544,7 @@ class CPU:
         # If the opcode is CISC's 'enter' instruction, which replaces three instructions on moving the stack further
         # down when calling a new procedure: push %bp / mov %bp, %sp / sub %sp, $num
         elif res_type == "enter":
-            self.logger.debug(f"INST INFO <enter> {operands_values[0]}")
+            self.logger.debug(f"INST INFO <enter> {ba2hex(operands_values[0])}")
             self.__push_stack(self.registers['BP']._state)  # Push %bp
             self.registers['BP'].write_data(self.registers['SP']._state)  # mov %bp, %sp
             new_stack_pointer_value = int(self.registers["SP"]._state.to01(), 2) - int(operands_values[0].to01(), 2)
@@ -575,7 +575,7 @@ class CPU:
 
         # If the opcode specifies outputting to the device
         elif res_type == "out":
-            self.logger.debug(f"INST INFO outputting to the device, value: {operands_values[-1]}")
+            self.logger.debug(f"INST INFO outputting to the device, value: {ba2hex(operands_values[-1])}")
             result_destination.out_shell(operands_values[-1])
 
         # If we are getting input from device, we 'hang' the processor so that it waits for input
@@ -598,6 +598,33 @@ class CPU:
             self.data_memory.write_data(result_destination * 8 + 16, operands_values[1])
             self.registers["TOS"].write_data(bin(result_destination + 4)[2:])
 
+        # Opcode specifies SIMD instruction for CISC
+        elif res_type.startswith("simd"):
+
+            # Get the values from four consecutive memory cells starting with the one passed in a memreg operand
+            if res_type == "simdstore":
+                result = (self.registers['R00']._state + self.registers['R01']._state +
+                               self.registers['R02']._state + self.registers['R03']._state)
+            else:
+                result = ""
+
+            # Calculate the result of the operations in ALU
+            if res_type == "simd":
+                function = functions_dictionary[self.instructions_dict[self.opcode.to01()][0][:-1]]
+                for i in range(0, 49, 16):
+                    result += function([operands_values[0][i:i + 16], operands_values[-1]], self.registers['FR']).to01()
+
+            # If needed, we have to save the result to several sources at the same time
+            if res_type in ["simd", "simdstore"]:
+                self.data_memory.write_data(result_destination * 8, bitarray(result))
+            elif res_type == "simdload":
+                self.registers['R00'].write_data(operands_values[0][0:16])
+                self.registers['R01'].write_data(operands_values[0][16:32])
+                self.registers['R02'].write_data(operands_values[0][32:48])
+                self.registers['R03'].write_data(operands_values[0][48:64])
+
+            self.logger.debug(f"SIMD OPERATION op_val[-1]: {ba2hex(operands_values[-1])}")
+
         # Else, we have to execute the needed computations for this function in the virtual ALU
         else:
             # Determine the needed function for this opcode and execute it, passing the flag register
@@ -617,7 +644,7 @@ class CPU:
                 result_destination.write_data(result_value)
 
             self.logger.debug(
-                f"INST INFO mwa: {memory_write_access}, tos_push: {tos_push}, result: {result_value.to01()}")
+                f"INST INFO mwa: {memory_write_access}, tos_push: {tos_push}, result: {ba2hex(result_value)}")
 
         return go_to_next_instruction
 
@@ -709,7 +736,7 @@ class CPU:
         elif self.isa in ["risc3", "cisc"]:
 
             # If the result is to be saved into the first operand
-            if (res_type := self.instructions_dict[self.opcode.to01()][1]) in ["firstop", "in", "stackpop"]:
+            if (res_type := self.instructions_dict[self.opcode.to01()][1]) in ["firstop", "in", "stackpop", "simd", "simdstore"]:
 
                 # Determining the code of the result register
                 if self.isa == "cisc":
@@ -720,7 +747,7 @@ class CPU:
                 # Figuring out if it's the register we are working with, or where it points to in memory
                 if operands_aliases[0] == "reg":
                     result_destination = self.register_codes[register_code]
-                elif operands_aliases[0] == "memreg":
+                elif operands_aliases[0] in ["memreg", "simdreg"]:
                     memory_write_access = True
                     result_destination = int(self.register_codes[register_code]._state.to01(), 2)
                 elif operands_aliases[0] == "memregoff":
@@ -777,15 +804,20 @@ class CPU:
                 operands_values.append(bitarray(result.rjust(16, sign_adjuster)))
 
             # If the operand is the memory addressed by register, add its value and go to the next operand
-            elif operand == "memreg":
+            elif operand in ["memreg", "simdreg"]:
 
                 if self.isa == "cisc":
                     register_code = self.long_registers.pop()
                 else:
                     register_code = self.instruction[start_point:start_point + 3].to01()
                     start_point += 3
-                tmp_register = twos_complement(int(self.register_codes[register_code]._state.to01(), 2), 16) * 8
-                operands_values.append(self.data_memory.read_data(tmp_register, tmp_register + 16))
+                tmp_register = int(self.register_codes[register_code]._state.to01(), 2) * 8
+
+                # If we are reading a vector of four from the memory
+                if operand == "simdreg":
+                    operands_values.append(self.data_memory.read_data(tmp_register, tmp_register + 64))
+                else:
+                    operands_values.append(self.data_memory.read_data(tmp_register, tmp_register + 16))
 
             elif operand == "memregoff":
 

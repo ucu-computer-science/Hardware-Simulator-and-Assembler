@@ -212,7 +212,7 @@ class Assembler:
                     encoded_number = self.__encode_number(offset_op, 16)
                     immediate_bytes += encoded_number
 
-                elif op_type == "memreg":
+                elif op_type in ["memreg", "simdreg"]:
                     if self.isa == "cisc":
                         register_byte += self.register_names[operand[2:-1]]
                     else:
@@ -284,7 +284,7 @@ class Assembler:
             return self.__valid_type(reg_op, "reg") and self.__valid_type(offset_op, "imm")
 
         # If the operand is a memory location addressed by a register, it should look like [%reg]
-        elif op_type == "memreg":
+        elif op_type in ["memreg", "simdreg"]:
             return (assembly_op.startswith("[") and assembly_op.endswith("]")
                     and self.__valid_type(assembly_op[1:-1], "reg"))
 

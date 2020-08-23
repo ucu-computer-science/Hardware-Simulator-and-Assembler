@@ -103,35 +103,28 @@ in [%R02+$2], $1
 out $1, %R00
 out $1, [%R02]
 out $1, [%R02+$2]
-
-# load4
-# firstop
-# memreg
+mov %R02, $512
+load4 [%R02]
+mov %R02, $256
+store4 [%R02]
 
 # store4
-# firstop
 # memreg
 
 # add4
-# firstop
 # memreg memreg
 
 # sub4
-# firstop
 # memreg memreg
 
 # mul4
-# firstop
 # memreg memreg
 
 # div4
-# firstop
 # memreg memreg
 
 # cmp4
-# firstop
 # memreg memreg
 
 # test4
-# firstop
 # memreg memreg
