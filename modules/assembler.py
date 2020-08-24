@@ -4,8 +4,6 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
-# TODO: Implement label decoding for jumps and calls
-
 # TODO: Implement assembly directives (db and dw)
 
 # TODO: There is more though, instructions.json is pretty inconsistent between different
@@ -97,6 +95,7 @@ class Assembler:
         # Determining the size of the instructions to read
         instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
         self.instruction_size = instruction_sizes[isa]
+        self.label_allowed = ["jmp", "call", "je", "jne", "jl", "jle", "jg", "jge"]
 
         self.binary_code = self.translate(program_text)
 
@@ -113,8 +112,11 @@ class Assembler:
         #  but still will need that for the actual translation and decoding processes
         binary_code = ""
 
+        # Preprocess the text, delete the comments and empty lines, remember labels and directives
+        text = self.preprocess(text)
+
         # Divide the program into lines
-        for line in text.split("\n"):
+        for index, line in enumerate(text):
             line = line.rstrip(" ")
             # Check if its an empty line or a comment line, skip if yes
             if line.strip(" ").startswith("#") or line.isspace() or not line:
@@ -138,44 +140,71 @@ class Assembler:
             # Get the list of encodings for this assembly instruction
             instructions_info = self.instructions[assembly_instruction]
 
-            # If this assembly instruction has only one encoding, encode it and its operands
-            if len(instructions_info) == 1:
-                binary_line = self.__encode_operands(operands, instructions_info[0])
-            else:
+            # If this assembly instruction has a few different opcodes depending on the type of operands
+            # we check every possible option until we find the one we needed
+            for instruction_info in instructions_info:
+                try:
 
-                # If this assembly instruction has a few different opcodes depending on the type of operands
-                # we check every possible option until we find the one we needed
-                for instruction_info in instructions_info:
-                    try:
+                    # Low and High byte moves have 5-bit opcodes, a special case
+                    if assembly_instruction in ["mov_low", "mov_high"] and len(instruction_info[0]) != 5:
+                        instruction_info[0] = instruction_info[0][:-1]
 
-                        # Low and High byte moves have 5-bit opcodes, a special case
-                        if assembly_instruction in ["mov_low", "mov_high"] and len(instruction_info[0]) != 5:
-                            instruction_info[0] = instruction_info[0][:-1]
+                    binary_line = self.__encode_operands(operands, instruction_info, assembly_instruction, index)
+                    break
+                except AssemblerError:
+                    continue
 
-                        binary_line = self.__encode_operands(operands, instruction_info)
-                        break
-                    except AssemblerError:
-                        continue
-
-                # If all of the opcode options were wrong, raise the error
-                if not binary_line:
-                    raise AssemblerError(f"Provide valid operands for this instruction: {line}")
+            # If all of the opcode options were wrong, raise the error
+            if not binary_line:
+                raise AssemblerError(f"Provide valid operands for this instruction: {line}")
 
             binary_code += binary_line + "\n"
 
         return binary_code
 
-    def __encode_operands(self, operands, instruction_info):
+    def preprocess(self, text):
+        """
+        Preprocesses the assembly code, finds any directives and collects the needed info on them
+
+        :param text: str - the text of the assembly program
+        """
+        result_text = []
+
+        self.labels = dict()
+
+        for line in text.split("\n"):
+            line = line.rstrip(" ")
+
+            # Check if its an empty line or a comment line, skip it if yes
+            if line.strip(" ").startswith("."):
+
+                line = line.strip(" ")[1:]
+                if not line.isalnum():
+                    raise AssemblerError("Provide valid instructions")
+                if line in self.labels:
+                    raise AssemblerError("Labels can not be reassigned or duplicated")
+
+                self.labels[line] = len(result_text)
+
+            elif not (line.strip(" ").startswith("#") or line.isspace() or not line):
+                result_text.append(line)
+
+        return result_text
+
+    def __encode_operands(self, operands, instruction_info, instruction_name, instruction_index):
         """
         Encodes the operands given an opcode and operands types
         :param operands: list - list of operands-strings
         :param instruction_info: list - of instruction encoding and operand types
+        :param instruction_name: str - a name of the assembly instruction
+        :param instruction_index: int - index of the current instruction
         """
         binary_line = instruction_info[0]
         types = instruction_info[1]
 
         # Eliminate processor-only information in type lists
-        if "one" in types: types.remove("one")
+        if "one" in types:
+            types.remove("one")
 
         instruction_length = self.instruction_size[0]
         if self.isa == "cisc":
@@ -189,7 +218,7 @@ class Assembler:
 
         # Check if the operand provided is of the type needed, if yes, encode and add it to the current line
         for index, operand in enumerate(operands):
-            if self.__valid_type(operand, op_type := types[index]):
+            if self.__valid_type(operand, op_type := types[index], instruction_name):
 
                 # Encode the operand properly and add it to the line
                 if op_type == "reg" or op_type == "fr":
@@ -241,15 +270,18 @@ class Assembler:
                         raise AssemblerError(f"Immediate constant provided too big: {self.line}")
 
                     if operand_sign == "-":
-                        offset_op = -1*offset_op
+                        offset_op = -1 * offset_op
 
                     encoded_number = self.__encode_number(offset_op, 16)
                     immediate_bytes += encoded_number
 
                 elif op_type.startswith("imm"):
 
-                    # Read the number from the assembly code
-                    num = int(operand[1:])
+                    # Decode the label if it's mentioned, otherwise read the number from the assembly instruction
+                    if instruction_name in self.label_allowed and operand[1:] in self.labels:
+                        num = (self.labels[operand[1:]] - instruction_index)
+                    else:
+                        num = int(operand[1:])
 
                     # RISC-Stack has to divide the number into two 6-bit bytes
                     # RISC-Accumulator and CISC have to divide the number into two 8-bit bytes
@@ -279,11 +311,12 @@ class Assembler:
 
         return binary_line.ljust(instruction_length, '0')
 
-    def __valid_type(self, assembly_op, op_type):
+    def __valid_type(self, assembly_op, op_type, instruction_name):
         """
         Checks if the operand provided in assembly code is of valid type for this instruction
         :param assembly_op: str - assembly operand
         :param op_type: str - keyword with operand type
+        :param instruction_name: str - a name of the assembly instruction
         :return: bool - whether the operand is validly encoded
         """
         # If the operand signifies a register, it should start
@@ -307,12 +340,13 @@ class Assembler:
 
             reg_op = assembly_op[:index].rstrip(" ")
             offset_op = assembly_op[index + 1:].lstrip(" ")
-            return self.__valid_type(reg_op, "reg") and self.__valid_type(offset_op, "imm")
+            return (self.__valid_type(reg_op, "reg", instruction_name) and
+                    self.__valid_type(offset_op, "imm", instruction_name))
 
         # If the operand is a memory location addressed by a register, it should look like [%reg]
         elif op_type in ["memreg", "simdreg"]:
             return (assembly_op.startswith("[") and assembly_op.endswith("]")
-                    and self.__valid_type(assembly_op[1:-1], "reg"))
+                    and self.__valid_type(assembly_op[1:-1], "reg", instruction_name))
 
         # If the operand provided is a memory location with an immediate constant offset - [%reg\s+\+\s+$off]
         elif op_type == "memregoff":
@@ -330,13 +364,18 @@ class Assembler:
                 index = index_plus
 
             memreg_op = assembly_op[1:index].rstrip(" ")
-            offset_op = assembly_op[index+1:-1].lstrip(" ")
+            offset_op = assembly_op[index + 1:-1].lstrip(" ")
             return (assembly_op.startswith("[") and assembly_op.endswith("]")
-                    and self.__valid_type(memreg_op, "reg") and self.__valid_type(offset_op, "imm"))
+                    and self.__valid_type(memreg_op, "reg", instruction_name) and
+                    self.__valid_type(offset_op, "imm", instruction_name))
 
         # If the operand is an immediate constant, it should start with a '$' sign and contain numbers only
+        # Valid labels are also allowed, they should appear anywhere in the program and start with a '.'
         elif op_type.startswith("imm"):
-            return assembly_op.startswith("$") and self.__is_number(assembly_op[1:])
+            result = [assembly_op.startswith("$") and self.__is_number(assembly_op[1:])]
+            if instruction_name in self.label_allowed:
+                result.append(assembly_op.startswith(".") and assembly_op[1:] in self.labels)
+            return any(result)
 
     @staticmethod
     def __encode_number(number, length):
