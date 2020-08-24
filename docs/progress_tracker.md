@@ -15,8 +15,8 @@
 1. ~~Accumulator ISA Assembler implementation~~
 1. ~~Accumulator ISA Simulator implementation~~
 1. ~~Web page functionality to change memory and registers on the fly~~
-1. CISC ISA Assembler functionality
-1. CISC ISA Simulator functionality
+1. ~~CISC ISA Assembler functionality~~
+1. ~~CISC ISA Simulator functionality~~
 
 #### Tests and additional program examples
 
