@@ -28,7 +28,11 @@ class TestCPU(unittest.TestCase):
                          ('risc2', os.path.join("modules", "demos", "risc2", "helloworld.asm")),
                          ('risc2', os.path.join("modules", "demos", "risc2", "alphabet_printout.asm")),
                          ('risc2', os.path.join("modules", "program_examples", "complete_risc2.asm")),
-                         ('cisc', os.path.join("modules", "program_examples", "complete_cisc.asm"))]
+                         ('cisc', os.path.join("modules", "program_examples", "complete_cisc.asm")),
+                         ('risc1', os.path.join("modules", "program_examples", "label_test_risc1.asm")),
+                         ('risc2', os.path.join("modules", "program_examples", "label_test_risc2.asm")),
+                         ('risc3', os.path.join("modules", "program_examples", "label_test_risc3.asm")),
+                         ('cisc', os.path.join("modules", "program_examples", "label_test_cisc.asm"))]
 
         output_files = self.reassemble(test_programs)
 
@@ -64,6 +68,18 @@ class TestCPU(unittest.TestCase):
 
         with open(output_files[10], "r") as file:
             self.complete_cisc = file.read()
+
+        with open(output_files[11], "r") as file:
+            self.label_risc1 = file.read()
+
+        with open(output_files[12], "r") as file:
+            self.label_risc2 = file.read()
+
+        with open(output_files[13], "r") as file:
+            self.label_risc3 = file.read()
+
+        with open(output_files[14], "r") as file:
+            self.label_cisc = file.read()
 
     def reassemble(self, programs):
         """ Reassembles all the test programs """
@@ -103,6 +119,18 @@ class TestCPU(unittest.TestCase):
 
         cpu_risc3 = CPU("risc3", "neumann", "special", self.risc3_program_text, program_start=512)
         self.assertEqual(ba2hex(cpu_risc3.program_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
+
+    def test_labels(self):
+        """ Tests correct workflow of labels """
+        cpu_risc1 = CPU("risc1", "neumann", "special", self.label_risc1)
+        cpu_risc2 = CPU("risc2", "neumann", "special", self.label_risc2)
+        cpu_risc3 = CPU("risc3", "neumann", "special", self.label_risc3)
+        cpu_cisc = CPU("cisc", "neumann", "special", self.label_cisc)
+
+        for cpu in [cpu_risc1, cpu_risc2, cpu_risc3, cpu_cisc]:
+            for _ in range(4):
+                cpu.web_next_instruction()
+            self.assertEqual(ba2hex(cpu.registers['IP']._state), '0200')
 
     def test_alphabet(self):
         """ Tests the correct alphabet printout for RISC1 and RISC3 architecture """
