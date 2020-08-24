@@ -186,7 +186,6 @@ class Assembler:
             raise AssemblerError(f"Provide valid operands for this instruction: {self.line}")
 
         # TODO: This probably could be moved to a separate function to allow for normal recursion calls
-        # TODO: Offsets work only like this for now: [%reg + $-5], implement proper workflow for [%reg - $5]
 
         # Check if the operand provided is of the type needed, if yes, encode and add it to the current line
         for index, operand in enumerate(operands):
@@ -200,7 +199,12 @@ class Assembler:
                         binary_line += self.register_names[operand[1:]]
 
                 elif op_type == "regoff":
-                    index = operand.find("+")
+
+                    if (index := operand.find("+")) != -1:
+                        operand_sign = "+"
+                    elif (index := operand.find("-")) != -1:
+                        operand_sign = "-"
+
                     reg_op = operand[:index].rstrip(" ")
                     offset_op = int(operand[index + 2:].lstrip(" "))
                     register_byte += self.register_names[reg_op[1:]]
@@ -208,6 +212,9 @@ class Assembler:
                     # Check if the size of the number is valid
                     if not (-1 * 2**15 < offset_op < 2**15):
                         raise AssemblerError(f"Immediate constant provided too big: {self.line}")
+
+                    if operand_sign == "-":
+                        offset_op = -1*offset_op
 
                     encoded_number = self.__encode_number(offset_op, 16)
                     immediate_bytes += encoded_number
@@ -219,7 +226,12 @@ class Assembler:
                         binary_line += self.register_names[operand[2:-1]]
 
                 elif op_type == "memregoff":
-                    index = operand.find("+")
+
+                    if (index := operand.find("+")) != -1:
+                        operand_sign = "+"
+                    elif (index := operand.find("-")) != -1:
+                        operand_sign = "-"
+
                     reg_op = operand[1:index].rstrip(" ")
                     offset_op = int(operand[index + 2:-1].lstrip(" "))
                     register_byte += self.register_names[reg_op[1:]]
@@ -227,6 +239,9 @@ class Assembler:
                     # Check if the size of the number is valid
                     if not (-1 * 2 ** 15 < offset_op < 2 ** 15):
                         raise AssemblerError(f"Immediate constant provided too big: {self.line}")
+
+                    if operand_sign == "-":
+                        offset_op = -1*offset_op
 
                     encoded_number = self.__encode_number(offset_op, 16)
                     immediate_bytes += encoded_number
@@ -277,8 +292,13 @@ class Assembler:
             return assembly_op.startswith("%") and assembly_op[1:] in self.register_names
 
         elif op_type == "regoff":
-            index = assembly_op.find("+")
-            if index == -1: return False
+            index_plus = assembly_op.find("+")
+            index_minus = assembly_op.find("-")
+
+            if (index_plus == -1 and index_minus == -1) or (index_plus != -1 and index_minus != -1):
+                return False
+
+            index = max(index_minus, index_plus)
             reg_op = assembly_op[:index].rstrip(" ")
             offset_op = assembly_op[index + 1:].lstrip(" ")
             return self.__valid_type(reg_op, "reg") and self.__valid_type(offset_op, "imm")
@@ -290,8 +310,13 @@ class Assembler:
 
         # If the operand provided is a memory location with an immediate constant offset - [%reg\s+\+\s+$off]
         elif op_type == "memregoff":
-            index = assembly_op.find("+")
-            if index == -1: return False
+            index_plus = assembly_op.find("+")
+            index_minus = assembly_op.find("-")
+
+            if (index_plus == -1 and index_minus == -1) or (index_plus != -1 and index_minus != -1):
+                return False
+
+            index = max(index_minus, index_plus)
             memreg_op = assembly_op[1:index].rstrip(" ")
             offset_op = assembly_op[index+1:-1].lstrip(" ")
             return (assembly_op.startswith("[") and assembly_op.endswith("]")
