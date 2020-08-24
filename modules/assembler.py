@@ -210,11 +210,11 @@ class Assembler:
                     register_byte += self.register_names[reg_op[1:]]
 
                     # Check if the size of the number is valid
-                    if not (-1 * 2**15 < offset_op < 2**15):
+                    if not (-1 * 2 ** 15 < offset_op < 2 ** 15):
                         raise AssemblerError(f"Immediate constant provided too big: {self.line}")
 
                     if operand_sign == "-":
-                        offset_op = -1*offset_op
+                        offset_op = -1 * offset_op
 
                     encoded_number = self.__encode_number(offset_op, 16)
                     immediate_bytes += encoded_number
@@ -294,11 +294,17 @@ class Assembler:
         elif op_type == "regoff":
             index_plus = assembly_op.find("+")
             index_minus = assembly_op.find("-")
+            index_num = assembly_op.find("$")
 
-            if (index_plus == -1 and index_minus == -1) or (index_plus != -1 and index_minus != -1):
+            if ((index_plus == -1 and index_minus == -1) or
+                    (index_plus != -1 and index_minus != -1 and (max(index_plus, index_minus) < index_num))):
                 return False
 
-            index = max(index_minus, index_plus)
+            if -1 < index_minus < index_num:
+                index = index_minus
+            elif -1 < index_plus < index_num:
+                index = index_plus
+
             reg_op = assembly_op[:index].rstrip(" ")
             offset_op = assembly_op[index + 1:].lstrip(" ")
             return self.__valid_type(reg_op, "reg") and self.__valid_type(offset_op, "imm")
@@ -312,11 +318,17 @@ class Assembler:
         elif op_type == "memregoff":
             index_plus = assembly_op.find("+")
             index_minus = assembly_op.find("-")
+            index_num = assembly_op.find("$")
 
-            if (index_plus == -1 and index_minus == -1) or (index_plus != -1 and index_minus != -1):
+            if ((index_plus == -1 and index_minus == -1) or
+                    (index_plus != -1 and index_minus != -1 and (max(index_plus, index_minus) < index_num))):
                 return False
 
-            index = max(index_minus, index_plus)
+            if -1 < index_minus < index_num:
+                index = index_minus
+            elif -1 < index_plus < index_num:
+                index = index_plus
+
             memreg_op = assembly_op[1:index].rstrip(" ")
             offset_op = assembly_op[index+1:-1].lstrip(" ")
             return (assembly_op.startswith("[") and assembly_op.endswith("]")
