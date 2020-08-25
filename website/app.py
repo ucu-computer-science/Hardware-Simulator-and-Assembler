@@ -107,7 +107,7 @@ app.layout = html.Div([
                         {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
                         {'label': 'HELLO WORLD', 'value': 'hello'},
                         {'label': 'BUBBLE SORT', 'value': 'bubble_sort'},
-                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial', 'disabled':True},
+                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial', 'disabled': True},
                         {'label': 'NONE', 'value': 'none'},
                     ],
                     placeholder="NONE",
@@ -123,7 +123,7 @@ app.layout = html.Div([
                     id='isa-dropdown',
                     options=[
                         {'label': 'REGISTER RISC', 'value': 'risc3'},
-                        {'label': 'REGISTER CISC', 'value': 'cisc', 'disabled': True},
+                        {'label': 'REGISTER CISC', 'value': 'cisc'},
                         {'label': 'STACK', 'value': 'risc1'},
                         {'label': 'ACCUMULATOR', 'value': 'risc2'},
                     ],
@@ -1285,12 +1285,21 @@ def update_registers(value_not_used, user_id, ip_changes, reset, if_input, info,
                                                                                                     'R00: 0000',
                                                                                                     'R01: 0000',
                                                                                                     'R02: 0000',
-                                                                                                    'R03: 0000'], []][
+                                                                                                    'R03: 0000'],
+                ['R00: 0000',
+                 'R01: 0000',
+                 'R02: 0000',
+                 'R03: 0000', 'SP: 0400',
+                 'BP: 0000',
+                 'FR: 0000',
+                 f'IP: {new_ip}'
+                 ]][
             coef]
     return \
         [['FR: 0000', 'SP: 0400', 'IP: 0200', 'TOS: 0000'],
          ['FR: 0000', 'SP: 0400', 'IP: 0200', 'IR: 0000', 'ACC: 0000'],
-         ['SP: 0400', 'IP: 0200', 'LR: 0000', 'FR: 0000', 'R00: 0000', 'R01: 0000', 'R02: 0000', 'R03: 0000'], []][coef]
+         ['SP: 0400', 'IP: 0200', 'LR: 0000', 'FR: 0000', 'R00: 0000', 'R01: 0000', 'R02: 0000', 'R03: 0000'],
+         ['R00: 0000', 'R01: 0000', 'R02: 0000', 'R03: 0000', 'SP: 0400', 'BP: 0000', 'FR: 0000', 'IP: 0200']][coef]
 
 
 @app.callback(Output('output-storage', 'children'),
