@@ -1,15 +1,31 @@
 # Bubble Sort | Stack-RISC example Assembly program
 
-# 00 30 00 20
-# Load first two values order (supposedly)
+# Example list: 00 30 00 20 00 10 00 00
+# Add first index to stack
 mov $0
-mov $2
+
+.loadingloop
+# Add value from the list at that index
+dup
 push
 load
 pop
-load
+
+# Add next index to stack
+mov $2
+add
+
+# Check if the list has finished (in this example we use 3-bytes list)
+dup
+cmpe $6
+jc $2
+
+# Continue going through the list
+jmp .loadingloop
+
+.swaploop
+# Move to the start of the list
 push
-cmpb
-
-jc $-11
-
+push
+push
+push
