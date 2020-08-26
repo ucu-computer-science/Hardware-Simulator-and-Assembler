@@ -1,0 +1,11 @@
+.word dw "anime"
+mov %R00, .word
+out $1, %R00
+mov %R00, .word+$1
+out $1, %R00
+mov %R00, .word+$2
+out $1, %R00
+mov %R00, .word+$3
+out $1, %R00
+mov %R00, .word+$4
+out $1, %R00

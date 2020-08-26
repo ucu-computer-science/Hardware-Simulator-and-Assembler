@@ -169,6 +169,7 @@ class Assembler:
         """
         result_text = []
 
+        # Remembering all instances and values of labels of two types
         self.jump_labels = dict()
         self.mov_labels = dict()
 
@@ -186,17 +187,23 @@ class Assembler:
                 if words[0] in self.jump_labels or words[0] in self.mov_labels:
                     raise AssemblerError(f"Labels can not be reassigned or duplicated: {line}")
 
+                # If only the label is mentioned, it specifies a jump location and points to the next instruction
                 if len(words) == 1:
                     self.jump_labels[line] = len(result_text)
+
+                # If the label is mentioned with directive specification and its value, we have to encode it into memory
                 elif len(words) == 3:
                     if words[1] == "db":
                         self.mov_labels[words[0]] = self.__decode_directive(True, words[2])
                     elif words[1] == "dw":
                         self.mov_labels[words[0]] = self.__decode_directive(False, words[2])
                     else:
-                        raise AssemblerError("Provide valid assembly directive")
+                        raise AssemblerError("Provide a valid assembly directive")
+
+                # Else, it's a wrong format of the directive
                 else:
-                    raise AssemblerError("Provide a valid assembly directive")
+                    raise AssemblerError(
+                        "Provide a valid assembly directive: either just '.label' or '.label db|dw value")
 
             elif not (line.strip(" ").startswith("#") or line.isspace() or not line):
                 result_text.append(line)
@@ -211,7 +218,9 @@ class Assembler:
         :param is_byte: bool - to encode value in a byte or word
         :param value: str - an operand to encode
         """
-        limits = (-2**7+1, 2**8) if is_byte else (-2**15+1, 2**16)
+        # We just figure out what's being encoded into bits - a number (which should fit in 8/16 bits) or a string of
+        # characters (every ASCII character is 1 byte), and return the value we found
+        limits = (-2 ** 7 + 1, 2 ** 8) if is_byte else (-2 ** 15 + 1, 2 ** 16)
         int_pattern = r"\d+"
         str_pattern = r"\"[a-zA-Z]+\""
 
@@ -311,21 +320,30 @@ class Assembler:
                     immediate_bytes += encoded_number
 
                 elif op_type.startswith("imm"):
+                    operand = operand.replace(" ", "")
+                    num_start = operand.find("$")
+                    label_check = operand[1:] if num_start == -1 else operand[1:num_start-1]
 
                     # Decode the label if it's mentioned, otherwise read the number from the assembly instruction
-                    if instruction_name in self.jump_label_allowed and operand.startswith(".") and operand[1:] in self.jump_labels:
-                        num = (self.jump_labels[operand[1:]] - instruction_index)
-                    elif instruction_name in self.mov_label_allowed and operand.startswith(".") and operand[1:] in self.mov_labels:
-                        value = self.mov_labels[operand[1:]]
+                    # There are two possible types of labels:
+                    # * one specifies the instruction to jump to, in that case we figure out the offset and encode it
+                    # * the other references a location in memory, and might also include offsets, we encode bytes or words
+                    if instruction_name in self.jump_label_allowed and operand.startswith(".") and label_check in self.jump_labels:
+                        num = (self.jump_labels[label_check] - instruction_index)
+                    elif instruction_name in self.mov_label_allowed and operand.startswith(".") and label_check in self.mov_labels:
+                        value = self.mov_labels[label_check]
                         if isinstance(value, int):
-                            if operand.find("$") != -1:
+                            if num_start != -1:
                                 raise AssemblerError("Provide valid assembly directives")
                             num = value
                         elif isinstance(value, list):
-                            if (num_start := operand.find("$")) != -1:
+                            if num_start == -1:
                                 num = value[0]
                             else:
-                                num = value[int(operand[num_start+1:])]
+                                mov_index = int(operand[num_start + 1:])
+                                if not(0 <= mov_index < len(value)):
+                                    raise AssemblerError("Provide a valid assembly directive offset")
+                                num = value[mov_index]
                     else:
                         num = int(operand[1:])
 
@@ -357,7 +375,7 @@ class Assembler:
 
         return binary_line.ljust(instruction_length, '0')
 
-    def __valid_type(self, assembly_op, op_type, instruction_name):
+    def __valid_type(self, assembly_op, op_type, instruction_name, recursive=False):
         """
         Checks if the operand provided in assembly code is of valid type for this instruction
         :param assembly_op: str - assembly operand
@@ -369,7 +387,7 @@ class Assembler:
         # with a '%' sign and the name should exist in this architecture
         if op_type == "reg":
             return ((assembly_op.startswith("%") and assembly_op[1:] in self.register_names) or
-                    (instruction_name in self.mov_label_allowed and assembly_op[1:] in self.mov_labels and assembly_op.find('$') != -1))
+                    (instruction_name in self.mov_label_allowed and assembly_op[1:] in self.mov_labels and recursive))
 
         elif op_type == "regoff":
             index_plus = assembly_op.find("+")
@@ -387,8 +405,10 @@ class Assembler:
 
             reg_op = assembly_op[:index].rstrip(" ")
             offset_op = assembly_op[index + 1:].lstrip(" ")
-            return (self.__valid_type(reg_op, "reg", instruction_name) and
-                    self.__valid_type(offset_op, "imm", instruction_name))
+            return ((self.__valid_type(reg_op, "reg", instruction_name)
+                     and self.__valid_type(offset_op, "imm", instruction_name)) or
+                    (recursive and self.__valid_type(reg_op, "reg", instruction_name, recursive=True)
+                     and self.__valid_type(offset_op, "imm", instruction_name)))
 
         # If the operand is a memory location addressed by a register, it should look like [%reg]
         elif op_type in ["memreg", "simdreg"]:
@@ -418,13 +438,15 @@ class Assembler:
 
         # If the operand is an immediate constant, it should start with a '$' sign and contain numbers only
         # Valid labels are also allowed, they should appear anywhere in the program and start with a '.'
+        # Labels are of two types: specifying the jump offset, or some value from the macro value in memory
         elif op_type.startswith("imm"):
             result = [assembly_op.startswith("$") and self.__is_number(assembly_op[1:])]
             if instruction_name in self.jump_label_allowed:
                 result.append(assembly_op.startswith(".") and assembly_op[1:] in self.jump_labels)
             if instruction_name in self.mov_label_allowed:
                 result.append(assembly_op.startswith(".") and
-                              (assembly_op[1:] in self.mov_labels or self.__valid_type(assembly_op, "regoff", instruction_name)))
+                              (assembly_op[1:] in self.mov_labels or self.__valid_type(assembly_op, "regoff",
+                                                                                       instruction_name, recursive=True)))
             return any(result)
 
     @staticmethod

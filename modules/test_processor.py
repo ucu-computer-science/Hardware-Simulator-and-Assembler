@@ -32,7 +32,8 @@ class TestCPU(unittest.TestCase):
                          ('risc1', os.path.join("modules", "program_examples", "label_test_risc1.asm")),
                          ('risc2', os.path.join("modules", "program_examples", "label_test_risc2.asm")),
                          ('risc3', os.path.join("modules", "program_examples", "label_test_risc3.asm")),
-                         ('cisc', os.path.join("modules", "program_examples", "label_test_cisc.asm"))]
+                         ('cisc', os.path.join("modules", "program_examples", "label_test_cisc.asm")),
+                         ('cisc', os.path.join("modules", "program_examples", "directive_test_cisc.asm"))]
 
         output_files = self.reassemble(test_programs)
 
@@ -81,6 +82,9 @@ class TestCPU(unittest.TestCase):
         with open(output_files[14], "r") as file:
             self.label_cisc = file.read()
 
+        with open(output_files[15], "r") as file:
+            self.directives_cisc = file.read()
+
     def reassemble(self, programs):
         """ Reassembles all the test programs """
         output_files = []
@@ -126,6 +130,7 @@ class TestCPU(unittest.TestCase):
         cpu_risc2 = CPU("risc2", "neumann", "special", self.label_risc2)
         cpu_risc3 = CPU("risc3", "neumann", "special", self.label_risc3)
         cpu_cisc = CPU("cisc", "neumann", "special", self.label_cisc)
+        cpu_directives_cisc = CPU("cisc", "neumann", "special", self.directives_cisc)
 
         for cpu in [cpu_risc1, cpu_risc2]:
             for _ in range(4):
@@ -136,6 +141,10 @@ class TestCPU(unittest.TestCase):
             for _ in range(5):
                 cpu.web_next_instruction()
             self.assertEqual(ba2hex(cpu.registers['R00']._state), '000f')
+
+        for _ in range(12):
+            cpu_directives_cisc.web_next_instruction()
+        self.assertEqual(str(cpu_directives_cisc.ports_dictionary['1']), '               anime')
 
     def test_alphabet(self):
         """ Tests the correct alphabet printout for RISC1 and RISC3 architecture """
