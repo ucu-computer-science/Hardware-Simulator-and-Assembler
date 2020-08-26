@@ -35,8 +35,8 @@ mov_low %R02, $13
 cmp %R02, %R00
 
 # This 'jump equal' instruction checks if the result of 'cmp' was zero, and if it was,
-# jumps 5 instructions forward to the end of the program to skip the loop
-je $5
+# jumps to the .finish (5 instructions forward in that example) to the end of the program to skip the loop
+je .finish
 
 # Inside the loop, we pop the value from the memory stack to R03 register, and output it into the device at port 1
 pop %R03
@@ -48,3 +48,7 @@ add %R00, %R00, %R01
 
 # This unconditional jump instruction transitions to the start of the loop
 jmp $-5
+
+.finish
+# Finish the program
+nop

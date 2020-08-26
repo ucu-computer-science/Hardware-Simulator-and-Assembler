@@ -1,6 +1,6 @@
 # Alphabet PrintOut | Register-CISC example Assembly program
 
-# Following instructions printout alphabet
+# Following instructions printout the alphabet
 # Directive .start contains starting point (ASCII-code of A)
 # Directive .end contains ending point (ASCII-code of Z)
 
