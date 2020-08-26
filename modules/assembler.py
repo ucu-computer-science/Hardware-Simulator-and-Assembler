@@ -11,6 +11,7 @@
 
 
 import os
+import re
 import json
 import argparse
 from collections import defaultdict
@@ -95,7 +96,8 @@ class Assembler:
         # Determining the size of the instructions to read
         instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
         self.instruction_size = instruction_sizes[isa]
-        self.label_allowed = ["jmp", "call", "je", "jne", "jl", "jle", "jg", "jge"]
+        self.jump_label_allowed = ["jmp", "call", "je", "jne", "jl", "jle", "jg", "jge"]
+        self.mov_label_allowed = ["mov", "load", "store", "push", "mov_low", "mov_high"]
 
         self.binary_code = self.translate(program_text)
 
@@ -126,12 +128,9 @@ class Assembler:
             # Split instruction name and operands
             binary_line = ""
             arguments = line.split(" ")
-            assembly_instruction, operands = arguments[0], arguments[1:]
-
-            for ind, operand in enumerate(operands[:-1]):
-                if not operand.endswith(','):
-                    raise AssemblerError(f"Provide valid operands for this instruction (commas included): {line}")
-                operands[ind] = operand[:-1]
+            assembly_instruction, operands = arguments[0], ' '.join(arguments[1:]).split(', ')
+            if len(operands) == 1 and operands[0] == '':
+                operands = []
 
             # Check if the instruction actually exists for this architecture
             if assembly_instruction not in self.instructions:
@@ -170,7 +169,8 @@ class Assembler:
         """
         result_text = []
 
-        self.labels = dict()
+        self.jump_labels = dict()
+        self.mov_labels = dict()
 
         for line in text.split("\n"):
             line = line.rstrip(" ")
@@ -179,17 +179,50 @@ class Assembler:
             if line.strip(" ").startswith("."):
 
                 line = line.strip(" ")[1:]
-                if not line.isalnum():
-                    raise AssemblerError("Provide valid instructions")
-                if line in self.labels:
-                    raise AssemblerError("Labels can not be reassigned or duplicated")
 
-                self.labels[line] = len(result_text)
+                words = line.split(" ")
+                if not words[0].isalnum():
+                    raise AssemblerError(f"Provide valid label: {line}")
+                if words[0] in self.jump_labels or words[0] in self.mov_labels:
+                    raise AssemblerError(f"Labels can not be reassigned or duplicated: {line}")
+
+                if len(words) == 1:
+                    self.jump_labels[line] = len(result_text)
+                elif len(words) == 3:
+                    if words[1] == "db":
+                        self.mov_labels[words[0]] = self.__decode_directive(True, words[2])
+                    elif words[1] == "dw":
+                        self.mov_labels[words[0]] = self.__decode_directive(False, words[2])
+                    else:
+                        raise AssemblerError("Provide valid assembly directive")
+                else:
+                    raise AssemblerError("Provide a valid assembly directive")
 
             elif not (line.strip(" ").startswith("#") or line.isspace() or not line):
                 result_text.append(line)
 
         return result_text
+
+    @staticmethod
+    def __decode_directive(is_byte, value):
+        """
+        Decodes operands for directives (db, dw)
+
+        :param is_byte: bool - to encode value in a byte or word
+        :param value: str - an operand to encode
+        """
+        limits = (-2**7+1, 2**8) if is_byte else (-2**15+1, 2**16)
+        int_pattern = r"\d+"
+        str_pattern = r"\"[a-zA-Z]+\""
+
+        if re.search(int_pattern, value) is not None:
+            value = int(value)
+            if limits[0] <= value <= limits[1]:
+                return value
+        elif re.search(str_pattern, value) is not None:
+            return [ord(char) for char in value[1:-1]]
+
+        raise AssemblerError("Provide a valid assembly directive operand")
 
     def __encode_operands(self, operands, instruction_info, instruction_name, instruction_index):
         """
@@ -229,13 +262,14 @@ class Assembler:
 
                 elif op_type == "regoff":
 
+                    operand = operand.replace(" ", "")
                     if (index := operand.find("+")) != -1:
                         operand_sign = "+"
                     elif (index := operand.find("-")) != -1:
                         operand_sign = "-"
 
-                    reg_op = operand[:index].rstrip(" ")
-                    offset_op = int(operand[index + 2:].lstrip(" "))
+                    reg_op = operand[:index]
+                    offset_op = int(operand[index + 2:])
                     register_byte += self.register_names[reg_op[1:]]
 
                     # Check if the size of the number is valid
@@ -256,13 +290,14 @@ class Assembler:
 
                 elif op_type == "memregoff":
 
+                    operand = operand.replace(" ", "")
                     if (index := operand.find("+")) != -1:
                         operand_sign = "+"
                     elif (index := operand.find("-")) != -1:
                         operand_sign = "-"
 
-                    reg_op = operand[1:index].rstrip(" ")
-                    offset_op = int(operand[index + 2:-1].lstrip(" "))
+                    reg_op = operand[1:index]
+                    offset_op = int(operand[index + 2:-1])
                     register_byte += self.register_names[reg_op[1:]]
 
                     # Check if the size of the number is valid
@@ -278,8 +313,19 @@ class Assembler:
                 elif op_type.startswith("imm"):
 
                     # Decode the label if it's mentioned, otherwise read the number from the assembly instruction
-                    if instruction_name in self.label_allowed and operand[1:] in self.labels:
-                        num = (self.labels[operand[1:]] - instruction_index)
+                    if instruction_name in self.jump_label_allowed and operand.startswith(".") and operand[1:] in self.jump_labels:
+                        num = (self.jump_labels[operand[1:]] - instruction_index)
+                    elif instruction_name in self.mov_label_allowed and operand.startswith(".") and operand[1:] in self.mov_labels:
+                        value = self.mov_labels[operand[1:]]
+                        if isinstance(value, int):
+                            if operand.find("$") != -1:
+                                raise AssemblerError("Provide valid assembly directives")
+                            num = value
+                        elif isinstance(value, list):
+                            if (num_start := operand.find("$")) != -1:
+                                num = value[0]
+                            else:
+                                num = value[int(operand[num_start+1:])]
                     else:
                         num = int(operand[1:])
 
@@ -322,7 +368,8 @@ class Assembler:
         # If the operand signifies a register, it should start
         # with a '%' sign and the name should exist in this architecture
         if op_type == "reg":
-            return assembly_op.startswith("%") and assembly_op[1:] in self.register_names
+            return ((assembly_op.startswith("%") and assembly_op[1:] in self.register_names) or
+                    (instruction_name in self.mov_label_allowed and assembly_op[1:] in self.mov_labels and assembly_op.find('$') != -1))
 
         elif op_type == "regoff":
             index_plus = assembly_op.find("+")
@@ -373,8 +420,11 @@ class Assembler:
         # Valid labels are also allowed, they should appear anywhere in the program and start with a '.'
         elif op_type.startswith("imm"):
             result = [assembly_op.startswith("$") and self.__is_number(assembly_op[1:])]
-            if instruction_name in self.label_allowed:
-                result.append(assembly_op.startswith(".") and assembly_op[1:] in self.labels)
+            if instruction_name in self.jump_label_allowed:
+                result.append(assembly_op.startswith(".") and assembly_op[1:] in self.jump_labels)
+            if instruction_name in self.mov_label_allowed:
+                result.append(assembly_op.startswith(".") and
+                              (assembly_op[1:] in self.mov_labels or self.__valid_type(assembly_op, "regoff", instruction_name)))
             return any(result)
 
     @staticmethod

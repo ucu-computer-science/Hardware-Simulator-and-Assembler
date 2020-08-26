@@ -127,10 +127,15 @@ class TestCPU(unittest.TestCase):
         cpu_risc3 = CPU("risc3", "neumann", "special", self.label_risc3)
         cpu_cisc = CPU("cisc", "neumann", "special", self.label_cisc)
 
-        for cpu in [cpu_risc1, cpu_risc2, cpu_risc3, cpu_cisc]:
+        for cpu in [cpu_risc1, cpu_risc2]:
             for _ in range(4):
                 cpu.web_next_instruction()
             self.assertEqual(ba2hex(cpu.registers['IP']._state), '0200')
+
+        for cpu in [cpu_risc3, cpu_cisc]:
+            for _ in range(5):
+                cpu.web_next_instruction()
+            self.assertEqual(ba2hex(cpu.registers['R00']._state), '000f')
 
     def test_alphabet(self):
         """ Tests the correct alphabet printout for RISC1 and RISC3 architecture """
