@@ -625,7 +625,7 @@
       "examples": [
         "not %reg1, %reg2"
       ],
-      "description": "Computes a bitwise not operation between reg2 and saves the result into reg1"
+      "description": "Computes a bitwise not operation on reg2 and saves the result into reg1"
     },
     {
       "name": "lsh",
@@ -735,6 +735,315 @@
         "out $port, $num"
       ],
       "description": "Transfers data from num (or reg) to the device at port"
+    },
+    {
+      "name": "nop",
+      "examples": [
+        "nop"
+      ],
+      "description": "Does not do anything"
+    }
+  ],
+  "cisc": [
+    "Instruction Set for CISC-Register ISA",
+    {
+      "name": "mov",
+      "examples": [
+        "mov %reg, $num",
+        "mov %reg, %reg",
+        "mov %reg, [%reg]",
+        "mov %reg, [%reg+$off]",
+        "mov [%reg], $num",
+        "mov [%reg], %reg",
+        "mov [%reg+$off], $num",
+        "mov [%reg+$off], %reg"
+      ],
+      "description": "Copies a word from the right operand into the left (either into the register, or into memory at location pointed by the register, with offset specified by $off)"
+    },
+    {
+      "name": "push",
+      "examples": [
+        "push $num",
+        "push %reg"
+      ],
+      "description": "Pushes the value of reg or num on the top of the memory stack"
+    },
+    {
+      "name": "pop",
+      "examples": [
+        "pop %reg"
+      ],
+      "description": "Pops the value from the memory stack into reg"
+    },
+    {
+      "name": "enter",
+      "examples": [
+        "enter $num"
+      ],
+      "description": "Replaces three instructions on moving the stack further own on new procedure call: push %bp / mov %bp, %sp / sub %sp, $num"
+    },
+    {
+      "name": "leave",
+      "examples": [
+        "leave"
+      ],
+      "description": "Replaces two instructions on return to the previous procedure's stack frame: mov %sp, %bp / pop %bp"
+    },
+    {
+      "name": "add",
+      "examples": [
+        "add %reg1, %reg2",
+        "add %reg1, [%reg2]",
+        "add %reg1, [%reg2+$off]",
+        "add [%reg1], %reg2"
+      ],
+      "description": "Adds the value of the second operand to the first operand, saving the result in the first one"
+    },
+    {
+      "name": "sub",
+      "examples": [
+        "add %reg1, %reg2",
+        "add %reg1, [%reg2]",
+        "add %reg1, [%reg2+$off]",
+        "add [%reg1], %reg2"
+      ],
+      "description": "Subtracts the value of the second operand from the first operand, saving the result in the first one"
+    },
+    {
+      "name": "inc",
+      "examples": [
+        "inc %reg",
+        "inc [%reg]",
+        "inc [%reg+$off]"
+      ],
+      "description": "Increments the value of the operand by one"
+    },
+     {
+      "name": "dec",
+      "examples": [
+        "dec %reg",
+        "dec [%reg]",
+        "dec [%reg+$off]"
+      ],
+      "description": "Decrements the value of the operand by one"
+    },
+    {
+      "name": "mul",
+      "examples": [
+        "mul %reg, $num",
+        "mul %reg1, %reg2",
+        "mul %reg1, [%reg2]",
+        "mul %reg1, [%reg2+$off]",
+        "mul [%reg1], %reg2"
+      ],
+      "description": "Multiplies two operands, saving the result in the first one"
+    },
+    {
+      "name": "div",
+      "examples": [
+        "div %reg, $num",
+        "div %reg1, %reg2",
+        "div %reg1, [%reg2]",
+        "div %reg1, [%reg2+$off]",
+        "div [%reg1], %reg2"
+      ],
+      "description": "Divides the first operand by the second operand, saving the result in the first one"
+    },
+    {
+      "name": "and",
+      "examples": [
+        "and %reg1, %reg2",
+        "and %reg1, [%reg2]"
+      ],
+      "description": "Computes a bitwise and operation between two operands and saves the result into the first one"
+    },
+    {
+      "name": "or",
+      "examples": [
+        "or %reg1, %reg2",
+        "or %reg1, [%reg2]"
+      ],
+      "description": "Computes a bitwise or operation between two operands and saves the result into the first one"
+    },
+    {
+      "name": "xor",
+      "examples": [
+        "xor %reg1, %reg2",
+        "xor %reg1, [%reg2]"
+      ],
+      "description": "Computes a bitwise xor operation between two operands and saves the result into the first one"
+    },
+    {
+      "name": "not",
+      "examples": [
+        "not %reg",
+        "not [%reg]"
+      ],
+      "description": "Computes a bitwise not operation on the value of the operand"
+    },
+    {
+      "name": "lsh",
+      "examples": [
+        "lsh %reg, $num",
+        "lsh [%reg], $num",
+        "lsh [%reg+$off], $num"
+      ],
+      "description": "Shifts the value from the first operand by off bits to the left, saving the result in the first operand"
+    },
+    {
+      "name": "rsh",
+      "examples": [
+        "rsh %reg, $num",
+        "rsh [%reg], $num",
+        "rsh [%reg+$off], $num"
+      ],
+      "description": "Shifts the value from the first operand by off bits to the right, saving the result in the first operand"
+    },
+    {
+      "name": "call",
+      "examples": [
+        "call $off",
+        "call %reg",
+        "call %reg+$off"
+      ],
+      "description": "Saves the next instruction's location to the stack, transfers control by off, reg, or reg+off instructions"
+    },
+    {
+      "name": "ret",
+      "examples": [
+        "ret"
+      ],
+      "description": "Transfers control back to the instruction saved in the stack"
+    },
+    {
+      "name": "cmp",
+      "examples": [
+        "cmp %reg, $num",
+        "cmp %reg1, %reg2",
+        "cmp %reg1, [%reg2]",
+        "cmp %reg1, [%reg2+$off]"
+      ],
+      "description": "Subtracts the second value from the first one, changing the flags accordingly"
+    },
+    {
+      "name": "test",
+      "examples": [
+        "test %reg1, %reg2",
+        "test %reg1, [%reg2]",
+        "test %reg1, [%reg2+$off]"
+      ],
+      "description": "Performs bitwise and operation between the first operand and the second operand, changing the flags accordingly"
+    },
+    {
+      "name": "jmp",
+      "examples": [
+        "jmp $off",
+        "jmp %reg",
+        "jmp %reg+$off"
+      ],
+      "description": "Jumps by off, reg or reg+off instructions unconditionally"
+    },
+    {
+      "name": "je",
+      "examples": [
+        "je $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was equal to the second"
+    },
+    {
+      "name": "jne",
+      "examples": [
+        "jne $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was not equal to the second"
+    },
+    {
+      "name": "jg",
+      "examples": [
+        "jg $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was greater than the second"
+    },
+    {
+      "name": "jge",
+      "examples": [
+        "jge $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was greater or equal than the second"
+    },
+    {
+      "name": "jl",
+      "examples": [
+        "jl $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was less than the second"
+    },
+    {
+      "name": "jle",
+      "examples": [
+        "jle $off"
+      ],
+      "description": "Jumps by off instructions if the first number in the compare instruction was less or equal than the second"
+    },
+    {
+      "name": "in",
+      "examples": [
+        "in %reg, $port",
+        "in [%reg], $port",
+        "in [%reg+$off], $port"
+      ],
+      "description": "Hangs the processor, waiting for the single-character user input on the device at the port specified, saving the result into reg"
+    },
+    {
+      "name": "out",
+      "examples": [
+        "out $port, %reg",
+        "out $port, [%reg]",
+        "out $port, [%reg+$off]"
+      ],
+      "description": "Transfers data from the second operand to the device at port"
+    },
+    {
+      "name": "load4",
+      "examples": [
+        "load4 [%reg]"
+      ],
+      "description": "SIMD operation: Loads four words starting from reg into four main registers: R00, R01, R02, R03"
+    },
+    {
+      "name": "store4",
+      "examples": [
+        "store4 [%reg]"
+      ],
+      "description": "SIMD operation: Stores main registers: R00, R01, R02, R03 into memory at location reg"
+    },
+    {
+      "name": "add4",
+      "examples": [
+        "add4 [%reg], %reg"
+      ],
+      "description": "SIMD operation: Adds the value of reg to four values starting at reg location in memory"
+    },
+    {
+      "name": "sub4",
+      "examples": [
+        "sub4 [%reg], %reg"
+      ],
+      "description": "SIMD operation: Subtracts the value of reg from four values starting at reg location in memory"
+    },
+    {
+      "name": "mul4",
+      "examples": [
+        "mul4 [%reg], %reg"
+      ],
+      "description": "SIMD operation: Multiplies four values starting at reg location in memory by the value of reg"
+    },
+    {
+      "name": "div4",
+      "examples": [
+        "div4 [%reg], %reg"
+      ],
+      "description": "SIMD operation: Divides four values starting at reg location in memory by the value of reg"
     },
     {
       "name": "nop",

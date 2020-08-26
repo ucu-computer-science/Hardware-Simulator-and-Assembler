@@ -414,9 +414,6 @@ class CPU:
         # If the opcode type is call, we can perform the needed actions without calling functions_dict
         if res_type == "call":
 
-            # TODO: I was trying to fix something and I broke other thing, probably here.
-            #  It might be pushing wrong address, idk, but it just enters the endless loop on call/ret pair
-
             # Remember the next instruction after the one which called the 'call' function
             next_instruction = self.program_pointer + 1
             if self.isa == "risc3":
