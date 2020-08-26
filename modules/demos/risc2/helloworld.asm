@@ -1,6 +1,11 @@
 # Hello World PrintOut | Accumulator-RISC example Assembly program
+
 # Push the ASCII encodings onto the stack, and load the first letter into ACC register
-mov $31
+# Directive .end contains last element 'Hello World!'
+
+.end db 31
+
+mov .end
 push
 mov $33
 push
@@ -26,11 +31,12 @@ mov $101
 push
 mov $72
 
+.loop
 # Check if we have already finished printing the alphabet
-cmp $31
+cmp .end
 
 # Jump to the end of the program if we are finished with printing
-je $6
+je .finish
 
 # Output a new letter to the device at port 1
 out $1
@@ -39,4 +45,8 @@ out $1
 pop
 
 # Jump back to the start of the loop
-jmp $-4
+jmp .loop
+
+.finish
+# Finish the program
+nop
