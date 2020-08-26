@@ -35,5 +35,5 @@ inc %R02
 cmp %R02, $6
 jne .mainloop
 
-# TODO: check if anything has changed, check how can I store a sole value in the memory
+# TODO: check if anything has changed
 nop
