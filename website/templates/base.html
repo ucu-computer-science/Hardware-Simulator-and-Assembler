@@ -24,11 +24,20 @@
     Thus, in <code>add %reg1, %reg2, %reg3</code> instruction, the result goes into <code>reg1</code>, and
     calculations are done between <code>reg2</code> and <code>reg3</code></p>
 <br>
-<p style="{{ p_style }}">Labels are allowed. They appear on their own lines and point to the next line, and can
+<p style="{{ p_style }}">A few label types are supported. Jump labels appear on their own lines and point to the next line, and can
 consist only of alphanumeric characters:</p>
 <p style="{{ p_style }}"><code>.labelexample</code></p>
 <p style="{{ p_style }}">They are used for jumps and calls, the instruction right next after the label will be jumped to:</p>
 <p style="{{ p_style }}"><code>jmp .labelexample</code></p>
+<br>
+<p style="{{ p_style }}">Assembly directives can be used too, db and dw are supported (they encode byte by byte and word by word respectively):</p>
+<p style="{{ p_style }}"><code>.number db 15</code></p>
+<p style="{{ p_style }}"><code>.word db "examplestring"</code></p>
+<p style="{{ p_style }}">They can be used as immediate constants anywhere in the assembly program. The first example below puts ASCII code for 'e' into R00, and the second - just a decimal number 15:</p>
+<p style="{{ p_style }}"><code>mov_low %R00, .word</code></p>
+<p style="{{ p_style }}"><code>mov_low %R00, .number</code></p>
+<p style="{{ p_style }}">Offsets can also be specified, the program below puts ASCII code for 'x' into R00, and so on:</p>
+<p style="{{ p_style }}"><code>mov_low %R00, .word+$1</code></p>
 <br>
 {% block content %}
 {% endblock %}
