@@ -618,6 +618,36 @@ def update_examples(n_clicks, user_id):
     return 'none'
 
 
+# If CISC architecture was chosen, add new option to examples dropdown
+@app.callback(Output('example-dropdown', 'options'),
+              [Input('info', 'children')])
+def change_examples(info):
+    """
+    Control example dropdown options in case of changed isa.
+
+    :param info: n_clicks of 'reset' button (processed in additional div)
+    :return: example dropdown options
+    """
+    isa = info.split()[0]
+    if isa == 'cisc':
+        return [
+                        {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
+                        {'label': 'HELLO WORLD', 'value': 'hello'},
+            {'label': 'HELLO WORLD (SIMD)', 'value': 'hello_simd'},
+                        {'label': 'BUBBLE SORT', 'value': 'bubble_sort'},
+                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial', 'disabled': True},
+                        {'label': 'NONE', 'value': 'none'},
+                    ]
+    else:
+        return [
+                        {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
+                        {'label': 'HELLO WORLD', 'value': 'hello'},
+                        {'label': 'BUBBLE SORT', 'value': 'bubble_sort'},
+                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial', 'disabled': True},
+                        {'label': 'NONE', 'value': 'none'},
+                    ]
+
+
 # Change main info
 @app.callback(
     Output('info', 'children'),
@@ -753,6 +783,10 @@ def add_example_code(example_name, app_examples, reset_clicks, user_id):
         if user_id in user_dict:
             user_dict[user_id]['example'] = 'hello'
         return app_examples[1]
+    elif example_name == 'hello_simd':
+        if user_id in user_dict:
+            user_dict[user_id]['example'] = 'hello_simd'
+        return app_examples[4]
     elif example_name == 'bubble_sort':
         if user_id in user_dict:
             user_dict[user_id]['example'] = 'bubble_sort'
