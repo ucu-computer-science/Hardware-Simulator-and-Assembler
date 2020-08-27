@@ -107,7 +107,7 @@ app.layout = html.Div([
                         {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
                         {'label': 'HELLO WORLD', 'value': 'hello'},
                         {'label': 'BUBBLE SORT', 'value': 'bubble_sort'},
-                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial', 'disabled': True},
+                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial'},
                         {'label': 'NONE', 'value': 'none'},
                     ],
                     placeholder="NONE",
@@ -635,7 +635,7 @@ def change_examples(info):
                         {'label': 'HELLO WORLD', 'value': 'hello'},
             {'label': 'HELLO WORLD (SIMD)', 'value': 'hello_simd'},
                         {'label': 'BUBBLE SORT', 'value': 'bubble_sort'},
-                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial', 'disabled': True},
+                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial'},
                         {'label': 'NONE', 'value': 'none'},
                     ]
     else:
@@ -643,7 +643,7 @@ def change_examples(info):
                         {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
                         {'label': 'HELLO WORLD', 'value': 'hello'},
                         {'label': 'BUBBLE SORT', 'value': 'bubble_sort'},
-                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial', 'disabled': True},
+                        {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial'},
                         {'label': 'NONE', 'value': 'none'},
                     ]
 
