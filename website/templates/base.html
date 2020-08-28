@@ -33,6 +33,9 @@ consist only of alphanumeric characters:</p>
 <p style="{{ p_style }}">Assembly directives can be used too, db and dw are supported (they encode byte by byte and word by word respectively):</p>
 <p style="{{ p_style }}"><code>.number db 15</code></p>
 <p style="{{ p_style }}"><code>.word db "examplestring"</code></p>
+<p style="{{ p_style }}">You can also encode byte values in strings:</p>
+<p style="{{ p_style }}"><code>.word db "word\0x035"</code></p>
+<p style="{{ p_style }}"><code>.word db "word\035"</code></p>
 <p style="{{ p_style }}">They can be used as immediate constants anywhere in the assembly program. The first example below puts ASCII code for 'e' into R00, and the second - just a decimal number 15:</p>
 <p style="{{ p_style }}"><code>mov_low %R00, .word</code></p>
 <p style="{{ p_style }}"><code>mov_low %R00, .number</code></p>
