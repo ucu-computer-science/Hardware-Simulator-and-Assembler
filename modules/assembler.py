@@ -360,13 +360,34 @@ class Assembler:
                 elif op_type == "memregoff":
 
                     operand = operand.replace(" ", "")
+                    num_start = operand.find("$")
+
                     if (index := operand.find("+")) != -1:
                         operand_sign = "+"
                     elif (index := operand.find("-")) != -1:
                         operand_sign = "-"
 
                     reg_op = operand[1:index]
-                    offset_op = int(operand[index + 2:-1])
+                    try:
+                        offset_op = int(operand[index + 2:-1])
+                    except ValueError:
+                        label_check = operand[index + 2:-1]
+                        if label_check in self.mov_labels:
+                            value = self.mov_labels[label_check]
+                            if isinstance(value, int):
+                                if num_start != -1:
+                                    raise AssemblerError("Provide valid assembly directives")
+                                offset_op = value
+                            elif isinstance(value, list):
+                                if num_start == -1:
+                                    offset_op = value[0]
+                                else:
+                                    mov_index = int(operand[num_start + 1:])
+                                    if not (0 <= mov_index < len(value)):
+                                        raise AssemblerError("Provide a valid assembly directive offset")
+                                    num = value[mov_index]
+                        else:
+                            raise AssemblerError("Provide valid assembly directives")
                     register_byte += self.register_names[reg_op[1:]]
 
                     # Check if the size of the number is valid
@@ -481,7 +502,7 @@ class Assembler:
         elif op_type == "memregoff":
             index_plus = assembly_op.find("+")
             index_minus = assembly_op.find("-")
-            index_num = assembly_op.find("$")
+            index_num = max(assembly_op.find("$"), assembly_op.find("."))
 
             if ((index_plus == -1 and index_minus == -1) or
                     (index_plus != -1 and index_minus != -1 and (max(index_plus, index_minus) < index_num))):
