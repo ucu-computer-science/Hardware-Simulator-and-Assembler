@@ -97,7 +97,8 @@ class Assembler:
         instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
         self.instruction_size = instruction_sizes[isa]
         self.jump_label_allowed = ["jmp", "call", "je", "jne", "jl", "jle", "jg", "jge", "jc"]
-        self.mov_label_allowed = ["mov", "load", "store", "push", "mov_low", "mov_high", "cmp", "cmpe", "cmpb"]
+        self.mov_label_allowed = ["mov", "load", "store", "push", "mov_low", "mov_high", "cmp", "cmpe", "cmpb", "mul",
+                                  "div"]
 
         self.binary_code = self.translate(program_text)
 
@@ -322,15 +323,17 @@ class Assembler:
                 elif op_type.startswith("imm"):
                     operand = operand.replace(" ", "")
                     num_start = operand.find("$")
-                    label_check = operand[1:] if num_start == -1 else operand[1:num_start-1]
+                    label_check = operand[1:] if num_start == -1 else operand[1:num_start - 1]
 
                     # Decode the label if it's mentioned, otherwise read the number from the assembly instruction
                     # There are two possible types of labels:
                     # * one specifies the instruction to jump to, in that case we figure out the offset and encode it
                     # * the other references a location in memory, and might also include offsets, we encode bytes or words
-                    if instruction_name in self.jump_label_allowed and operand.startswith(".") and label_check in self.jump_labels:
+                    if instruction_name in self.jump_label_allowed and operand.startswith(
+                            ".") and label_check in self.jump_labels:
                         num = (self.jump_labels[label_check] - instruction_index)
-                    elif instruction_name in self.mov_label_allowed and operand.startswith(".") and label_check in self.mov_labels:
+                    elif instruction_name in self.mov_label_allowed and operand.startswith(
+                            ".") and label_check in self.mov_labels:
                         value = self.mov_labels[label_check]
                         if isinstance(value, int):
                             if num_start != -1:
@@ -341,7 +344,7 @@ class Assembler:
                                 num = value[0]
                             else:
                                 mov_index = int(operand[num_start + 1:])
-                                if not(0 <= mov_index < len(value)):
+                                if not (0 <= mov_index < len(value)):
                                     raise AssemblerError("Provide a valid assembly directive offset")
                                 num = value[mov_index]
                     else:
@@ -446,7 +449,8 @@ class Assembler:
             if instruction_name in self.mov_label_allowed:
                 result.append(assembly_op.startswith(".") and
                               (assembly_op[1:] in self.mov_labels or self.__valid_type(assembly_op, "regoff",
-                                                                                       instruction_name, recursive=True)))
+                                                                                       instruction_name,
+                                                                                       recursive=True)))
             return any(result)
 
     @staticmethod

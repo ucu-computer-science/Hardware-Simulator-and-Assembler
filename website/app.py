@@ -633,7 +633,7 @@ def change_examples(info):
         return [
                         {'label': 'ALPHABET PRINTOUT', 'value': 'alphabet'},
                         {'label': 'HELLO WORLD', 'value': 'hello'},
-            {'label': 'HELLO WORLD (SIMD)', 'value': 'hello_simd'},
+                        {'label': 'HELLO WORLD (SIMD)', 'value': 'hello_simd'},
                         {'label': 'BUBBLE SORT', 'value': 'bubble_sort'},
                         {'label': 'POLYNOMIAL CALCULATION', 'value': 'polynomial'},
                         {'label': 'NONE', 'value': 'none'},
