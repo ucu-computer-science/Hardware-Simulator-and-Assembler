@@ -4,7 +4,39 @@
 # Assembly Simulator project 2020
 # GNU General Public License v3.0
 
-# TODO: Implement assembly directives (db and dw)
+# This one of the most important modules of the Hardware Simulator that translates
+# mnemonics into binary code
+
+#     Is supposed to handle a few ISA architectures:
+#         * Stack
+#         * Accumulator
+#         * RISC Register
+#         * CISC Register architectures
+
+# Basic workflow of the Assembler is as follows:
+#   * Command line interface checks provided program's ISA and passes code to the actual Assembler
+#   * Assembler loads instructions for the provided ISA from instructions.json and preprocesses the code
+#   * Translate instructions line by line:
+#       * Separate instruction itself from operands
+#       * Find correct encoding of that instruction, considering special case of 5-bit opcodes
+#       * Check if the operand provided is of the type needed, if yes, encode and add it to the current line
+#           (more about work with instructions.json below)
+#   * Return a complete binary code of the program
+
+# Encoding operands with information from instructions.json:
+#   * Check if valid operands for that instruction were provided and if they are written correctly
+#   * Add "reg" or "fr" ("memreg" or "simdreg") operands names to the binary line (or register byte for CISC)
+#   * Encode register (or memregs) with offset and add its encoded value to immediate_bytes
+#   * Encode immediate value:
+#       * Decode the label if it's mentioned, otherwise read the number from the assembly instruction
+#   * For CISC left adjust register byte and add it to the binary line with immediate bytes
+
+# Decoding directives:
+#   * Search for a correct pattern in the line
+#   * If an integer is provided within required limits: return its value
+#   * Decode characters in the string one by one, add their ASCII codes to the result and return it
+
+# Resulting binary code is provided to the processor and executed
 
 # TODO: There is more though, instructions.json is pretty inconsistent between different
 #  architectures as it was all done on the go, and is under-documented
