@@ -85,7 +85,8 @@ class TestCPU(unittest.TestCase):
         with open(output_files[15], "r") as file:
             self.directives_cisc = file.read()
 
-    def reassemble(self, programs):
+    @staticmethod
+    def reassemble(programs):
         """ Reassembles all the test programs """
         output_files = []
         for program in programs:
