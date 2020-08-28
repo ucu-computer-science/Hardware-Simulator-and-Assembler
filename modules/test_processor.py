@@ -116,7 +116,7 @@ class TestCPU(unittest.TestCase):
         """ Tests the correct byte program_start for each architecture """
         cpu_risc1 = CPU("risc1", "neumann", "special", self.risc1_alphabet, program_start=512)
         self.assertEqual(ba2hex(cpu_risc1.program_memory.slots[512*6:512*6 + 22*6]),
-                         "8810479816e90061eb00188004ea3fe40")
+                         "8810479816e90061eb00188004ea3fe5c")
 
         cpu_risc2 = CPU("risc2", "neumann", "special", self.risc2_alphabet, program_start=512)
         self.assertEqual(ba2hex(cpu_risc2.program_memory.slots[512*8:512*8 + 16*8]), "81004185005b8800048f00010f87fffc")
@@ -142,9 +142,9 @@ class TestCPU(unittest.TestCase):
                 cpu.web_next_instruction()
             self.assertEqual(ba2hex(cpu.registers['R00']._state), '000f')
 
-        for _ in range(12):
+        for _ in range(14):
             cpu_directives_cisc.web_next_instruction()
-        self.assertEqual(str(cpu_directives_cisc.ports_dictionary['1']), '               anime')
+        self.assertEqual(str(cpu_directives_cisc.ports_dictionary['1']), '              animea')
 
     def test_alphabet(self):
         """ Tests the correct alphabet printout for RISC1 and RISC3 architecture """

@@ -222,15 +222,42 @@ class Assembler:
         # We just figure out what's being encoded into bits - a number (which should fit in 8/16 bits) or a string of
         # characters (every ASCII character is 1 byte), and return the value we found
         limits = (-2 ** 7 + 1, 2 ** 8) if is_byte else (-2 ** 15 + 1, 2 ** 16)
-        int_pattern = r"\d+"
-        str_pattern = r"\"[a-zA-Z]+\""
+        int_pattern = r"^\d+$"
+        str_pattern = r"^\"[a-zA-Z0-9\\]+\"$"
 
+        # Decode an integer
         if re.search(int_pattern, value) is not None:
             value = int(value)
             if limits[0] <= value <= limits[1]:
                 return value
+
+        # Decode a string into numbers
         elif re.search(str_pattern, value) is not None:
-            return [ord(char) for char in value[1:-1]]
+            result = []
+            index = 1
+            while index < (len(value) - 1):
+                char = value[index]
+                # Decode a number encoded in a string of characters
+                if char == "\\":
+                    index += 1
+                    if value[index:index+2] == "0x":
+                        index += 2
+                        number = int(value[index:index+3], 16)
+                        index += 3
+                    else:
+                        number = int(value[index:index + 3])
+                        index += 3
+                    if 0 <= number <= 255:
+                        result.append(number)
+                    else:
+                        raise AssemblerError("Provide a valid assembly directive operand")
+
+                # Else, just figure out the ASCII code of the character and remember it
+                else:
+                    result.append(ord(char))
+                    index += 1
+
+            return result
 
         raise AssemblerError("Provide a valid assembly directive operand")
 
