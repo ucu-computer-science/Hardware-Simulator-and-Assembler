@@ -23,12 +23,12 @@
 1. ~~RISC-Register final tests for every instruction~~
 1. ~~Stack ISA advanced instructions tests~~
 1. ~~Accumulator ISA advanced instructions tests~~
-1. Alphabet output example program (~~RISC1~~, ~~RISC2~~, ~~RISC3~~, CISC)
-1. Hello world output example program (~~RISC1~~, ~~RISC2~~, ~~RISC3~~, CISC)
-1. Add more example programs showcasing something more or less meaningful (sorts?)
+1. ~~Alphabet output example program (RISC1, RISC2, RISC3, CISC)~~
+1. ~~Hello world output example program (RISC1, RISC2, RISC3, CISC)~~
+1. ~~Add more example programs showcasing something more or less meaningful (bubble sorting, polynomial calculation)~~
 
 #### Bonus advanced functionality:
-1. Assembler working with labels (they are not included in binary code, it translates them to immediate offsets)
+1. ~~Assembler working with labels (they are not included in binary code, it translates them to immediate offsets)~~
 1. ~~'Next instruction' automation, configurable execution time~~
 1. Breakpoints in assembly code, with configurable execution time
 1. ~~Bin/Hex Instruction Representation Settings~~ 
