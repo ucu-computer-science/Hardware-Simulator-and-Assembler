@@ -695,8 +695,7 @@ class CPU:
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
             elif res_type == "memtos":
                 memory_write_access = True
-                tos_val = int(self.registers["TOS"]._state.to01(), 2) * 8
-                result_destination = int(self.data_memory.read_data(tos_val, tos_val + 16).to01(), 2)
+                result_destination = int(self.__pop_tos(pop=True).to01(), 2)
             elif res_type == "fr":
                 result_destination = self.registers["FR"]
             elif res_type == "stackpop":
@@ -841,8 +840,8 @@ class CPU:
                 operands_values.append(self.__pop_tos(second=True))
 
             elif operand == "memtos":
-                tos_value = int(self.__pop_tos(pop=True).to01(), 2) * 8
-                operands_values.append(self.data_memory.read_data(tos_value, tos_value + 16))
+                tos_val = int(self.__pop_tos(pop=True).to01(), 2) * 8
+                operands_values.append(self.data_memory.read_data(tos_val, tos_val + 16))
 
             elif operand == "memir":
                 ir_value = int(self.registers["IR"]._state.to01(), 2) * 8
