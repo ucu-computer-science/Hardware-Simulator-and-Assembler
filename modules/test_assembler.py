@@ -5,7 +5,7 @@
 # GNU General Public License v3.0
 import unittest
 import os
-from modules.assembler import Assembler
+from modules.assembler import Assembler, AssemblerError
 
 
 # This module tests the Assembler's basic functionality
@@ -108,6 +108,17 @@ class TestAssembler(unittest.TestCase):
         self.assertEqual(self.complete_cisc, self.checked_complete_cisc)
         self.assertEqual(self.label_cisc, self.checked_label_cisc)
         self.assertEqual(self.directives_cisc, self.checked_directives_cisc)
+
+    def test_errors(self):
+        """ Test if Assembler raises correct errors (test some of them). """
+        with self.assertRaises(AssemblerError):
+            Assembler("risc1", "mov_low %R00, $4")
+        with self.assertRaises(AssemblerError):
+            Assembler("risc3", "mov_low $4, $0")
+        with self.assertRaises(AssemblerError):
+            Assembler("risc1", ".anime%")
+        with self.assertRaises(AssemblerError):
+            Assembler("risc1", ".anime 024")
 
 
 if __name__ == '__main__':
