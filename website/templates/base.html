@@ -42,5 +42,11 @@ consist only of alphanumeric characters:</p>
 <p style="{{ p_style }}">Offsets can also be specified, the program below puts ASCII code for 'x' into R00, and so on:</p>
 <p style="{{ p_style }}"><code>mov_low %R00, .word+$1</code></p>
 <br>
+<p style="{{ p_style }}">Simulator supports two INPUT/OUTPUT architectures:</p>
+    <ul style="padding-left: 14%; text-align: left">
+        <li><p style="color: #FFFFFF;">Specials commands I/O (uses <code>in</code>, <code>out</code> commands)</p></li>
+        <li><p style="color: #FFFFFF;">Memory-Mapped I/O (uses memory at starting point 1004 and ending point 1024)</p></li>
+    </ul>
+<br>
 {% block content %}
 {% endblock %}
