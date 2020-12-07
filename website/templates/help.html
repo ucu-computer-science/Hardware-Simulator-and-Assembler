@@ -13,23 +13,23 @@
 <table class="rwd-table" style="background-color: #453c64; width: 80%">
 <thead>
     <tr>
-      <th style="text-align:left; vertical-align: text-top; width: 15%">Instruction</th>
-      <th style="text-align:left; vertical-align: text-top; width: 25%">Examples</th>
-      <th style="text-align:left; vertical-align: text-top; width: 60%">Description</th>
+      <th style="text-align:left; vertical-align: text-top; width: 15%; color: #FFFFFF;">Instruction</th>
+      <th style="text-align:left; vertical-align: text-top; width: 25%; color: #FFFFFF;">Examples</th>
+      <th style="text-align:left; vertical-align: text-top; width: 60%; color: #FFFFFF;">Description</th>
     </tr>
 </thead>
 <tbody>
 {% for item in items[1:] %}
 <TR>
-    <TD style="text-align:left; vertical-align: text-top"><code>{{item.name}}</code></TD>
+   <TD style="text-align:left; vertical-align: text-top; color: #FFFFFF;"><code>{{item.name}}</code></TD>
    <TD style="text-align:left; vertical-align: text-top">
        <ul style="padding: 0;">
            {% for example in item.examples %}
-           <li><code>{{example}}</code></li>
+           <li><code style="color: #FFFFFF;">{{example}}</code></li>
            {% endfor %}
        </ul>
    </TD>
-   <TD style="text-align:left; vertical-align: text-top">{{item.description}}</TD>
+   <TD style="text-align:left; vertical-align: text-top; color: #FFFFFF;">{{item.description}}</TD>
 </TR>
 {% endfor %}
 </tbody>
