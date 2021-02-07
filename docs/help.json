@@ -802,10 +802,10 @@
     {
       "name": "sub",
       "examples": [
-        "add %reg1, %reg2",
-        "add %reg1, [%reg2]",
-        "add %reg1, [%reg2+$off]",
-        "add [%reg1], %reg2"
+        "sub %reg1, %reg2",
+        "sub %reg1, [%reg2]",
+        "sub %reg1, [%reg2+$off]",
+        "sub [%reg1], %reg2"
       ],
       "description": "Subtracts the value of the second operand from the first operand, saving the result in the first one"
     },
