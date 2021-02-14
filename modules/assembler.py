@@ -161,7 +161,7 @@ class Assembler:
             # Split instruction name and operands
             binary_line = ""
             arguments = line.split()
-            assembly_instruction, operands = arguments[0], ' '.join(arguments[1:]).split(', ')
+            assembly_instruction, operands = arguments[0], ''.join(arguments[1:]).split(',')
             if len(operands) == 1 and operands[0] == '':
                 operands = []
 
