@@ -209,6 +209,10 @@ class Assembler:
         for line in text.split("\n"):
             line = line.rstrip(" ")
 
+            if "#" in line:
+                ind = line.index("#")
+                line = line[:ind]
+
             # Check if its an empty line or a comment line, skip it if yes
             if line.strip(" ").startswith("."):
 
