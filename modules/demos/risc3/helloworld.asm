@@ -2,7 +2,8 @@
 # These next instructions load ASCII encodings of characters in "Hello world!" into registers
 # and then push them onto the stack, backwards, so that when the values are popped from the stack,
 # we can output the values in a normal way
-mov_low %R00, $33
+ 
+mov_low %R00, $33   # mov_low %R00, $33 
 push %R00
 mov_low %R00, $100
 push %R00

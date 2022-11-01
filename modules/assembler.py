@@ -194,7 +194,7 @@ class Assembler:
 
         return binary_code
 
-    def preprocess(self, text):
+    def preprocess(self, text : str):
         """
         Preprocesses the assembly code, finds any directives and collects the needed info on them
 
@@ -206,7 +206,21 @@ class Assembler:
         self.jump_labels = dict()
         self.mov_labels = dict()
 
-        for line in text.split("\n"):
+
+        text = text.split("\n")
+        text_no_comments = []
+
+        for line in text:
+
+            line_no_comment = line.split("#", 1)[0].strip()
+            if line_no_comment:
+
+                text_no_comments.append(line_no_comment)
+        
+        # text = "\n".join(text_no_comments)
+            
+
+        for line in text_no_comments:
             line = line.rstrip(" ")
 
             # Check if its an empty line or a comment line, skip it if yes

@@ -1,6 +1,6 @@
 {
   "risc1": [
-    "Instruction Set for RISC-Stack ISA",
+    "Instruction Set for Stack ISA",
     {
       "name": "load",
       "examples": [
@@ -227,7 +227,7 @@
     }
   ],
   "risc2": [
-    "Instruction Set for RISC-Accumulator ISA",
+    "Instruction Set for Accumulator ISA",
     {
       "name": "load",
       "examples": [
