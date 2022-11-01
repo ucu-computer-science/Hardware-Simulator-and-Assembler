@@ -1,37 +1,48 @@
-# Hello World PrintOut | Stack-RISC example Assembly program
+# Hello World PrintOut | Accumulator example Assembly program
 
-# These next instructions load ASCII encodings of characters in "Hello world!" into the register stack
-# backwards, so that when the values are popped from the stack, we can output the values in a normal way
+# Push the ASCII encodings onto the stack, and load the first letter into ACC register
 # Directive .end contains last element 'Hello World!'
 
 .end db 31
 
 mov .end
+push
 mov $33
+push
 mov $100
+push
 mov $108
+push
 mov $114
+push
 mov $111
+push
 mov $119
+push
 mov $32
+push
 mov $111
+push
 mov $108
+push
 mov $108
+push
 mov $101
+push
 mov $72
 
 .loop
-# Duplicate the value for the comparison
-dup
-
 # Check if we have already finished printing the alphabet
-cmpe .end
+cmp .end
 
 # Jump to the end of the program if we are finished with printing
-jc .finish
+je .finish
 
-# Output TOS value to the device at port 1
+# Output a new letter to the device at port 1
 out $1
+
+# Pop the new letter into ACC register
+pop
 
 # Jump back to the start of the loop
 jmp .loop

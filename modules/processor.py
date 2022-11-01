@@ -167,7 +167,7 @@ class CPU:
             self.instructions_dict = json.load(file)[self.isa]
 
         # Determining the size of the instructions to read (size of the instruction, opcode size, byte size)
-        instruction_sizes = {"risc1": (6, 6, 6), "risc2": (8, 8, 8), "risc3": (16, 6, 8), "cisc": (8, 8, 8)}
+        instruction_sizes = {"stack": (6, 6, 6), "accumulator": (8, 8, 8), "risc": (16, 6, 8), "cisc": (8, 8, 8)}
         self.instruction_size = instruction_sizes[self.isa]
 
         # Set the instruction pointer to the starting point of the program and load the specified program into memory
@@ -281,7 +281,7 @@ class CPU:
 
         # If the first bit of the encoded binary instruction indicates that the next two
         # bytes are going to be an immediate constant, change the read_state
-        if self.isa in ["risc1", "risc2"] and self.opcode[0]:
+        if self.isa in ["stack", "accumulator"] and self.opcode[0]:
             constant_reader = 1
         elif self.isa == "cisc":
             # Styles of CISC architecture with counters for register and constant readers
@@ -386,9 +386,9 @@ class CPU:
         start_point = self.__determine_start_point()
 
         # Reading the list of operands encoded in the binary instruction
-        if self.isa in ["risc3", "cisc"]:
+        if self.isa in ["risc", "cisc"]:
             operands_aliases = self.instructions_dict[self.opcode.to01()][-1]
-        elif self.isa == "risc1":
+        elif self.isa == "stack":
             operands_aliases = self.instructions_dict[self.opcode.to01()][1][1:]
         else:
             operands_aliases = self.instructions_dict[self.opcode.to01()][1]
@@ -406,7 +406,7 @@ class CPU:
                           f"Destination: {result_destination}, TOS_Push: {tos_push})")
 
         # Different architectures have different kinds of instructions encodings
-        if self.isa in ["risc3", "cisc"]:
+        if self.isa in ["risc", "cisc"]:
             res_type = self.instructions_dict[self.opcode.to01()][1]
         else:
             res_type = self.instructions_dict[self.opcode.to01()][1][0]
@@ -416,7 +416,7 @@ class CPU:
 
             # Remember the next instruction after the one which called the 'call' function
             next_instruction = self.program_pointer + 1
-            if self.isa == "risc3":
+            if self.isa == "risc":
                 self.registers["LR"].write_data(bin(next_instruction)[2:])
             else:
                 self.__push_stack(bitarray(bin(next_instruction)[2:].rjust(16, '0')))
@@ -424,7 +424,7 @@ class CPU:
             # There is only one operand for a call function, and it determines the program_start from the IP
             operand = operands_aliases[0]
             if operand.startswith("imm") or ((len(operands_aliases) > 1) and operands_aliases[1] == "imm"):
-                if self.isa == "risc3":
+                if self.isa == "risc":
                     # Calculate the new location of the instruction pointer, change it
                     imm_len = int(operand[3:])
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), imm_len)
@@ -456,7 +456,7 @@ class CPU:
             # TODO: Should we zero out the Link Register register after returning to it once?
             # In RISC-Register architecture we retrieve the caller address in the Link Register,
             # otherwise we just pop it on the stack
-            if self.isa == "risc3":
+            if self.isa == "risc":
                 return_point = int(self.registers["LR"]._state.to01(), 2)
             else:
                 return_point = int(self.__pop_stack().to01(), 2)
@@ -504,13 +504,13 @@ class CPU:
 
                 # If the program_start was specified with the number, its length was specified as well
                 # Else, just use the register length or long immediate length
-                if operands_aliases[0].startswith("imm") and self.isa == "risc3":
+                if operands_aliases[0].startswith("imm") and self.isa == "risc":
                     num_len = int(operands_aliases[0][3:])
                 else:
                     num_len = 16
 
                 # Calculate the new program_start in instructions
-                if self.isa in ["risc3", "cisc"]:
+                if self.isa in ["risc", "cisc"]:
                     jump_num = twos_complement(int(operands_values[0].to01(), 2), num_len)
                 else:
                     # Figure out if the value we should jump for was pushed on to the stack, or is in the instruction
@@ -652,7 +652,7 @@ class CPU:
         :return: start_point - int, representing the bit value in the instruction from which the opcodes begin
         """
         # Figure out the operands details for the RISC-Register ISA
-        if self.isa == "risc3":
+        if self.isa == "risc":
 
             # Load the special case moves for RISC-Register architecture
             low_high_load_risc = ["mov_low", "mov_high"]
@@ -664,8 +664,8 @@ class CPU:
                 start_point = 5
             else:
                 start_point = 6
-        # We don't really include operands in instructions for RISC1, RISC2 and CISC. This really speaks volumes about
-        # how all of this was 'engineered', ahem, starting with RISC3 and having no idea whatsoever about the future
+        # We don't really include operands in instructions for Stack, Accumulator and CISC. This really speaks volumes about
+        # how all of this was 'engineered', ahem, starting with RISC and having no idea whatsoever about the future
         # modifications, which, turns out, do not conform to the standard workflow and require tweaks and hacks
         # This *should* work, anyway :=)
         else:
@@ -686,10 +686,9 @@ class CPU:
 
         # Determining where to save the result of the operation depending on type of the operation specified
         #
-        # RISC-Stack ISA
-        if self.isa == "risc1":
-
-            # Determining the result destination for RISC-Stack iSA
+        # Stack ISA
+        if self.isa == "stack":
+            # Determining the result destination for Stack iSA
             if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["tos", "in", "swap"]:
                 memory_write_access, tos_push = True, True
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
@@ -705,11 +704,10 @@ class CPU:
                 result_destination = self.registers["FR"]
             elif res_type == "out":
                 result_destination = self.ports_dictionary[str(int(self.long_immediate_result.to01(), 2))]
+        # Accumulator
+        elif self.isa == "accumulator":
 
-        # Accumulator-RISC
-        elif self.isa == "risc2":
-
-            # Determining the result destination for RISC-Accumulator ISA
+            # Determining the result destination for Accumulator ISA
             if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["acc", "in"]:
                 result_destination = self.registers["ACC"]
             elif res_type == "stackpop":
@@ -724,9 +722,9 @@ class CPU:
                 result_destination = self.registers["FR"]
             elif res_type == "ir":
                 result_destination = self.registers["IR"]
-
+                
         # Register-RISC and CISC architectures
-        elif self.isa in ["risc3", "cisc"]:
+        elif self.isa in ["risc", "cisc"]:
 
             # If the result is to be saved into the first operand
             if (res_type := self.instructions_dict[self.opcode.to01()][1]) in ["firstop", "in", "stackpop", "simd", "simdstore"]:
@@ -823,7 +821,7 @@ class CPU:
 
             # If the operand is the immediate constant, add its value and go to the next operand
             elif operand.startswith("imm"):
-                if self.isa in ["risc1", "risc2", "cisc"]:
+                if self.isa in ["stack", "accumulator", "cisc"]:
                     operands_values.append(self.long_immediates.pop())
                 else:
                     immediate_length = int(operand[3:])

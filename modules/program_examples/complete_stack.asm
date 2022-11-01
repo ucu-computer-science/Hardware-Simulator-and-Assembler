@@ -1,4 +1,4 @@
-# There are 38 different instructions for RISC1 ISA (counting different operand types for the same instructions)
+# There are 38 different instructions for Stack RISC1 ISA (counting different operand types for the same instructions)
 # This assembly program aims to meaningfully test all of them, with edge cases considered
 #########################################################################################
 mov $1022

@@ -22,7 +22,7 @@
 #     with open("docs/help.json", "r") as file:
 #         help_dict = json.load(file)
 #     with open("modules/registers.json", "r") as file:
-#         register_dict = json.load(file)["risc3"]
+#         register_dict = json.load(file)["risc"]
 #
 #     p_style = "color: #FFFFFF; padding-left: 12%; width: 75%"
 #     return render_template('help.html', items=help_dict, p_style=p_style, reg_dict=register_dict)
@@ -52,7 +52,7 @@ def template_test():
     with open("docs/help.json", "r") as file:
         help_dict = json.load(file)
     with open("modules/registers.json", "r") as file:
-        register_dict = json.load(file)["risc3"]
+        register_dict = json.load(file)["risc"]
 
     p_style = "color: #FFFFFF; padding-left: 12%; width: 75%"
     return render_template('help.html', items=help_dict, p_style=p_style, reg_dict=register_dict)

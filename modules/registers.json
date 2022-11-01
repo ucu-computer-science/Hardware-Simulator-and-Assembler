@@ -1,19 +1,19 @@
 {
     "comments": "Each ISA architecture contains a list of registers for it, including: name, general_purpose bool, encoding",
-    "risc1": [
+    "stack": [
         ["FR", 0, "000", "Flag Register"],
         ["SP", 0, "001", "Stack Pointer"],
         ["IP", 0, "010", "Instruction Pointer"],
         ["TOS", 1, "011", "Top Of the Stack pointer"]
     ],
-    "risc2": [
+    "accumulator": [
         ["FR", 0, "000", "Flag Register"],
         ["SP", 0, "001", "Stack Pointer"],
         ["IP", 0, "010", "Instruction Pointer"],
         ["IR", 0, "011", "Index Register"],
         ["ACC", 1, "100", "Accumulator Register"]
     ],
-    "risc3": [
+    "risc": [
         ["SP", 0, "100", "Stack Pointer"],
         ["IP", 0, "101", "Instruction Pointer"],
         ["LR", 0, "110", "Link Register"],

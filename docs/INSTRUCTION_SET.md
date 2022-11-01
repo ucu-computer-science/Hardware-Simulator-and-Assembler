@@ -40,7 +40,7 @@ This emphasizes the complexity of CISC instructions and eases the actual program
 
 ## Instructions for each architecture with short descriptions
 
-| RISC STACK | RISC ACCUMULATOR | RISC REGISTER | CISC REGISTER |
+|    STACK   |    ACCUMULATOR   |    REGISTER   |    REGISTER   |
 |------------|------------------|---------------|---------------|
 | **Registers** ||||
 | *```tos``` - Points to the top of the register stack in the memory* | *```acc``` - Points to the accumulator register*| *```R00``` - General-purpose 16-bit word, R00H-high byte, R00L-low byte; ```R01``` - General-purpose 16-bit word, R01H-high byte, R01L-low byte; ```R02``` - General-purpose 16-bit word, R02H-high byte, R02L-low byte; ```R03``` - General-purpose 16-bit word, R03H-high byte, R03L-low byte;* | *```R00``` - General-purpose 16-bit word, R00H-high byte, R00L-low byte; ```R01``` - General-purpose 16-bit word, R01H-high byte, R01L-low byte; ```R02``` - General-purpose 16-bit word, R02H-high byte, R02L-low byte; ```R03``` - General-purpose 16-bit word, R03H-high byte, R03L-low byte;* |

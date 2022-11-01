@@ -33,8 +33,8 @@ from website.example_programs import examples
 # CPU DICTIONARY ( key=user.id, value=dict(cpu, intervals) )
 user_dict = dict()
 # Numbers of buttons (used to change type of isa during cpu creation, are same for every session and user)
-buttons = {0: 'risc1', 1: 'risc2', 2: 'risc3', 3: 'cisc'}
-isas = {'risc1': 0, 'risc2': 1, 'risc3': 2, 'cisc': 3}
+buttons = {0: 'stack', 1: 'accumulator', 2: 'risc', 3: 'cisc'}
+isas = {'stack': 0, 'accumulator': 1, 'risc': 2, 'cisc': 3}
 # Empty memoty cells
 base_headers = ['Addr   :  ', '00 01 02 03', '04 05 06 07', '08 09 0a 0b', '0c 0d 0e 0f', '10 11 12 13', '14 15 16 17',
                 '18 19 1a 1b', '1c 1d 1e 1f']
@@ -122,12 +122,12 @@ app.layout = html.Div([
                 dcc.Dropdown(
                     id='isa-dropdown',
                     options=[
-                        {'label': 'REGISTER RISC', 'value': 'risc3'},
+                        {'label': 'REGISTER RISC', 'value': 'risc'},
                         {'label': 'REGISTER CISC', 'value': 'cisc'},
-                        {'label': 'STACK', 'value': 'risc1'},
-                        {'label': 'ACCUMULATOR', 'value': 'risc2'},
+                        {'label': 'STACK', 'value': 'stack'},
+                        {'label': 'ACCUMULATOR', 'value': 'accumulator'},
                     ],
-                    value='risc3',
+                    value='risc',
                     style=dropdown_style1,
                     clearable=False,
                 ),
@@ -328,7 +328,7 @@ app.layout = html.Div([
     html.Div([dcc.Link(html.Button('INSTRUCTION SET (HELP)', style={"color": help_font_color, 'font-family': 'custom',
                                                                     "background-color": help_color,
                                                                     'margin-bottom': 15,
-                                                                    'font-size': 13}), id='link', href='/help-risc3',
+                                                                    'font-size': 13}), id='link', href='/help-risc',
                        refresh=True,
                        style={'color': text_color, 'display': 'block', 'width': 260}),
               dcc.Link(children=["GitHub Repository"], href='https://github.com/dariaomelkina/poc_project',
@@ -347,7 +347,7 @@ app.layout = html.Div([
     # HIDDEN DIVS
 
     # Main info (has default settings)
-    html.Div(id="info", children='risc3 neumann special', style={'display': 'none'}),
+    html.Div(id="info", children='risc neumann special', style={'display': 'none'}),
     # Id creation and storage
     html.Div(id='id-storage', style={'display': 'none'}),
     html.Div(id='id-creation', style={'display': 'none'}),
@@ -381,10 +381,10 @@ app.layout = html.Div([
     # Storage to hold seconds for instruction per second
     html.Div(id='seconds-storage', children=1, style={'display': 'none'}),
 
-    # Example storage (for risc3 by default)
-    html.Div(id='examples', children=examples['risc3'], style={'display': 'none'}),
+    # Example storage (for risc by default)
+    html.Div(id='examples', children=examples['risc'], style={'display': 'none'}),
 
-    # Instruction pointer storage (for risc3 by default)
+    # Instruction pointer storage (for risc by default)
     html.Div(id='ip-storage', children=512, style={'display': 'none'}),
 
     # Div to enable input mode
@@ -577,7 +577,7 @@ def control_architecture(chosen_isa, info):
     """
     isa, arch, io = info.split()
     isa = chosen_isa
-    if isa == 'risc1':
+    if isa == 'stack':
         return [{'label': 'VON NEUMANN', 'value': 'neumann', 'disabled': True},
                 {'label': 'HARVARD', 'value': 'harvard'}, ], 'harvard', io
     else:
@@ -1607,35 +1607,34 @@ def help(isa):
     p_style = "color: #FFFFFF; padding-left: 12%; width: 75%"
     return render_template('help.html', items=help_dict, p_style=p_style, reg_dict=register_dict)
 
-
-@app.server.route('/help-risc1')
-def help_risc1():
+@app.server.route('/help-stack')
+def help_stack():
     """
-    Create a help page for the risc1 isa.
+    Create a help page for the stack isa.
 
     :return: html page
     """
-    return help('risc1')
+    return help('stack')
 
 
-@app.server.route('/help-risc2')
-def help_risc2():
+@app.server.route('/help-accumulator')
+def help_accumulator():
     """
-    Create a help page for the risc2 isa.
+    Create a help page for the accumulator isa.
 
     :return: html page
     """
-    return help('risc2')
+    return help('accumulator')
 
 
-@app.server.route('/help-risc3')
-def help_risc3():
+@app.server.route('/help-risc')
+def help_risc():
     """
-    Create a help page for the risc3 isa.
+    Create a help page for the risc isa.
 
     :return: html page
     """
-    return help('risc3')
+    return help('risc')
 
 
 @app.server.route('/help-cisc')

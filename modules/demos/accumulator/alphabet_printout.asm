@@ -1,4 +1,4 @@
-# Alphabet PrintOut | Stack-RISC example Assembly program
+# Alphabet PrintOut | Accumulator example Assembly program
 
 # Following instructions printout the alphabet
 # Directive .start contains starting point (ASCII-code of A)
@@ -7,26 +7,21 @@
 .start db 65
 .end db 91
 
-# Load the starting ASCII value into TOS
+# Load the starting ASCII value into ACC
 mov .start
 
 .loop
-# Duplicate it for the comparison
-dup
-
 # Check if we have already finished printing the alphabet
-cmpe .end
+cmp .end
 
 # Jump to the end of the program if we are finished with printing
-jc .finish
+je .finish
 
-# Output TOS value to the device at port 1
-dup
+# Output ACC value to the device at port 1
 out $1
 
 # Increment the value of the ASCII code by 1
-mov $1
-add
+inc
 
 # Jump back to the start of the loop
 jmp .loop

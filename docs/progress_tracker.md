@@ -23,8 +23,8 @@
 1. ~~RISC-Register final tests for every instruction~~
 1. ~~Stack ISA advanced instructions tests~~
 1. ~~Accumulator ISA advanced instructions tests~~
-1. ~~Alphabet output example program (RISC1, RISC2, RISC3, CISC)~~
-1. ~~Hello world output example program (RISC1, RISC2, RISC3, CISC)~~
+1. ~~Alphabet output example program (Stack, Accumulator, RISC, CISC)~~
+1. ~~Hello world output example program (Stack, Accumulator, RISC, CISC)~~
 1. ~~Add more example programs showcasing something more or less meaningful (bubble sorting, polynomial calculation)~~
 
 #### Bonus advanced functionality:

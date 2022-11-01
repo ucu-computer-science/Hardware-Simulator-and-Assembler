@@ -1,4 +1,4 @@
-# Polynomial Calculation | Accumulator-RISC example Assembly program
+# Polynomial Calculation | Stack example Assembly program
 
 # These instructions calculate a value of a polynomial expression
 # In that example polynomial is 2*x^2 + 3*x - 7, x = 2
@@ -18,72 +18,95 @@
 .start db 2
 .end db 6
 .n db 2
+.indexn db 10
+.indexnewn db 12
 .value db 2
 .resultindex db 0
 
-# Load initial start index to IR
+# Store maxvalue of n by chosen index
+mov .indexn
+store .n
+
+# Push the first index of coefficients list to memory
 mov .start
-storei
-
-# Push maximum power of the expression
-mov .n
-push
 push
 
-# Go through coefficients in the list
-.listloop
-loadi
-cmp .end
-jg .startaddition
-
-# Work with each coefficient
-.powerloop
+.mainloop
+# Check if we have finished going through the list
 pop
-
-# Skip multiplication if power is less than 1
-cmp $1
-jl .finishpowerloop
-dec
+dup
 push
+cmpb .end
+jc .additionloop
+
+mov .indexnewn
+mov .indexn
+load
+store
+
+
+.loop
+# Check if n > 0
+mov .indexnewn
+load
+cmpb $0
+jc $2
+
+# Multiply values
+jmp .continue
+pop
+dup
+dup
+push
+load
 mov .value
 mul
 store
-jmp .powerloop
 
-# Finish with raising value to the power
-.finishpowerloop
+# Decrement current value of n
+mov .indexnewn
+dup
+load
+mov $-1
+add
+store
+jmp .loop
+
+.continue
 pop
-dec
-push
-push
-loadi
-inc
-inc
-storei
-jmp .listloop
-
-# Add values in the list
-.startaddition
-mov $0
-push
-
-.additionloop
-loadi
-cmp .start
-je .result
-dec
-dec
-storei
-pop
+mov $2
 add
 push
-jmp .additionloop
+mov .indexn
+dup
+load
+mov $-1
+add
+store
+jmp .mainloop
 
-# Store the result in the memory
-.result
+# Add resulting values
+.additionloop
 mov .resultindex
-storei
+mov $0
+
+.addition
 pop
+dup
+push
+cmpe .start
+jc .finishaddition
+pop
+mov $-2
+add
+dup
+push
+load
+add
+jmp .addition
+
+# Store the result
+.finishaddition
 store
 
 # Finish the program

@@ -1,4 +1,4 @@
-# Bubble Sort | Accumulator-RISC example Assembly program
+# Bubble Sort | Accumulator example Assembly program
 
 # These instructions sort a manually 'created' list
 # Directive .start contains the starting index of the list (0 in that example)

@@ -23,7 +23,7 @@ class Simulator:
         parser = argparse.ArgumentParser()
         parser.add_argument("--file", help="provide the binary code filepath")
         parser.add_argument("--isa",
-                            help="specify the ISA architecture: RISC1 (Stack), RISC2 (Accumulator), RISC3 (Register), CISC (Register)")
+                            help="specify the ISA architecture: Stack, Accumulator, RISC (Register), CISC (Register)")
         parser.add_argument("--architecture",
                             help="specify the data/program architecture: neumann, harvard, harvardm")
         parser.add_argument("--output", help="specify the type of I/O: mmio, special")
@@ -33,7 +33,7 @@ class Simulator:
         args = parser.parse_args()
 
         # Lists of valid architecture types
-        valid_isa = ['risc1', 'risc2', 'risc3', 'cisc']
+        valid_isa = ['stack', 'accumulator', 'risc', 'cisc']
         valid_architectures = ['neumann', 'harvard', 'harvardm']
         valid_io = ['mmio', 'special']
 

@@ -1,6 +1,6 @@
 {
   "comments": "Each architecture contains a dict of instructions: encoding, name, result destination and list of operands",
-  "risc1": {
+  "stack": {
     "000000": [
       "halt",
       "halt"
@@ -347,7 +347,7 @@
       []
     ]
   },
-  "risc2": {
+  "accumulator": {
     "00000000": [
       "halt",
       "halt"
@@ -785,7 +785,7 @@
       []
     ]
   },
-  "risc3": {
+  "risc": {
     "000000": [
       "halt",
       "halt",

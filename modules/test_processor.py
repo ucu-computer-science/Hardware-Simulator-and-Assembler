@@ -18,66 +18,66 @@ from modules.assembler import Assembler
 class TestCPU(unittest.TestCase):
     def setUp(self):
         """ Loads the common programs for testing """
-        test_programs = [('risc1', os.path.join("modules", "demos", "risc1", 'alphabet_printout.asm')),
-                         ('risc1', os.path.join("modules", "demos", "risc1", "helloworld.asm")),
-                         ('risc3', os.path.join("modules", "demos", "risc3", "helloworld.asm")),
-                         ('risc3', os.path.join("modules", "demos", "risc3", "alphabet_printout.asm")),
-                         ('risc3', os.path.join("modules", "program_examples", "assembly_test6.asm")),
-                         ('risc3', os.path.join("modules", "program_examples", "complete_risc3.asm")),
-                         ('risc1', os.path.join("modules", "program_examples", "complete_risc1.asm")),
-                         ('risc2', os.path.join("modules", "demos", "risc2", "helloworld.asm")),
-                         ('risc2', os.path.join("modules", "demos", "risc2", "alphabet_printout.asm")),
-                         ('risc2', os.path.join("modules", "program_examples", "complete_risc2.asm")),
+        test_programs = [('stack', os.path.join("modules", "demos", "stack", 'alphabet_printout.asm')),
+                         ('stack', os.path.join("modules", "demos", "stack", "helloworld.asm")),
+                         ('risc', os.path.join("modules", "demos", "risc", "helloworld.asm")),
+                         ('risc', os.path.join("modules", "demos", "risc", "alphabet_printout.asm")),
+                         ('risc', os.path.join("modules", "program_examples", "assembly_test6.asm")),
+                         ('risc', os.path.join("modules", "program_examples", "complete_risc.asm")),
+                         ('stack', os.path.join("modules", "program_examples", "complete_stack.asm")),
+                         ('accumulator', os.path.join("modules", "demos", "accumulator", "helloworld.asm")),
+                         ('accumulator', os.path.join("modules", "demos", "accumulator", "alphabet_printout.asm")),
+                         ('accumulator', os.path.join("modules", "program_examples", "complete_accumulator.asm")),
                          ('cisc', os.path.join("modules", "program_examples", "complete_cisc.asm")),
-                         ('risc1', os.path.join("modules", "program_examples", "label_test_risc1.asm")),
-                         ('risc2', os.path.join("modules", "program_examples", "label_test_risc2.asm")),
-                         ('risc3', os.path.join("modules", "program_examples", "label_test_risc3.asm")),
+                         ('stack', os.path.join("modules", "program_examples", "label_test_stack.asm")),
+                         ('accumulator', os.path.join("modules", "program_examples", "label_test_accumulator.asm")),
+                         ('risc', os.path.join("modules", "program_examples", "label_test_risc.asm")),
                          ('cisc', os.path.join("modules", "program_examples", "label_test_cisc.asm")),
                          ('cisc', os.path.join("modules", "program_examples", "directive_test_cisc.asm"))]
 
         output_files = self.reassemble(test_programs)
 
         with open(output_files[0], "r") as file:
-            self.risc1_alphabet = file.read()
+            self.stack_alphabet = file.read()
 
         with open(output_files[1], "r") as file:
-            self.risc1_hello_world = file.read()
+            self.stack_hello_world = file.read()
 
         with open(output_files[2], "r") as file:
-            self.risc3_hello_world = file.read()
+            self.risc_hello_world = file.read()
 
         with open(output_files[3], "r") as file:
-            self.risc3_alphabet = file.read()
+            self.risc_alphabet = file.read()
 
         with open(output_files[4], "r") as file:
-            self.risc3_program_text = file.read()
+            self.risc_program_text = file.read()
 
         with open(output_files[5], "r") as file:
-            self.complete_risc3 = file.read()
+            self.complete_risc = file.read()
 
         with open(output_files[6], "r") as file:
-            self.complete_risc1 = file.read()
+            self.complete_stack = file.read()
 
         with open(output_files[7], "r") as file:
-            self.risc2_hello_world = file.read()
+            self.accumulator_hello_world = file.read()
 
         with open(output_files[8], "r") as file:
-            self.risc2_alphabet = file.read()
+            self.accumulator_alphabet = file.read()
 
         with open(output_files[9], "r") as file:
-            self.complete_risc2 = file.read()
+            self.complete_accumulator = file.read()
 
         with open(output_files[10], "r") as file:
             self.complete_cisc = file.read()
 
         with open(output_files[11], "r") as file:
-            self.label_risc1 = file.read()
+            self.label_stack = file.read()
 
         with open(output_files[12], "r") as file:
-            self.label_risc2 = file.read()
+            self.label_accumulator = file.read()
 
         with open(output_files[13], "r") as file:
-            self.label_risc3 = file.read()
+            self.label_risc = file.read()
 
         with open(output_files[14], "r") as file:
             self.label_cisc = file.read()
@@ -102,8 +102,8 @@ class TestCPU(unittest.TestCase):
 
     def test_program_loading(self):
         """ Tests the correct program loading in the memory """
-        cpu_neumann = CPU("risc3", "neumann", "special", self.risc3_program_text)
-        cpu_harvard = CPU("risc3", "harvard", "special", self.risc3_program_text)
+        cpu_neumann = CPU("risc", "neumann", "special", self.risc_program_text)
+        cpu_harvard = CPU("risc", "harvard", "special", self.risc_program_text)
 
         # Testing Neumann architecture
         self.assertEqual(ba2hex(cpu_neumann.program_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
@@ -115,30 +115,30 @@ class TestCPU(unittest.TestCase):
 
     def test_program_loading_offset(self):
         """ Tests the correct byte program_start for each architecture """
-        cpu_risc1 = CPU("risc1", "neumann", "special", self.risc1_alphabet, program_start=512)
-        self.assertEqual(ba2hex(cpu_risc1.program_memory.slots[512*6:512*6 + 22*6]),
+        cpu_stack = CPU("stack", "neumann", "special", self.stack_alphabet, program_start=512)
+        self.assertEqual(ba2hex(cpu_stack.program_memory.slots[512*6:512*6 + 22*6]),
                          "8810479816e90061eb00188004ea3fe5c")
 
-        cpu_risc2 = CPU("risc2", "neumann", "special", self.risc2_alphabet, program_start=512)
-        self.assertEqual(ba2hex(cpu_risc2.program_memory.slots[512*8:512*8 + 16*8]), "81004185005b8800048f00010f87fffc")
+        cpu_accumulator = CPU("accumulator", "neumann", "special", self.accumulator_alphabet, program_start=512)
+        self.assertEqual(ba2hex(cpu_accumulator.program_memory.slots[512*8:512*8 + 16*8]), "81004185005b8800048f00010f87fffc")
 
-        cpu_risc3 = CPU("risc3", "neumann", "special", self.risc3_program_text, program_start=512)
-        self.assertEqual(ba2hex(cpu_risc3.program_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
+        cpu_risc = CPU("risc", "neumann", "special", self.risc_program_text, program_start=512)
+        self.assertEqual(ba2hex(cpu_risc.program_memory.slots[512*8:512*8 + 16*8]), "184119011a5b5500680488080c0263fc")
 
     def test_labels(self):
         """ Tests correct workflow of labels """
-        cpu_risc1 = CPU("risc1", "neumann", "special", self.label_risc1)
-        cpu_risc2 = CPU("risc2", "neumann", "special", self.label_risc2)
-        cpu_risc3 = CPU("risc3", "neumann", "special", self.label_risc3)
+        cpu_stack = CPU("stack", "neumann", "special", self.label_stack)
+        cpu_accumulator = CPU("accumulator", "neumann", "special", self.label_accumulator)
+        cpu_risc = CPU("risc", "neumann", "special", self.label_risc)
         cpu_cisc = CPU("cisc", "neumann", "special", self.label_cisc)
         cpu_directives_cisc = CPU("cisc", "neumann", "special", self.directives_cisc)
 
-        for cpu in [cpu_risc1, cpu_risc2]:
+        for cpu in [cpu_stack, cpu_accumulator]:
             for _ in range(4):
                 cpu.web_next_instruction()
             self.assertEqual(ba2hex(cpu.registers['IP']._state), '0200')
 
-        for cpu in [cpu_risc3, cpu_cisc]:
+        for cpu in [cpu_risc, cpu_cisc]:
             for _ in range(5):
                 cpu.web_next_instruction()
             self.assertEqual(ba2hex(cpu.registers['R00']._state), '000f')
@@ -148,61 +148,61 @@ class TestCPU(unittest.TestCase):
         self.assertEqual(str(cpu_directives_cisc.ports_dictionary['1']), '              animea')
 
     def test_alphabet(self):
-        """ Tests the correct alphabet printout for RISC1 and RISC3 architecture """
-        cpu_risc1 = CPU("risc1", "harvard", "special", self.risc1_alphabet)
-        cpu_risc2 = CPU("risc2", "harvard", "special", self.risc2_alphabet)
-        cpu_risc3 = CPU("risc3", "neumann", "special", self.risc3_alphabet)
+        """ Tests the correct alphabet printout for Stack and RISC architecture """
+        cpu_stack = CPU("stack", "harvard", "special", self.stack_alphabet)
+        cpu_accumulator = CPU("accumulator", "harvard", "special", self.accumulator_alphabet)
+        cpu_risc = CPU("risc", "neumann", "special", self.risc_alphabet)
 
         # Skipping the needed amount of instructions
         for _ in range(50):
-            cpu_risc1.web_next_instruction()
+            cpu_stack.web_next_instruction()
         for _ in range(30):
-            cpu_risc2.web_next_instruction()
+            cpu_accumulator.web_next_instruction()
         for _ in range(35):
-            cpu_risc3.web_next_instruction()
+            cpu_risc.web_next_instruction()
 
         alphabet_check = ["              ABCDEF", "GHIJKLMNOPQRSTUVWXYZ"]
 
-        self.assertEqual(str(cpu_risc1.ports_dictionary["1"]), alphabet_check[0])
-        self.assertEqual(str(cpu_risc2.ports_dictionary["1"]), alphabet_check[0])
-        self.assertEqual(str(cpu_risc3.ports_dictionary["1"]), alphabet_check[0])
+        self.assertEqual(str(cpu_stack.ports_dictionary["1"]), alphabet_check[0])
+        self.assertEqual(str(cpu_accumulator.ports_dictionary["1"]), alphabet_check[0])
+        self.assertEqual(str(cpu_risc.ports_dictionary["1"]), alphabet_check[0])
 
         # Skipping the needed amount of instructions
         for _ in range(165):
-            cpu_risc1.web_next_instruction()
+            cpu_stack.web_next_instruction()
         for _ in range(100):
-            cpu_risc2.web_next_instruction()
+            cpu_accumulator.web_next_instruction()
         for _ in range(100):
-            cpu_risc3.web_next_instruction()
+            cpu_risc.web_next_instruction()
 
-        self.assertEqual(str(cpu_risc1.ports_dictionary["1"]), alphabet_check[1])
-        self.assertEqual(str(cpu_risc2.ports_dictionary["1"]), alphabet_check[1])
-        self.assertEqual(str(cpu_risc3.ports_dictionary["1"]), alphabet_check[1])
+        self.assertEqual(str(cpu_stack.ports_dictionary["1"]), alphabet_check[1])
+        self.assertEqual(str(cpu_accumulator.ports_dictionary["1"]), alphabet_check[1])
+        self.assertEqual(str(cpu_risc.ports_dictionary["1"]), alphabet_check[1])
 
     def test_hello_world(self):
-        """ Tests the correct 'Hello world' workflow for RISC1 and RISC3 architecture """
-        cpu_risc1 = CPU("risc1", "harvard", "special", self.risc1_hello_world)
-        cpu_risc2 = CPU("risc2", "harvard", "special", self.risc2_hello_world)
-        cpu_risc3 = CPU("risc3", "neumann", "special", self.risc3_hello_world)
+        """ Tests the correct 'Hello world' workflow for Stack and RISC architecture """
+        cpu_stack = CPU("stack", "harvard", "special", self.stack_hello_world)
+        cpu_accumulator = CPU("accumulator", "harvard", "special", self.accumulator_hello_world)
+        cpu_risc = CPU("risc", "neumann", "special", self.risc_hello_world)
 
         # Skipping the needed amount of instructions
         for _ in range(73):
-            cpu_risc1.web_next_instruction()
+            cpu_stack.web_next_instruction()
         for _ in range(84):
-            cpu_risc2.web_next_instruction()
+            cpu_accumulator.web_next_instruction()
         for _ in range(95):
-            cpu_risc3.web_next_instruction()
+            cpu_risc.web_next_instruction()
 
-        self.assertEqual(ba2hex(cpu_risc3.program_memory.slots[-192:]),
+        self.assertEqual(ba2hex(cpu_risc.program_memory.slots[-192:]),
                          "00480065006c006c006f00200077006f0072006c00640021")
 
-        self.assertEqual(str(cpu_risc1.ports_dictionary["1"]), "        Hello world!")
-        self.assertEqual(str(cpu_risc2.ports_dictionary["1"]), "        Hello world!")
-        self.assertEqual(str(cpu_risc3.ports_dictionary["1"]), "        Hello world!")
+        self.assertEqual(str(cpu_stack.ports_dictionary["1"]), "        Hello world!")
+        self.assertEqual(str(cpu_accumulator.ports_dictionary["1"]), "        Hello world!")
+        self.assertEqual(str(cpu_risc.ports_dictionary["1"]), "        Hello world!")
 
-    def test_risc1_complete(self):
-        """ Tests all of the instructions of RISC1 ISA """
-        cpu = CPU("risc1", "neumann", "special", self.complete_risc1)
+    def test_stack_complete(self):
+        """ Tests all of the instructions of Stack ISA """
+        cpu = CPU("stack", "neumann", "special", self.complete_stack)
         cpu.web_next_instruction()
 
         # Checking the mov $1022 instruction
@@ -470,9 +470,9 @@ class TestCPU(unittest.TestCase):
         tos_val = int(cpu.registers['TOS']._state.to01(), 2)
         self.assertEqual(ba2hex(cpu.data_memory.read_data(tos_val*8 - 16, tos_val*8)), '0045')
 
-    def test_risc2_complete(self):
-        """ Tests all of the instructions of RISC2 ISA """
-        cpu = CPU("risc2", "neumann", "special", self.complete_risc2)
+    def test_accumulator_complete(self):
+        """ Tests all of the instructions of Accumulator ISA """
+        cpu = CPU("accumulator", "neumann", "special", self.complete_accumulator)
         cpu.web_next_instruction()
 
         # Testing the mov $512 instruction
@@ -680,9 +680,9 @@ class TestCPU(unittest.TestCase):
         cpu.web_next_instruction()
         self.assertEqual(str(cpu.ports_dictionary['1']), '                   E')
 
-    def test_risc3_complete(self):
-        """ Tests all of the instructions of RISC3 ISA """
-        cpu = CPU("risc3", "neumann", "special", self.complete_risc3)
+    def test_risc_complete(self):
+        """ Tests all of the instructions of RISC ISA """
+        cpu = CPU("risc", "neumann", "special", self.complete_risc)
         cpu.web_next_instruction()
 
         # Check the mov_high %R00, $2 instruction

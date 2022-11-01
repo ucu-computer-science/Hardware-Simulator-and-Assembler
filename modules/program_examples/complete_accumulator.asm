@@ -1,4 +1,4 @@
-# There are 48 different instructions for RISC1 ISA (counting different operand types for the same instructions)
+# There are 48 different instructions for Accumulator RISC2 ISA (counting different operand types for the same instructions)
 # This assembly program aims to meaningfully test all of them, with edge cases considered
 #########################################################################################
 mov $512

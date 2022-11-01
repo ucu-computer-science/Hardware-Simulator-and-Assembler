@@ -63,8 +63,8 @@ class AssemblerCLI:
         # Creating the command line parser and main arguments
         parser = argparse.ArgumentParser()
         parser.add_argument("-f", "--file", help="provide the assembly program filepath")
-        parser.add_argument("--isa", help="specify the ISA architecture: RISC1 (Stack), "
-                                          "RISC2 (Accumulator), RISC3 (Register), CISC (Register)")
+        parser.add_argument("--isa", help="specify the ISA architecture: Stack, "
+                                          "Accumulator, RISC (Register), CISC (Register)")
         parser.add_argument("-o", "--output", help="Specify the output file")
 
         # Parsing the command line arguments
@@ -75,7 +75,7 @@ class AssemblerCLI:
             raise AssemblerError("Assembly program filepath not provided")
 
         # Check if the ISA is provided and actually exists
-        valid_isa = ['risc1', 'risc2', 'risc3', 'cisc']
+        valid_isa = ['stack', 'accumulator', 'risc', 'cisc']
         if not args.isa or args.isa.lower() not in valid_isa:
             raise AssemblerError("Specify the valid instruction set architecture")
 
@@ -126,7 +126,7 @@ class Assembler:
             self.register_names = {register[0]: register[2] for register in registers}
 
         # Determining the size of the instructions to read
-        instruction_sizes = {"risc1": (6, 6), "risc2": (8, 8), "risc3": (16, 6), "cisc": (8, 8)}
+        instruction_sizes = {"stack": (6, 6), "accumulator": (8, 8), "risc": (16, 6), "cisc": (8, 8)}
         self.instruction_size = instruction_sizes[isa]
         self.jump_label_allowed = ["jmp", "call", "je", "jne", "jl", "jle", "jg", "jge", "jc"]
         self.mov_label_allowed = ["mov", "load", "store", "push", "mov_low", "mov_high", "cmp", "cmpe", "cmpb", "mul",
@@ -444,11 +444,11 @@ class Assembler:
                     else:
                         num = int(operand[1:])
 
-                    # RISC-Stack has to divide the number into two 6-bit bytes
-                    # RISC-Accumulator and CISC have to divide the number into two 8-bit bytes
+                    # Stack has to divide the number into two 6-bit bytes
+                    # Accumulator and CISC have to divide the number into two 8-bit bytes
                     # Immediate constant length is undefined for Risc-Register architecture,
                     # and thus is set for every instruction
-                    bit_lengths = {"risc1": "12", "risc2": "16", "risc3": op_type[3:], "cisc": "16"}
+                    bit_lengths = {"stack": "12", "accumulator": "16", "risc": op_type[3:], "cisc": "16"}
                     bit_len = int(bit_lengths[self.isa])
 
                     # Check if the size of the number is valid

@@ -1,5 +1,5 @@
 {
-  "risc1": [
+  "stack": [
     "Instruction Set for Stack ISA",
     {
       "name": "load",
@@ -226,7 +226,7 @@
       "description": "Does not do anything"
     }
   ],
-  "risc2": [
+  "accumulator": [
     "Instruction Set for Accumulator ISA",
     {
       "name": "load",
@@ -513,7 +513,7 @@
       "description": "Does not do anything"
     }
   ],
-  "risc3": [
+  "risc": [
     "Instruction Set for RISC-Register ISA",
     {
       "name": "load",
