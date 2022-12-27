@@ -87,9 +87,12 @@
 
 # TODO: Should we have a SIMD switch on / off for CISC?
 
+# DONE:
+#  * at the moment commented out curses functionality
+
 import os
 import json
-import curses
+# import curses
 import logging
 from bitarray import bitarray
 from bitarray.util import ba2hex
@@ -178,6 +181,9 @@ class CPU:
 
         self.instruction = bitarray('')
 
+        '''
+        Deprecated curses functionality
+        
         # Draw the main interface
         if self.curses_mode:
             self.start_screen()
@@ -192,6 +198,7 @@ class CPU:
 
             # Close the curses module screen if we are in its mode
             self.close_screen()
+        '''
 
     def __create_registers(self):
         """
@@ -336,9 +343,13 @@ class CPU:
         Execute the current instruction, and move on to the next one, moving the instruction pointer
         """
         is_close = False
+        '''
+        Deprecated curses functionality
+        
         # Waiting for the key or button to be pressed, depending on the mode
         if self.curses_mode:
             is_close = self.curses_next_instruction()
+        '''
 
         # Executing the instruction if it's not a 'nop' - no operation instruction
         if (instr_name := self.instructions_dict[self.opcode.to01()][0]) == "nop":
@@ -913,6 +924,9 @@ class CPU:
         else:
             self.input_result_destination.write_data(char)
 
+    '''
+    Deprecated curses functionality
+    
     # Below are the methods for curses-driven command-line interface
     def start_program(self):
         """
@@ -1078,6 +1092,7 @@ class CPU:
         self.std_screen.keypad(False)
         curses.curs_set(True)
         curses.endwin()
+    '''
 
 
 class SimulatorError(Exception):
