@@ -240,10 +240,8 @@ class Assembler:
 
                 # If the label is mentioned with directive specification and its value, we have to encode it into memory
                 elif len(words) == 3:
-                    if words[1] == "db":
-                        self.mov_labels[words[0]] = self.__decode_directive(True, words[2])
-                    elif words[1] == "dw":
-                        self.mov_labels[words[0]] = self.__decode_directive(False, words[2])
+                    if words[1] in ["db", "dw"]:
+                        self.mov_labels[words[0]] = self.__decode_directive(words[1], words[2])
                     else:
                         raise AssemblerError("Provide a valid assembly directive")
 
@@ -258,15 +256,16 @@ class Assembler:
         return result_text
 
     @staticmethod
-    def __decode_directive(is_byte, value):
+    def __decode_directive(directive, value):
         """
         Decodes operands for directives (db, dw)
 
-        :param is_byte: bool - to encode value in a byte or word
+        :param directive: str - valid assembly directive
         :param value: str - an operand to encode
         """
         # We just figure out what's being encoded into bits - a number (which should fit in 8/16 bits) or a string of
         # characters (every ASCII character is 1 byte), and return the value we found
+        is_byte = directive == 'db'
         limits = (-2 ** 7 + 1, 2 ** 8) if is_byte else (-2 ** 15 + 1, 2 ** 16)
         int_pattern = r"^\d+$"
         str_pattern = r"^\"[a-zA-Z0-9\\]+\"$"
