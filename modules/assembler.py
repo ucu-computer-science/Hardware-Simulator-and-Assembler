@@ -41,7 +41,7 @@
 # TODO: There is more though, instructions.json is pretty inconsistent between different
 #  architectures as it was all done on the go, and is under-documented
 
-import sys
+
 import os
 import re
 import json
@@ -231,7 +231,6 @@ class Assembler:
                 words = line.split(" ")
                 if not words[0].isalnum():
                     raise AssemblerError(f"Provide valid label: {line}")
-                    
                 if words[0] in self.jump_labels or words[0] in self.mov_labels:
                     raise AssemblerError(f"Labels can not be reassigned or duplicated: {line}")
 
@@ -538,10 +537,8 @@ class Assembler:
         # Labels are of two types: specifying the jump offset, or some value from the macro value in memory
         elif op_type.startswith("imm"):
             result = [assembly_op.startswith("$") and self.__is_number(assembly_op[1:])]
-            
             if instruction_name in self.jump_label_allowed:
                 result.append(assembly_op.startswith(".") and assembly_op[1:] in self.jump_labels)
-            
             if instruction_name in self.mov_label_allowed:
                 result.append(assembly_op.startswith(".") and
                               (assembly_op[1:] in self.mov_labels or self.__valid_type(assembly_op, "regoff",
@@ -558,29 +555,6 @@ class Assembler:
         :return: str - two lines with encoded numbers of specified length
         """
         return bin(twos_complement(number, length))[2:].rjust(length, '0')
-
-# def encode(number, length):
-#     if number < 0:
-#         number = (1 << length) + number
-         
-#     result  = f'{number: 0{length}b}'[:2]
-#     return result
-
-# def encode(number, length):
-#     if number < 0:
-#         number = (1<<length) + number
-#     return number
-
-# def encode(number, length):
-#     if number < 0:
-#         number = -number 
-#         number = (1 << length) + number
-#     else:
-#         number %=  (1 << length)
-#     result  = f'{number:0{length}b}'
-#     return result
-
-# encode(1,1)
 
     @staticmethod
     def __is_number(n):
@@ -601,8 +575,4 @@ class AssemblerError(Exception):
 
 
 if __name__ == '__main__':
-    # print(sys.argv)
-    # sys.argv.extend(
-    #     ['-f', 'modules/program_examples_experiment/label_test_stack.asm', '--isa', 'Stack']
-    # )
     assembler = AssemblerCLI()
