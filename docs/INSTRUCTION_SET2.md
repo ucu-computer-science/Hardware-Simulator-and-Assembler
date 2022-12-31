@@ -108,6 +108,14 @@ being saved into the first operand:
 
 ## Instructions for each architecture
 
+### Flags description:
+
+* `CF` : Carry flag - Set if the last arithmetic operation carried (addition) or borrowed (subtraction) a bit beyond the size of the register. This is then checked when the operation is followed with an add-with-carry or subtract-with-borrow to deal with values too large for just one register to contain;
+* `ZF`: Zero flag - Set if the result of an operation is Zero (0);
+* `OF`: Overflow flag - Set if signed arithmetic operations result in a value too large for the register to contain;
+* `SF`: Sign flag - Set if the result of an operation is negative.
+
+
 |    STACK   |    ACCUMULATOR   |    REGISTER   | CISC REGISTER |
 |------------|------------------|---------------|---------------|
 | **Registers** ||||
@@ -210,6 +218,7 @@ being saved into the first operand:
 |  |  |  | ```rsh [%reg+$off], $imm``` |
 | | | | |
 | **Flow control** |   |   |   |
+| ```halt``` | ```halt``` | ```halt``` | ```halt``` |
 | ```call label``` | ```call label``` | ```call label``` | ```call label``` |
 | ```call $imm``` | ```call $imm``` | ```call [$imm]``` | ```call [imm]``` |
 | ```call``` | ```call``` | ```call [%reg]``` | ```call [%reg]``` |
