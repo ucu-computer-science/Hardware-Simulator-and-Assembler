@@ -39,14 +39,21 @@ not_working_text = '#AFAFB2'
 
 not_working = {"background": not_working_bg, "font": not_working_text}
 
-style_header = {'backgroundColor': background_color, 'border': f'1px {background_color}',
-                'color': text_color, 'font-size': 12}
+style_header = {'backgroundColor': background_color, 
+                'border': f'1px {background_color}',
+                'color': text_color, 
+                'font-size': 12}
 
-style_memory_header = {'backgroundColor': table_main_color, 'border': f'1px {background_color}',
-                       'color': memory_font, 'font-size': 12}
+style_memory_header = {'backgroundColor': table_main_color, 
+                       'border': f'1px {background_color}',
+                       'color': memory_font, 
+                       'font-size': 12}
 
-style_cell = {'backgroundColor': table_main_color, 'color': table_main_font_color, 'textAlign': 'center',
-              'border': f'1px {table_header_color}', 'font-size': 12}
+style_cell = {'backgroundColor': table_main_color, 
+              'color': table_main_font_color, 
+              'textAlign': 'center',
+              'border': f'1px {table_header_color}', 
+              'font-size': 12}
 
 tab_style = {
     'borderBottom': f'1px solid {background_color}',
@@ -86,9 +93,12 @@ memory_selected_tab_style2['color'] = text_color
 memory_selected_tab_style2['backgroundColor'] = background_color
 
 
-dropdown_style1 = {'width': 200, 'backgroundColor': background_color,
+dropdown_style1 = {'width': 200, 
+                   'backgroundColor': background_color,
                    'color': text_color,
                    'font-size': '18px'}
-dropdown_style2 = {'width': 285, 'backgroundColor': background_color,
+
+dropdown_style2 = {'width': 285, 
+                   'backgroundColor': background_color,
                    'color': text_color,
                    'font-size': '18px'}

@@ -231,6 +231,7 @@ class Assembler:
                 words = line.split(" ")
                 if not words[0].isalnum():
                     raise AssemblerError(f"Provide valid label: {line}")
+                    
                 if words[0] in self.jump_labels or words[0] in self.mov_labels:
                     raise AssemblerError(f"Labels can not be reassigned or duplicated: {line}")
 
@@ -537,8 +538,10 @@ class Assembler:
         # Labels are of two types: specifying the jump offset, or some value from the macro value in memory
         elif op_type.startswith("imm"):
             result = [assembly_op.startswith("$") and self.__is_number(assembly_op[1:])]
+            
             if instruction_name in self.jump_label_allowed:
                 result.append(assembly_op.startswith(".") and assembly_op[1:] in self.jump_labels)
+            
             if instruction_name in self.mov_label_allowed:
                 result.append(assembly_op.startswith(".") and
                               (assembly_op[1:] in self.mov_labels or self.__valid_type(assembly_op, "regoff",

@@ -148,10 +148,13 @@ class CPU:
         self.memory_size = 1024
         # Create data and program memory according to the specified architecture
         if architecture in ["neumann", "harvardm"]:
+
             memory = Memory(self.memory_size)
             self.data_memory = memory
             self.program_memory = memory
+
         elif architecture == "harvard":
+
             self.data_memory = Memory(self.memory_size)
             self.program_memory = Memory(self.memory_size)
 
@@ -219,6 +222,7 @@ class CPU:
             if register[0] == "TOS":
                 self.tos_start = 256
                 temp.write_data(bin(self.tos_start)[2:])
+
             elif register[0] in ["SP", "BP"]:
                 self.stack_start = 1024
                 temp.write_data(bin(self.stack_start)[2:])
@@ -361,10 +365,12 @@ class CPU:
         self.logger.debug("FINISH decoding and executing the instruction")
         registers_state = ', '.join([f'{name}: {ba2hex(register._state)}' for name, register in self.registers.items()])
         self.logger.debug(F"Registers state: {registers_state}")
+        
         if go_to_next_instruction:
             ip_val = int(self.registers["IP"]._state.to01(), 2)
             bytes_per_instruction = self.instruction_size[0] // self.instruction_size[2]
             ip_val = bin(ip_val + bytes_per_instruction + self.additional_jump)[2:]
+
             self.program_pointer += 1
             self.registers["IP"].write_data(ip_val)
             self.logger.debug("MOVE IP to the next instruction")
@@ -379,6 +385,7 @@ class CPU:
         # TODO: I think we've never properly tested this? I know this SHOULD work, but anyhow
         for port, device in self.ports_dictionary.items():
             if device.io_type == "mmio":
+
                 self.logger.debug(f"Updating mmio device at {port}, memory[{device.start_point}:{device.end_point}]")
                 data = self.data_memory.read_data(device.start_point * 8, device.end_point * 8)
                 device._state = data
@@ -540,6 +547,7 @@ class CPU:
                 self.logger.debug(f"INST INFO <jmp> (Distance: {jump_num}, Bytes: {jump_distance}, "
                                   f"Bits: {jump_distance * self.instruction_size[2]})")
                 ip_value = int(self.registers["IP"]._state.to01(), 2)
+
                 self.registers["IP"].write_data(bin(ip_value + jump_distance)[2:])
                 self.program_pointer += jump_num
                 go_to_next_instruction = False
@@ -703,16 +711,21 @@ class CPU:
             if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["tos", "in", "swap"]:
                 memory_write_access, tos_push = True, True
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
+
             elif res_type == "memtos":
                 memory_write_access = True
                 result_destination = int(self.__pop_tos(pop=True).to01(), 2)
+
             elif res_type == "fr":
                 result_destination = self.registers["FR"]
+
             elif res_type == "stackpop":
                 memory_write_access, tos_push = True, True
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
+
             elif res_type == "stackpopf":
                 result_destination = self.registers["FR"]
+
             elif res_type == "out":
                 result_destination = self.ports_dictionary[str(int(self.long_immediate_result.to01(), 2))]
         # Accumulator
@@ -721,16 +734,21 @@ class CPU:
             # Determining the result destination for Accumulator ISA
             if (res_type := self.instructions_dict[self.opcode.to01()][1][0]) in ["acc", "in"]:
                 result_destination = self.registers["ACC"]
+
             elif res_type == "stackpop":
                 dest_type = self.instructions_dict[self.opcode.to01()][1][1]
                 result_destination = self.registers[dest_type.upper()]
+
             elif res_type == "memir":
                 memory_write_access = True
                 result_destination = int(self.registers["IR"]._state.to01(), 2)
+
             elif res_type == "out":
                 result_destination = self.ports_dictionary[str(int(self.long_immediate_result.to01(), 2))]
+
             elif res_type in ["cmp", "fr"]:
                 result_destination = self.registers["FR"]
+
             elif res_type == "ir":
                 result_destination = self.registers["IR"]
                 
@@ -749,9 +767,11 @@ class CPU:
                 # Figuring out if it's the register we are working with, or where it points to in memory
                 if operands_aliases[0] == "reg":
                     result_destination = self.register_codes[register_code]
+
                 elif operands_aliases[0] in ["memreg", "simdreg"]:
                     memory_write_access = True
                     result_destination = int(self.register_codes[register_code]._state.to01(), 2)
+                    
                 elif operands_aliases[0] == "memregoff":
                     memory_write_access = True
                     offset = twos_complement(int(self.long_immediate_result.to01(), 2), 16)
