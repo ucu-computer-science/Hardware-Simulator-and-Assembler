@@ -41,7 +41,7 @@
 # TODO: There is more though, instructions.json is pretty inconsistent between different
 #  architectures as it was all done on the go, and is under-documented
 
-
+import sys
 import os
 import re
 import json
@@ -559,6 +559,29 @@ class Assembler:
         """
         return bin(twos_complement(number, length))[2:].rjust(length, '0')
 
+# def encode(number, length):
+#     if number < 0:
+#         number = (1 << length) + number
+         
+#     result  = f'{number: 0{length}b}'[:2]
+#     return result
+
+# def encode(number, length):
+#     if number < 0:
+#         number = (1<<length) + number
+#     return number
+
+# def encode(number, length):
+#     if number < 0:
+#         number = -number 
+#         number = (1 << length) + number
+#     else:
+#         number %=  (1 << length)
+#     result  = f'{number:0{length}b}'
+#     return result
+
+# encode(1,1)
+
     @staticmethod
     def __is_number(n):
         """
@@ -578,4 +601,8 @@ class AssemblerError(Exception):
 
 
 if __name__ == '__main__':
+    print(sys.argv)
+    sys.argv.extend(
+        ['-f', 'modules/program_examples_experiment/acc_test1.asm', '--isa', 'Accumulator']
+    )
     assembler = AssemblerCLI()

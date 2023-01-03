@@ -75,10 +75,12 @@ empty_memory = dash_table.DataTable(id='mem', columns=([{'id': i, 'name': i} for
 server = Flask(__name__)
 # Actually different on server
 server.secret_key = b'_5#y2L"F4Q8'
-external_stylesheets = [
-    'https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)']
-app = dash.Dash(name=__name__, server=server,
-                external_stylesheets=external_stylesheets, routes_pathname_prefix='/')
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'url(assets/reset.css)']
+
+app = dash.Dash(name=__name__, 
+                server=server,
+                external_stylesheets=external_stylesheets, 
+                routes_pathname_prefix='/')
 app.title = "ASSEMBLY SIMULATOR"
 
 # MAIN LAYOUT
@@ -198,33 +200,47 @@ app.layout = html.Div([
 
                 # Tabs with bin and hex code
                 html.Div([
-                    dcc.Tabs(id='TABS', value='binary', children=[
-                        dcc.Tab(label='BIN:', value='binary', style=tab_style,
-                                selected_style=tab_selected_style),
-                        dcc.Tab(label='HEX:', value='hexadecimal',
-                                style=tab_style, selected_style=tab_selected_style),
-                    ], style={'width': 190, 'height': 58}),
+                    dcc.Tabs(id='TABS', 
+                            value='binary', 
+                            children=[
+                                    dcc.Tab(label='BIN:', 
+                                            value='binary', 
+                                            style=tab_style,
+                                            selected_style=tab_selected_style),
+
+                                    dcc.Tab(label='HEX:', 
+                                            value='hexadecimal',
+                                            style=tab_style, 
+                                            selected_style=tab_selected_style),
+                                    ], 
+                            style={'width': 190, 'height': 58}
+                            ),
                     html.Div(id='tabs-content')
-                ], style={'display': 'inline-block', 'margin-left': 10}),
+                        ], 
+                        style={'display': 'inline-block', 'margin-left': 10}),
 
             ]),
 
             html.Div([
                 html.Div([dash_table.DataTable(id='initial-ip',
-                                               columns=(
-                                                   [{'id': '1', 'name': 'INITIAL IP'}]),
+                                               columns=([{'id': '1', 'name': 'INITIAL IP'}]),
                                                data=([{'1': '0200'}]),
                                                style_header=style_header,
                                                style_cell=style_cell,
                                                editable=True), ],
                          style={'display': 'block', 'width': 100, 'margin-left': 85}),
                 # Button to assemble
-                html.Button('ASSEMBLE', id='assemble', n_clicks=0,
-                            style={'margin-left': 280, 'margin-top': -40, "color": button['font'],
-                                   'font-family': 'custom',
-                                   "background-color": button['background'],
-                                   'width': 160, 'display': 'block',
-                                   'font-size': 13}),
+                html.Button('ASSEMBLE', 
+                            id='assemble', 
+                            n_clicks=0,
+                            style={ 'margin-left': 280, 
+                                    'margin-top': -40, 
+                                    "color": button['font'],
+                                    'font-family': 'custom',
+                                    "background-color": button['background'],
+                                    'width': 160, 'display': 'block',
+                                    'font-size': 13 }
+                            ),
 
             ]),
 
@@ -236,16 +252,14 @@ app.layout = html.Div([
             html.Div([
 
                 # Next instruction
-                html.Div(id='instruction', style={'display': 'inline-block', 'margin-right': 10
-                                                  }),
+                html.Div(id='instruction', style={'display': 'inline-block', 'margin-right': 10 }),
 
                 # Output, registers and flags
                 html.Div([
 
                     html.Div(id='output',
                              children=dash_table.DataTable(id='in_out',
-                                                           columns=(
-                                                               [{'id': '1', 'name': 'OUTPUT'}]),
+                                                           columns=([{'id': '1', 'name': 'OUTPUT'}]),
                                                            data=([{'1': ''}]),
                                                            style_header=style_header,
                                                            style_cell=style_cell,
@@ -290,14 +304,12 @@ app.layout = html.Div([
                         ([
                             dash_table.DataTable(
                                 id='seconds',
-                                columns=(
-                                    [{'id': '1', 'name': 'INST/SEC (max1)'}]),
+                                columns=([{'id': '1', 'name': 'INST/SEC (max1)'}]),
                                 data=([{'1': '1'}]),
                                 style_header=style_header,
                                 style_cell=style_cell,
                                 editable=True
                                 ),
-
                         ],
                         style={'display': 'inline-block'}),
 
@@ -439,7 +451,8 @@ app.layout = html.Div([
 
     # Flags storage
     html.Div(id='flags-storage',
-             children=['0'] * 4, style={'display': 'none'}),
+             children=['0'] * 4, 
+             style={'display': 'none'}),
 
     # Output storage
     html.Div(id='output-storage', children='', style={'display': 'none'}),
@@ -458,8 +471,7 @@ app.layout = html.Div([
     # Example storage (for risc by default)
     html.Div(id='examples', 
              children=examples['risc'], 
-             style={'display': 'none'}
-            ),
+             style={'display': 'none'}),
 
     # Instruction pointer storage (for risc by default)
     html.Div(id='ip-storage', children=512, style={'display': 'none'}),
@@ -560,6 +572,8 @@ def assemble(n_clicks, user_id, reset_clicks, info, assembly_code, ip, next_clic
             user_dict[user_id]['manual-changes'] = ['1', '1', '1']
             user_dict[user_id]['time'] = 1
 
+
+
     elif n_clicks:
 
         if user_id not in user_dict:
@@ -607,9 +621,7 @@ def assemble(n_clicks, user_id, reset_clicks, info, assembly_code, ip, next_clic
 
             if not user_dict[user_id]['code']:
                 
-                user_dict[user_id]['cpu'] = CPU(
-                    isa, architecture, io, binary_program, ip
-                    )
+                user_dict[user_id]['cpu'] = CPU(isa, architecture, io, binary_program, ip)
                 user_dict[user_id]['code'] = assembly_code
                 user_dict[user_id]['binhex'] = [binary_program, hex_program]
         else:
@@ -623,14 +635,11 @@ def assemble(n_clicks, user_id, reset_clicks, info, assembly_code, ip, next_clic
                         file.write(f'Example: Alphabet for {isa}.')
                     else:
                         file.write(f'Example: Hello World for {isa}.')
-                file.write(
-                    '\n\n============================================\n\n')
+                file.write('\n\n============================================\n\n')
 
             try:
                 binary_program = Assembler(isa, assembly_code).binary_code
-                user_dict[user_id]['cpu'] = CPU(
-                    isa, architecture, io, binary_program, ip
-                    )
+                user_dict[user_id]['cpu'] = CPU(isa, architecture, io, binary_program, ip)
                 hex_program = '\n'.join(
                     list(map(lambda x: hex(int(x, 2))[2:], [x for x in binary_program.split('\n') if x])))
 
@@ -1546,12 +1555,11 @@ def update_memory(value, user_id, reset, n_clicks):
         memory_data = [[], [], [], [], [], [], [], []]
 
         for i in range(0, len(user_dict[user_id]['cpu'].data_memory.slots), 32 * 8):
-            string = ba2hex(
-                user_dict[user_id]['cpu'].data_memory.slots[i:i + 32 * 8]
-                )
+            string = ba2hex(user_dict[user_id]['cpu'].data_memory.slots[i:i + 32 * 8])
+            
             for x in range(8):
-                memory_data[x].append(
-                    " ".join([string[8 * x:8 * x + 8][y:y + 2] for y in range(0, 8, 2)]))
+                memory_data[x].append(" ".join([string[8 * x:8 * x + 8][y:y + 2] for y in range(0, 8, 2)]))
+
         lst = []
         for i in memory_data:
             lst.append('\t'.join(i))
@@ -1562,12 +1570,10 @@ def update_memory(value, user_id, reset, n_clicks):
         else:
             memory_program = [[], [], [], [], [], [], [], []]
             for i in range(0, len(user_dict[user_id]['cpu'].program_memory.slots), 32 * 8):
-                string = ba2hex(
-                    user_dict[user_id]['cpu'].program_memory.slots[i:i + 32 * 8])
+                string = ba2hex(user_dict[user_id]['cpu'].program_memory.slots[i:i + 32 * 8])
 
                 for x in range(8):
-                    memory_program[x].append(
-                        " ".join([string[8 * x:8 * x + 8][y:y + 2] for y in range(0, 8, 2)]))
+                    memory_program[x].append(" ".join([string[8 * x:8 * x + 8][y:y + 2] for y in range(0, 8, 2)]))
 
             lst_program = []
             for i in memory_program:
@@ -1641,8 +1647,7 @@ def manually_change_flags(data_flags, user_id, n_clicks):
         if user_dict[user_id]['completed-changes'] == ['1', '1', '1', '1', '1'] and (
                 time.time() - user_dict[user_id]['time']) > 3:
 
-            flags = ''.join([data_flags[0]['CF'], data_flags[0]
-                             ['ZF'], data_flags[0]['OF'], data_flags[0]['SF']])
+            flags = ''.join([data_flags[0]['CF'], data_flags[0]['ZF'], data_flags[0]['OF'], data_flags[0]['SF']])
             # Check if flags table did changed (not due to pressing 'next' button)
             if list(user_dict[user_id]['cpu'].registers['FR']._state.to01()[12:]) != [data_flags[0]['CF'],
                                                                                       data_flags[0]['ZF'],
@@ -1654,8 +1659,7 @@ def manually_change_flags(data_flags, user_id, n_clicks):
 
                 try:
                     cf, zf, of, sf = list(flags)
-                    user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(
-                        ''.join([cf, zf, of, sf]))
+                    user_dict[user_id]['cpu'].registers['FR']._state[12:16] = bitarray(''.join([cf, zf, of, sf]))
                     user_dict[user_id]['flags-changed'] = True
                     user_dict[user_id]['manual-changes'][0] = '1'
 
@@ -1707,12 +1711,11 @@ def manually_change_registers(data, user_id, n_clicks):
 
                 if user_dict[user_id]['flags-changed']:
                     user_dict[user_id]['flags-changed'] = False
-                    new_reg_dict['FR:'] = ba2hex(
-                        user_dict[user_id]['cpu'].registers['FR']._state)
+                    new_reg_dict['FR:'] = ba2hex(user_dict[user_id]['cpu'].registers['FR']._state)
 
                 for key, value in new_reg_dict.items():
-                    user_dict[user_id]['cpu'].registers[key[:-1]
-                                                        ]._state = bitarray(hex2ba(value).to01().rjust(16, '0'))
+                    user_dict[user_id]['cpu'].registers[key[:-1]]._state = bitarray(hex2ba(value).to01().rjust(16, '0'))
+
         user_dict[user_id]['time'] = time.time()
         user_dict[user_id]['manual-changes'][1] = '1'
     return 0
@@ -1748,8 +1751,7 @@ def manually_change_memory(data, user_id, n_clicks, chosen_tab):
                     for dictionary in data:
                         for key in dictionary:
                             if key != 'Addr   :  ':
-                                new_data += hex2ba(
-                                    dictionary[key].replace(" ", "").rjust(8, '0'))
+                                new_data += hex2ba(dictionary[key].replace(" ", "").rjust(8, '0'))
                 except ValueError:
                     new_data = user_dict[user_id]['cpu'].data_memory.slots
 

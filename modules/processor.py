@@ -92,7 +92,7 @@
 
 import os
 import json
-# import curses
+import curses
 import logging
 from bitarray import bitarray
 from bitarray.util import ba2hex
@@ -148,7 +148,7 @@ class CPU:
         self.memory_size = 1024
         # Create data and program memory according to the specified architecture
         if architecture in ["neumann", "harvardm"]:
-
+            
             memory = Memory(self.memory_size)
             self.data_memory = memory
             self.program_memory = memory
@@ -184,8 +184,8 @@ class CPU:
 
         self.instruction = bitarray('')
 
-        '''
-        Deprecated curses functionality
+        # '''
+        # Deprecated curses functionality
         
         # Draw the main interface
         if self.curses_mode:
@@ -201,7 +201,7 @@ class CPU:
 
             # Close the curses module screen if we are in its mode
             self.close_screen()
-        '''
+        # '''
 
     def __create_registers(self):
         """
@@ -347,13 +347,13 @@ class CPU:
         Execute the current instruction, and move on to the next one, moving the instruction pointer
         """
         is_close = False
-        '''
-        Deprecated curses functionality
+        # '''
+        # Deprecated curses functionality
         
         # Waiting for the key or button to be pressed, depending on the mode
         if self.curses_mode:
             is_close = self.curses_next_instruction()
-        '''
+        # '''
 
         # Executing the instruction if it's not a 'nop' - no operation instruction
         if (instr_name := self.instructions_dict[self.opcode.to01()][0]) == "nop":
@@ -365,7 +365,7 @@ class CPU:
         self.logger.debug("FINISH decoding and executing the instruction")
         registers_state = ', '.join([f'{name}: {ba2hex(register._state)}' for name, register in self.registers.items()])
         self.logger.debug(F"Registers state: {registers_state}")
-        
+
         if go_to_next_instruction:
             ip_val = int(self.registers["IP"]._state.to01(), 2)
             bytes_per_instruction = self.instruction_size[0] // self.instruction_size[2]
@@ -771,7 +771,7 @@ class CPU:
                 elif operands_aliases[0] in ["memreg", "simdreg"]:
                     memory_write_access = True
                     result_destination = int(self.register_codes[register_code]._state.to01(), 2)
-                    
+
                 elif operands_aliases[0] == "memregoff":
                     memory_write_access = True
                     offset = twos_complement(int(self.long_immediate_result.to01(), 2), 16)
@@ -944,8 +944,8 @@ class CPU:
         else:
             self.input_result_destination.write_data(char)
 
-    '''
-    Deprecated curses functionality
+    # '''
+    # Deprecated curses functionality
     
     # Below are the methods for curses-driven command-line interface
     def start_program(self):
@@ -1016,10 +1016,10 @@ class CPU:
                                curses.A_REVERSE)
 
         # Create the box for the instruction in binary
-        self.instruction_window = curses.newwin(5, 19, 2, 2)
+        self.instruction_window = curses.newwin(8, 25, 2, 2)
         self.instruction_window.box()
         # Create the sub-window for the actual instruction in binary representation
-        self.instruction_box = self.instruction_window.subwin(3, 17, 3, 3)
+        self.instruction_box = self.instruction_window.subwin(6, 23, 3, 3)
 
         # Create the box for the registers info
         self.register_window = curses.newwin(8, 25, 2, 30)
@@ -1066,7 +1066,7 @@ class CPU:
         self.instruction_box.clear()
         self.instruction_box.addstr("Next instruction:")
         self.instruction_box.addstr(f"{self.instruction.to01()}\n")
-        self.instruction_box.addstr(self.instructions_dict[self.opcode.to01()][0])
+        self.instruction_box.addstr(str(self.instructions_dict[self.opcode.to01()])[:50])
 
         # Fill the register box with current registers and their values
         self.register_box.clear()
@@ -1112,7 +1112,7 @@ class CPU:
         self.std_screen.keypad(False)
         curses.curs_set(True)
         curses.endwin()
-    '''
+    # '''
 
 
 class SimulatorError(Exception):
