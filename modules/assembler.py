@@ -609,12 +609,4 @@ class AssemblerError(Exception):
 
 
 if __name__ == '__main__':
-    # print(sys.argv)
-    # sys.argv.extend(
-    #     ['--file', 'modules/program_examples_experiment/test_2_accumulator.asm', 
-    #     '--isa', 'Accumulator',
-    #     # '--output', 'modules/program_examples_experiment/test_1_accumulator.asm'
-    #     ]
-
-    # )
     assembler = AssemblerCLI()
