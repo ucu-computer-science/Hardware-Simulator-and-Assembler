@@ -31,7 +31,7 @@
 #   * Create the registers, memory according to the architectures specified
 #   * Load the program binary code into memory at starting position (IP)
 #   * Then, the CPU executes instructions one by one, whether by manual presses, or at certain time intervals,
-#         everything is controlled by web_next_instruction call, it skips to the next instructions, executing it,
+#         everything is controlled by web_next_instruction call, it skips to the next instruction, executing it,
 #         and updates everything attached to CPU (Should not be called immediately after the last call,
 #         processing might take some time)
 #   * Instruction execution involves several steps as well:
@@ -184,8 +184,8 @@ class CPU:
 
         self.instruction = bitarray('')
 
-        # '''
-        # Deprecated curses functionality
+        '''
+        Deprecated curses functionality
         
         # Draw the main interface
         if self.curses_mode:
@@ -201,7 +201,7 @@ class CPU:
 
             # Close the curses module screen if we are in its mode
             self.close_screen()
-        # '''
+        '''
 
     def __create_registers(self):
         """
@@ -245,7 +245,7 @@ class CPU:
         self.instr_size_list = list(map(lambda x: len(x) // self.instruction_size[2], program_text.split('\n')))
         self.program_pointer = 0
         self.logger.debug(f"Program was loaded into program memory starting at {ip_value} byte")
-        self.logger.debug(f"Instruction size list: {self.instr_size_list}")
+        self.logger.debug(f"Instruction size list: {self.instr_size_list}\n")
 
     def web_next_instruction(self):
         """
@@ -347,13 +347,13 @@ class CPU:
         Execute the current instruction, and move on to the next one, moving the instruction pointer
         """
         is_close = False
-        # '''
-        # Deprecated curses functionality
+        '''
+        Deprecated curses functionality
         
         # Waiting for the key or button to be pressed, depending on the mode
         if self.curses_mode:
             is_close = self.curses_next_instruction()
-        # '''
+        '''
 
         # Executing the instruction if it's not a 'nop' - no operation instruction
         if (instr_name := self.instructions_dict[self.opcode.to01()][0]) == "nop":
@@ -373,7 +373,7 @@ class CPU:
 
             self.program_pointer += 1
             self.registers["IP"].write_data(ip_val)
-            self.logger.debug("MOVE IP to the next instruction")
+            self.logger.debug("MOVE IP to the next instruction\n")
 
         self.logger.debug("-" * 100)
         return is_close
@@ -719,6 +719,9 @@ class CPU:
             elif res_type == "fr":
                 result_destination = self.registers["FR"]
 
+            # elif res_type == "sp":
+            #     result_destination = self.registers["SP"]
+
             elif res_type == "stackpop":
                 memory_write_access, tos_push = True, True
                 result_destination = int(self.registers["TOS"]._state.to01(), 2)
@@ -751,6 +754,9 @@ class CPU:
 
             elif res_type == "ir":
                 result_destination = self.registers["IR"]
+
+            elif res_type == "sp":
+                result_destination = self.registers["SP"]
                 
         # Register-RISC and CISC architectures
         elif self.isa in ["risc", "cisc"]:
@@ -880,11 +886,13 @@ class CPU:
                 start_read = int(self.long_immediate_result.to01(), 2) * 8
                 operands_values.append(self.data_memory.read_data(start_read, start_read + 16))
 
-            elif operand in ["fr", "ir", "acc"]:
+            elif operand in ["fr", "ir", "acc", "sp"]:
                 operands_values.append(self.registers[operand.upper()]._state)
 
-            elif operand == "one":
+            elif operand =="one":
                 operands_values.append(bitarray(bin(1)[2:].rjust(16, '0')))
+            elif operand =="two":
+                operands_values.append(bitarray(bin(2)[2:].rjust(16, '0')))
 
         return operands_values
 
@@ -944,8 +952,8 @@ class CPU:
         else:
             self.input_result_destination.write_data(char)
 
-    # '''
-    # Deprecated curses functionality
+    '''
+    Deprecated curses functionality
     
     # Below are the methods for curses-driven command-line interface
     def start_program(self):
@@ -964,6 +972,8 @@ class CPU:
             self.__update_devices()
 
             # Draw the updated screen
+
+            # !!!
             if self.curses_mode:
                 self.draw_screen()
 
@@ -1022,37 +1032,44 @@ class CPU:
         self.instruction_box = self.instruction_window.subwin(6, 23, 3, 3)
 
         # Create the box for the registers info
-        self.register_window = curses.newwin(8, 25, 2, 30)
+        self.register_window = curses.newwin(8, 25, 10, 2)
         self.register_window.box()
         # Create the sub-window for the actual registers representation
-        self.register_box = self.register_window.subwin(6, 23, 3, 31)
+        self.register_box = self.register_window.subwin(6, 23, 11, 3)
+
+        memory_rows = 17
+        memory_cols = 130
 
         if self.architecture in ["neumann", "harvardm"]:
             # Create the box for the memory representation
-            self.data_memory_window = curses.newwin(19, 130, 10, 2)
+            self.data_memory_window = curses.newwin(memory_rows + 2, memory_cols + 2, 2, 30)
             self.data_memory_window.box()
             # Create the window for the memory print
-            self.data_memory_box = self.data_memory_window.subwin(17, 128, 11, 3)
+            self.data_memory_box = self.data_memory_window.subwin(memory_rows, memory_cols, 3, 31)
         else:
             # Create the boxes for the data and program memory representation
-            self.data_memory_window = curses.newwin(19, 130, 10, 2)
-            self.program_memory_window = curses.newwin(19, 130, 30, 2)
+            self.data_memory_window = curses.newwin(memory_rows + 2, memory_cols + 2, 2, 30)
+            self.program_memory_window = curses.newwin(memory_rows + 2, memory_cols + 2, 21, 30)
             self.data_memory_window.box()
             self.program_memory_window.box()
             # Create the windows for the data and program memory print
-            self.data_memory_box = self.data_memory_window.subwin(17, 128, 11, 3)
-            self.program_memory_box = self.program_memory_window.subwin(17, 128, 31, 3)
+            self.data_memory_box = self.data_memory_window.subwin(memory_rows, memory_cols, 3, 31)
+            self.program_memory_box = self.program_memory_window.subwin(memory_rows, memory_cols, 22, 31)
 
-        # Create the box for the shell representation
-        self.shell_window = curses.newwin(3, 23, 2, 60)
+        # # Create the box for the shell representation
+        self.shell_window = curses.newwin(4, 25, 18, 2)
         self.shell_window.box()
-        self.shell_box = self.shell_window.subwin(1, 21, 3, 61)
+        self.shell_box = self.shell_window.subwin(2, 23, 19, 3)
 
         # Refresh all the internal datastructures bottom-up, update the screen
         self.std_screen.noutrefresh()
         self.instruction_window.noutrefresh()
         self.register_window.noutrefresh()
         self.data_memory_window.noutrefresh()
+
+        if self.architecture == "harvard":
+            self.program_memory_window.noutrefresh()
+
         self.shell_window.noutrefresh()
         curses.doupdate()
 
@@ -1064,29 +1081,36 @@ class CPU:
 
         # Clearing the instruction box and inserting the new instruction
         self.instruction_box.clear()
-        self.instruction_box.addstr("Next instruction:")
+        self.instruction_box.addstr("Next instruction:\n")
         self.instruction_box.addstr(f"{self.instruction.to01()}\n")
-        self.instruction_box.addstr(str(self.instructions_dict[self.opcode.to01()])[:50])
+        self.instruction_box.addstr(str(self.instructions_dict[self.opcode.to01()]))
 
         # Fill the register box with current registers and their values
         self.register_box.clear()
         self.register_box.addstr(" Registers:\n")
         items = [(value.name, value._state.tobytes().hex()) for key, value in self.registers.items()]
+        
         for i in range(len(items)):
             self.register_box.addstr(f" {(items[i][0] + ':').ljust(4, ' ')} {items[i][1]}")
+
             if (i % 2) == 1:
                 self.register_box.addstr("\n")
 
         # Refresh the data memory on screen
         self.data_memory_box.clear()
-        for i in range(0, len(self.data_memory.slots), 8):
-            self.data_memory_box.addstr(ba2hex(self.data_memory.slots[i:i + 8]))
+        mem_str = ''
+        for i in range(0, len(self.data_memory.slots), 512):
+            mem_str += ba2hex(self.data_memory.slots[i:i + 512]) +'\n'
+        self.data_memory_box.addstr(mem_str)
 
         # If the architecture has two separate memories, we update the program memory too
         if self.architecture == "harvard":
             self.program_memory_box.clear()
-            for i in range(0, len(self.program_memory.slots), 8):
-                self.program_memory_box.addstr(ba2hex(self.program_memory.slots[i:i + 8]))
+            mem_str = ''
+
+            for i in range(0, len(self.program_memory.slots), 512):
+                mem_str += ba2hex(self.program_memory.slots[i:i + 512]) +'\n'
+            self.program_memory_box.addstr(mem_str)
 
         # Refresh the shell output
         self.shell_box.clear()
@@ -1098,6 +1122,10 @@ class CPU:
         self.instruction_box.noutrefresh()
         self.register_box.noutrefresh()
         self.data_memory_box.noutrefresh()
+
+        if self.architecture == "harvard":
+            self.program_memory_box.noutrefresh()
+
         self.shell_box.noutrefresh()
         curses.doupdate()
 
@@ -1112,7 +1140,7 @@ class CPU:
         self.std_screen.keypad(False)
         curses.curs_set(True)
         curses.endwin()
-    # '''
+    '''
 
 
 class SimulatorError(Exception):
